@@ -39,12 +39,21 @@ a:hover { text-decoration:underline; }
 .hero-band::after { content:""; position:absolute; left:0; right:0; bottom:0; height:110px;
   background:linear-gradient(180deg, rgba(246,245,241,0), #f6f5f1); pointer-events:none; }
 .hero-band .wrap { position:relative; }
-.hero { padding:92px 0 96px; }
-.pill { display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase; color:var(--orange); background:#fdf3e4;
-  border:1px solid #f0dcc8; padding:3px 12px; border-radius:999px; }
-h1 { font-size:clamp(42px, 8vw, 62px); line-height:1.06; letter-spacing:-0.02em;
-  color:var(--ink); margin:20px 0 12px; font-weight:650; }
+.hero { padding:72px 0 84px; }
+.hero-panel { max-width:680px; background:rgba(255,255,255,.58);
+  border-radius:26px; padding:30px 36px 26px;
+  box-shadow:0 1px 2px rgba(23,24,28,.03), 0 16px 48px rgba(23,24,28,.07),
+    inset 0 0 0 1px rgba(255,255,255,.7);
+  backdrop-filter:blur(14px) saturate(1.15); -webkit-backdrop-filter:blur(14px) saturate(1.15); }
+.pill { display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--mut);
+  background:rgba(255,255,255,.85); padding:6px 14px; border-radius:999px;
+  box-shadow:inset 0 0 0 1px rgba(23,24,28,.07); }
+.pill .d { width:4px; height:4px; border-radius:50%; }
+.pill .d0 { background:var(--blue); }
+.pill .d1 { background:var(--orange); }
+h1 { font-size:clamp(40px, 7.4vw, 58px); line-height:1.06; letter-spacing:-0.02em;
+  color:var(--ink); margin:18px 0 10px; font-weight:650; }
 h1 .hl { background:linear-gradient(180deg, transparent 64%, #f6e2b8 64%) no-repeat 0 0 / 100% 100%;
   border-radius:2px; padding:0 .04em; }
 .dek { font-size:clamp(17px, 3vw, 21px); line-height:1.5; color:var(--mut); font-style:italic;
@@ -71,11 +80,12 @@ main { padding-top:2px; }
 .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 @media (max-width:680px) { .grid { grid-template-columns:1fr; } }
 .card { display:flex; flex-direction:column; background:var(--card);
-  border:1px solid var(--hair); border-radius:18px; overflow:hidden; color:inherit;
-  transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
-.card:hover { text-decoration:none; transform:translateY(-3px); border-color:var(--hair-dk);
-  box-shadow:0 12px 32px rgba(23,24,28,.09); }
-.card .art { display:block; width:100%; height:148px; border-bottom:1px solid var(--hair);
+  border-radius:20px; overflow:hidden; color:inherit;
+  box-shadow:0 1px 2px rgba(23,24,28,.03), 0 10px 30px rgba(23,24,28,.05);
+  transition:transform .18s ease, box-shadow .18s ease; }
+.card:hover { text-decoration:none; transform:translateY(-3px);
+  box-shadow:0 2px 4px rgba(23,24,28,.04), 0 18px 44px rgba(23,24,28,.10); }
+.card .art { display:block; width:100%; height:148px;
   background:var(--bg); object-fit:cover; }
 .card .body { padding:17px 20px 18px; }
 .card .meta { font-size:12.5px; color:var(--mut); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
@@ -84,23 +94,23 @@ main { padding-top:2px; }
   font-family:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif; }
 .card .desc { font-size:15px; line-height:1.62; color:#4a4d55; margin:0;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.card .tags { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
-.tag { font-size:11.5px; font-weight:600; letter-spacing:.03em; padding:2px 10px;
-  border-radius:999px; border:1px solid transparent; }
-.t0 { color:var(--blue);   background:#eaf0fc; border-color:#d8e3f8; }
-.t1 { color:var(--purple); background:#f1ecfb; border-color:#e5dcf6; }
-.t2 { color:var(--orange); background:#fdf3e4; border-color:#f5e4c8; }
-.t3 { color:var(--pink);   background:#fbecef; border-color:#f5d9df; }
-.t4 { color:var(--teal);   background:#e7f6f4; border-color:#cfeae6; }
+.card .tags { display:flex; flex-wrap:wrap; gap:5px 14px; margin-top:12px; }
+.tag { font-size:12px; font-weight:650; letter-spacing:.01em; }
+.tag::before { content:"#"; opacity:.5; margin-right:1px; font-weight:600; }
+.t0 { color:var(--blue); }
+.t1 { color:var(--purple); }
+.t2 { color:var(--orange); }
+.t3 { color:var(--pink); }
+.t4 { color:var(--teal); }
 
 /* newest post gets the big stage */
-.card.feature { border-radius:22px; margin-bottom:18px; }
+.card.feature { border-radius:24px; margin-bottom:18px; }
 .card.feature .art { height:clamp(170px, 30vw, 264px); }
 .card.feature .body { padding:22px 26px 24px; }
 .card.feature h2 { font-size:clamp(23px, 4.2vw, 31px); margin:8px 0 7px; }
 .card.feature .desc { -webkit-line-clamp:3; font-size:15.5px; }
 .kick { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.11em;
-  text-transform:uppercase; color:var(--orange); background:#fdf3e4; border:1px solid #f0dcc8;
+  text-transform:uppercase; color:var(--orange); background:#fdf3e4;
   padding:2px 10px; border-radius:999px; margin-right:8px; }
 
 .empty { border:1.5px dashed var(--hair-dk); border-radius:14px; padding:52px 24px;
@@ -111,6 +121,7 @@ main { padding-top:2px; }
 /* ── gentle motion (skipped if reduced-motion) ───────── */
 @media (prefers-reduced-motion: no-preference) {
   h1 .hl { background-size:0% 100%; animation:sweep .9s cubic-bezier(.3,.6,.3,1) .4s forwards; }
+  .hero-panel { animation:rise .7s cubic-bezier(.2,.7,.25,1) both; }
   .list.anim .card { animation:rise .55s cubic-bezier(.2,.7,.25,1) both;
     animation-delay:calc(var(--i, 0) * 80ms); }
 }
@@ -125,7 +136,8 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
 .foot-in a:hover { color:var(--ink); }
 
 @media (max-width:560px) {
-  .hero { padding:64px 0 72px; }
+  .hero { padding:52px 0 64px; }
+  .hero-panel { padding:22px 22px 19px; border-radius:22px; }
   .card .body { padding:15px 17px 16px; }
   .card.feature .body { padding:18px 20px 20px; }
 }
@@ -146,10 +158,12 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   <canvas id="flow" aria-hidden="true"></canvas>
   <div class="wrap">
     <header class="hero">
-      <span class="pill">reading · thinking · building</span>
-      <h1 class="serif">Jaewon's <span class="hl">이것저것</span></h1>
-      <p class="dek serif">papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.</p>
-      <p class="hero-meta" id="heroMeta"></p>
+      <div class="hero-panel">
+        <span class="pill"><span>reading</span><span class="d d0"></span><span>thinking</span><span class="d d1"></span><span>building</span></span>
+        <h1 class="serif">Jaewon's <span class="hl">이것저것</span></h1>
+        <p class="dek serif">papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.</p>
+        <p class="hero-meta" id="heroMeta"></p>
+      </div>
     </header>
   </div>
 </div>
@@ -339,33 +353,38 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
     cv.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
+  // soundwave cover — amplitude bars around a centerline, seeded per slug
   function drawArt(cv, t) {
     const ctx = cv.getContext("2d"), w = cv._w, h = cv._h;
-    if (!cv._ribbons) {
+    if (!cv._wave) {
       const seed = (+cv.dataset.seed || 1) >>> 0;
       cv._noise = makeNoise(seed);
       const rand = mulberry32(seed ^ 0xabcdef);
-      cv._ribbons = Array.from({ length: 14 }, () => ({
-        yf: rand(),                       // vertical position (fraction of height)
-        o: rand() * 9,                    // noise phase offset
-        ampf: 0.10 + rand() * 0.26,       // wave amplitude (fraction of height)
-        wb: 1.1 + rand() * 2.6,           // stroke width at base scale
-        col: rgba(pick(rand), 0.55 + rand() * 0.4),
-      }));
+      const i1 = (rand() * PAL.length) | 0;
+      const i2 = (i1 + 1 + ((rand() * (PAL.length - 1)) | 0)) % PAL.length;
+      cv._wave = {
+        o1: rand() * 20, o2: rand() * 20,     // noise phases: envelope / detail
+        sp: 0.85 + rand() * 0.5,              // per-post frequency character
+        c1: PAL[i1], c2: PAL[i2],             // gradient endpoints
+      };
     }
-    const noise = cv._noise;
-    const k = Math.sqrt(h / 92);          // strokes grow gently with canvas height
+    const noise = cv._noise, wv = cv._wave;
+    const mid = h / 2, maxA = h * 0.40;
+    const bw = Math.max(2.2, h * 0.022);      // bar width scales with banner
+    const pitch = bw * 2.15;
+    const drift = t * 46;                     // waveform crawls on hover
     ctx.fillStyle = BG; ctx.fillRect(0, 0, w, h);
-    ctx.lineCap = "round";
-    for (const rb of cv._ribbons) {
-      ctx.strokeStyle = rb.col; ctx.lineWidth = rb.wb * k;
-      const amp = Math.min(rb.ampf * h, 74);
-      ctx.beginPath();
-      for (let x = -6; x <= w + 6; x += 3) {
-        const y = rb.yf * h + noise(x * 0.016, rb.o + t) * amp;
-        x === -6 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
+    ctx.strokeStyle = "rgba(23,24,28,.07)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(6, mid); ctx.lineTo(w - 6, mid); ctx.stroke();
+    ctx.lineCap = "round"; ctx.lineWidth = bw;
+    const mix = (a, b, u) => (a + (b - a) * u) | 0;
+    for (let x = bw * 1.5; x <= w - bw * 1.5; x += pitch) {
+      const u = x / w;
+      const env = Math.abs(noise((x + drift) * 0.0055 * wv.sp, wv.o1));       // slow bursts
+      const det = Math.abs(noise((x + drift) * 0.030 * wv.sp, wv.o2 + t * 0.7)); // fine texture
+      const a = Math.max(maxA * (0.18 + 0.82 * env) * (0.30 + 0.70 * det), h * 0.016);
+      ctx.strokeStyle = `rgba(${mix(wv.c1[0], wv.c2[0], u)},${mix(wv.c1[1], wv.c2[1], u)},${mix(wv.c1[2], wv.c2[2], u)},0.82)`;
+      ctx.beginPath(); ctx.moveTo(x, mid - a); ctx.lineTo(x, mid + a); ctx.stroke();
     }
   }
 
@@ -378,7 +397,7 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
       let raf = 0;
       card.addEventListener("pointerenter", () => {
         cancelAnimationFrame(raf);
-        const tick = () => { cv._t += 0.012; drawArt(cv, cv._t); raf = requestAnimationFrame(tick); };
+        const tick = () => { cv._t += 0.016; drawArt(cv, cv._t); raf = requestAnimationFrame(tick); };
         raf = requestAnimationFrame(tick);
       });
       card.addEventListener("pointerleave", () => cancelAnimationFrame(raf));
