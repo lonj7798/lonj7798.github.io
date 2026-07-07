@@ -33,20 +33,27 @@ a:hover { text-decoration:underline; }
 .bar-t a { color:inherit; }
 .bar-links { margin-left:auto; display:flex; gap:16px; font-size:13px; }
 
-/* ── hero ────────────────────────────────────────────── */
-.hero { padding:76px 0 8px; }
+/* ── hero with flowing ink canvas ────────────────────── */
+.hero-band { position:relative; overflow:hidden; background:var(--bg); }
+#flow { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.hero-band::after { content:""; position:absolute; left:0; right:0; bottom:0; height:110px;
+  background:linear-gradient(180deg, rgba(246,245,241,0), #f6f5f1); pointer-events:none; }
+.hero-band .wrap { position:relative; }
+.hero { padding:92px 0 96px; }
 .pill { display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.12em;
   text-transform:uppercase; color:var(--orange); background:#fdf3e4;
   border:1px solid #f0dcc8; padding:3px 12px; border-radius:999px; }
 h1 { font-size:clamp(42px, 8vw, 62px); line-height:1.06; letter-spacing:-0.02em;
   color:var(--ink); margin:20px 0 12px; font-weight:650; }
-h1 .hl { background:linear-gradient(180deg, transparent 64%, #f6e2b8 64%); border-radius:2px; padding:0 .04em; }
+h1 .hl { background:linear-gradient(180deg, transparent 64%, #f6e2b8 64%) no-repeat 0 0 / 100% 100%;
+  border-radius:2px; padding:0 .04em; }
 .dek { font-size:clamp(17px, 3vw, 21px); line-height:1.5; color:var(--mut); font-style:italic;
   margin:0 0 14px; max-width:640px; }
 .hero-meta { font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums; }
 
 /* ── controls ────────────────────────────────────────── */
-.controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:30px 0 8px; }
+main { padding-top:2px; }
+.controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:26px 0 8px; }
 .search { flex:1 1 220px; min-width:180px; padding:9px 14px; border:1px solid var(--hair);
   border-radius:10px; background:var(--card); font:inherit; font-size:14px; color:var(--ink); }
 .search::placeholder { color:#9a9da6; }
@@ -61,14 +68,12 @@ h1 .hl { background:linear-gradient(180deg, transparent 64%, #f6e2b8 64%); borde
 
 /* ── post list ───────────────────────────────────────── */
 .list { padding:14px 0 8px; }
-.card { position:relative; display:block; background:var(--card); border:1px solid var(--hair);
-  border-radius:14px; padding:22px 48px 20px 24px; margin:0 0 14px; color:inherit;
-  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.card { display:flex; align-items:center; gap:20px; background:var(--card);
+  border:1px solid var(--hair); border-radius:14px; padding:20px 22px; margin:0 0 14px;
+  color:inherit; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
 .card:hover { text-decoration:none; transform:translateY(-2px); border-color:var(--hair-dk);
   box-shadow:0 6px 24px rgba(23,24,28,.07); }
-.card::after { content:"→"; position:absolute; top:22px; right:22px; font-size:16px;
-  color:var(--hair-dk); transition:color .15s, transform .15s; }
-.card:hover::after { color:var(--ink); transform:translateX(3px); }
+.card .body { flex:1; min-width:0; }
 .card .meta { font-size:12.5px; color:var(--mut); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
 .card h2 { font-size:clamp(19px, 3.4vw, 24px); line-height:1.3; letter-spacing:-0.01em;
   color:var(--ink); margin:7px 0 6px; font-weight:650;
@@ -84,10 +89,24 @@ h1 .hl { background:linear-gradient(180deg, transparent 64%, #f6e2b8 64%); borde
 .t3 { color:var(--pink);   background:#fbecef; border-color:#f5d9df; }
 .t4 { color:var(--teal);   background:#e7f6f4; border-color:#cfeae6; }
 
+.thumb { flex:0 0 92px; width:92px; height:92px; border-radius:12px;
+  border:1px solid var(--hair); background:var(--bg); object-fit:cover; display:block;
+  transition:border-color .18s ease; }
+.card:hover .thumb { border-color:var(--hair-dk); }
+
 .empty { border:1.5px dashed var(--hair-dk); border-radius:14px; padding:52px 24px;
   text-align:center; color:var(--mut); font-size:15px; line-height:1.8; }
 .empty code { background:var(--card); border:1px solid var(--hair); border-radius:6px;
   padding:2px 8px; font-size:13px; }
+
+/* ── gentle motion (skipped if reduced-motion) ───────── */
+@media (prefers-reduced-motion: no-preference) {
+  h1 .hl { background-size:0% 100%; animation:sweep .9s cubic-bezier(.3,.6,.3,1) .4s forwards; }
+  .list.anim .card { animation:rise .55s cubic-bezier(.2,.7,.25,1) both;
+    animation-delay:calc(var(--i, 0) * 80ms); }
+}
+@keyframes sweep { to { background-size:100% 100%; } }
+@keyframes rise { from { opacity:0; transform:translateY(14px); } }
 
 /* ── footer ──────────────────────────────────────────── */
 footer { margin-top:64px; border-top:1px solid var(--hair); }
@@ -97,8 +116,9 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
 .foot-in a:hover { color:var(--ink); }
 
 @media (max-width:560px) {
-  .hero { padding-top:56px; }
-  .card { padding:18px 40px 17px 18px; }
+  .hero { padding:64px 0 72px; }
+  .card { padding:16px 18px; gap:14px; }
+  .thumb { flex-basis:68px; width:68px; height:68px; }
 }
 </style>
 </head>
@@ -113,14 +133,19 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   </div>
 </div>
 
-<main class="wrap">
-  <header class="hero">
-    <span class="pill">reading · thinking · building</span>
-    <h1 class="serif">Jaewon's <span class="hl">이것저것</span></h1>
-    <p class="dek serif">papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.</p>
-    <p class="hero-meta" id="heroMeta"></p>
-  </header>
+<div class="hero-band">
+  <canvas id="flow" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <header class="hero">
+      <span class="pill">reading · thinking · building</span>
+      <h1 class="serif">Jaewon's <span class="hl">이것저것</span></h1>
+      <p class="dek serif">papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.</p>
+      <p class="hero-meta" id="heroMeta"></p>
+    </header>
+  </div>
+</div>
 
+<main class="wrap">
   <div class="controls" id="controls" hidden>
     <input class="search" id="search" type="search" placeholder="search… ( / )" autocomplete="off">
     <div class="chips" id="chips"></div>
@@ -141,95 +166,300 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
 <script src="posts.js"></script>
 <script>
 (function () {
-  const posts = (window.POSTS || []).slice().sort((a, b) =>
-    (b.date || "").localeCompare(a.date || "") || (a.title || "").localeCompare(b.title || ""));
+  "use strict";
+  const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const BG = "#f6f5f1";
 
-  const $list = document.getElementById("list");
-  const $chips = document.getElementById("chips");
-  const $search = document.getElementById("search");
-  const $meta = document.getElementById("heroMeta");
-  const $controls = document.getElementById("controls");
-
-  let activeTag = null;
-  let query = "";
-
+  /* ── shared helpers ──────────────────────────────────── */
   const esc = s => String(s ?? "").replace(/[&<>"']/g,
     c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmtDate = d => (d || "").replaceAll("-", ".");
-  const tagClass = t => {
-    let h = 0;
-    for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    return "t" + (h % 5);
+  const hash32 = s => {
+    let h = 2166136261;
+    for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  };
+  const mulberry32 = a => () => {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 
-  // hero meta ─ post count + last update
-  if (posts.length) {
-    $meta.textContent = `${posts.length} post${posts.length > 1 ? "s" : ""} · last updated ${fmtDate(posts[0].date)}`;
-    $controls.hidden = posts.length < 2 && !posts.some(p => (p.tags || []).length);
-  } else {
-    $meta.textContent = "0 posts — coming soon";
+  // seeded 2D Perlin noise, output ≈ [-1, 1]
+  function makeNoise(seed) {
+    const rand = mulberry32(seed);
+    const base = Uint8Array.from({ length: 256 }, (_, i) => i);
+    for (let i = 255; i > 0; i--) {
+      const j = (rand() * (i + 1)) | 0;
+      [base[i], base[j]] = [base[j], base[i]];
+    }
+    const p = new Uint8Array(512);
+    for (let i = 0; i < 512; i++) p[i] = base[i & 255];
+    const fade = t => t * t * t * (t * (t * 6 - 15) + 10);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const grad = (h, x, y) => {
+      switch (h & 7) {
+        case 0: return  x + y; case 1: return -x + y;
+        case 2: return  x - y; case 3: return -x - y;
+        case 4: return  x;     case 5: return -x;
+        case 6: return  y;     default: return -y;
+      }
+    };
+    return (x, y) => {
+      const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+      x -= Math.floor(x); y -= Math.floor(y);
+      const u = fade(x), v = fade(y);
+      const a = p[X] + Y, b = p[X + 1] + Y;
+      return lerp(
+        lerp(grad(p[a], x, y),         grad(p[b], x - 1, y),     u),
+        lerp(grad(p[a + 1], x, y - 1), grad(p[b + 1], x - 1, y - 1), u), v);
+    };
   }
 
-  // tag chips with counts
-  const counts = new Map();
-  posts.forEach(p => (p.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
-  const chipEls = [];
-  const mkChip = (label, tag, n) => {
-    const b = document.createElement("button");
-    b.className = "chip";
-    b.innerHTML = `${esc(label)}<span class="n">${n}</span>`;
-    b.onclick = () => { activeTag = (activeTag === tag) ? null : tag; sync(); };
-    b.dataset.tag = tag ?? "";
-    chipEls.push(b);
-    $chips.appendChild(b);
+  // ink palette on paper — cool-dominant, rare warm accents
+  const PAL = [
+    [47, 107, 216, .32],   // blue
+    [15, 157, 140, .24],   // teal
+    [122, 79, 211, .18],   // purple
+    [224, 138, 30, .10],   // orange
+    [211, 79, 110, .07],   // pink
+    [23, 24, 28,  .09],    // ink
+  ];
+  const pick = rand => {
+    let r = rand();
+    for (const [R, G, B, w] of PAL) { if ((r -= w) < 0) return [R, G, B]; }
+    return PAL[0];
   };
-  if (counts.size) {
-    mkChip("전체", null, posts.length);
-    [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .forEach(([t, n]) => mkChip(t, t, n));
-  }
+  const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
-  function matches(p) {
-    if (activeTag && !(p.tags || []).includes(activeTag)) return false;
-    if (!query) return true;
-    const hay = `${p.title} ${p.description || ""} ${(p.tags || []).join(" ")}`.toLowerCase();
-    return hay.includes(query);
-  }
+  /* ── hero: ambient flowing ink ───────────────────────── */
+  (function heroFlow() {
+    const cv = document.getElementById("flow");
+    if (!cv) return;
+    const band = cv.parentElement;
+    const ctx = cv.getContext("2d");
+    const noise = makeNoise(0x9e3779b9);
+    const WIND = 0.30;      // gentle left→right drift
+    const SCALE = 0.0028;   // field zoom
+    let W = 0, H = 0, parts = [], raf = 0, t = 0;
+    let inView = true, running = false;
 
-  function render() {
-    if (!posts.length) {
-      $list.innerHTML = `<div class="empty">아직 아무것도 없어요.<br>
-        <code>./new-post.sh &lt;html&gt;</code> 로 첫 글을 올려보세요 ✏️</div>`;
-      return;
+    const spawn = (p = {}) => {
+      p.x = Math.random() * W;
+      p.y = Math.random() * H;
+      p.vx = WIND; p.vy = 0;
+      p.life = 260 + Math.random() * 420;
+      p.w = 0.8 + Math.random() * 1.1;
+      p.col = rgba(pick(Math.random), 0.26 + Math.random() * 0.22);
+      return p;
+    };
+
+    function size() {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      W = band.clientWidth; H = band.clientHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+      ctx.lineCap = "round";
+      const n = Math.min(320, Math.max(90, Math.round(W * H / 3000)));
+      parts = Array.from({ length: n }, () => spawn());
+      if (REDUCE) drawStatic();
     }
-    const shown = posts.filter(matches);
-    if (!shown.length) {
-      $list.innerHTML = `<div class="empty">검색 결과가 없어요 — try another word.</div>`;
-      return;
+
+    function step() {
+      t += 0.0022;
+      ctx.fillStyle = "rgba(246,245,241,0.045)";   // trails melt back into paper
+      ctx.fillRect(0, 0, W, H);
+      for (const p of parts) {
+        const a = noise(p.x * SCALE, p.y * SCALE + t) * Math.PI * 2.1;
+        p.vx += (Math.cos(a) * 1.5 + WIND - p.vx) * 0.06;   // steer softly
+        p.vy += (Math.sin(a) * 1.5 - p.vy) * 0.06;
+        const nx = p.x + p.vx, ny = p.y + p.vy;
+        ctx.strokeStyle = p.col; ctx.lineWidth = p.w;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); ctx.stroke();
+        p.x = nx; p.y = ny;
+        if (--p.life < 0 || p.x < -12 || p.x > W + 12 || p.y < -12 || p.y > H + 12) spawn(p);
+      }
     }
-    $list.innerHTML = shown.map(p => `
-      <a class="card" href="posts/${encodeURIComponent(p.slug)}/">
-        <div class="meta">${fmtDate(p.date)}${p.lang ? ` &nbsp;·&nbsp; ${esc(p.lang)}` : ""}</div>
-        <h2>${esc(p.title)}</h2>
-        ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ""}
-        ${(p.tags || []).length ? `<div class="tags">${p.tags.map(t =>
-          `<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join("")}</div>` : ""}
-      </a>`).join("");
+
+    // reduced-motion: one elegant still frame instead of animation
+    function drawStatic() {
+      const rand = mulberry32(20260707);
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 110; i++) {
+        let x = rand() * W, y = rand() * H;
+        ctx.strokeStyle = rgba(pick(rand), 0.30 + rand() * 0.2);
+        ctx.lineWidth = 0.8 + rand() * 1.2;
+        ctx.beginPath(); ctx.moveTo(x, y);
+        for (let k = 0; k < 90; k++) {
+          const a = noise(x * SCALE, y * SCALE) * Math.PI * 2.1;
+          x += Math.cos(a) * 2.6 + WIND * 2;
+          y += Math.sin(a) * 2.6;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function loop() { step(); raf = requestAnimationFrame(loop); }
+    function play() {
+      if (running || REDUCE || document.hidden || !inView) return;
+      running = true; raf = requestAnimationFrame(loop);
+    }
+    function stop() { running = false; cancelAnimationFrame(raf); }
+
+    size();
+    let rt = 0;
+    addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(size, 120); });
+    new IntersectionObserver(es => {
+      inView = es[0].isIntersecting;
+      inView ? play() : stop();
+    }).observe(band);
+    document.addEventListener("visibilitychange", () => document.hidden ? stop() : play());
+    play();
+  })();
+
+  /* ── generative cover art per post ───────────────────── */
+  function drawThumb(cv, t) {
+    const ctx = cv.getContext("2d"), s = cv.width;
+    if (!cv._ribbons) {
+      const seed = (+cv.dataset.seed || 1) >>> 0;
+      cv._noise = makeNoise(seed);
+      const rand = mulberry32(seed ^ 0xabcdef);
+      cv._ribbons = Array.from({ length: 13 }, () => ({
+        y: rand() * s,
+        o: rand() * 9,
+        amp: 12 + rand() * 26,
+        w: 1.3 + rand() * 3,
+        col: rgba(pick(rand), 0.55 + rand() * 0.4),
+      }));
+    }
+    const noise = cv._noise;
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, s, s);
+    ctx.lineCap = "round";
+    for (const rb of cv._ribbons) {
+      ctx.strokeStyle = rb.col; ctx.lineWidth = rb.w;
+      ctx.beginPath();
+      for (let x = -8; x <= s + 8; x += 4) {
+        const y = rb.y + noise(x * 0.013, rb.o + t) * rb.amp;
+        x === -8 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
   }
 
-  function sync() {
-    chipEls.forEach(b => b.classList.toggle("on",
-      (b.dataset.tag || null) === activeTag || (!activeTag && b.dataset.tag === "")));
-    render();
+  function initThumbs(root) {
+    root.querySelectorAll("canvas.thumb").forEach(cv => {
+      drawThumb(cv, 0);
+      if (REDUCE) return;
+      const card = cv.closest(".card");
+      let raf = 0, tt = 0;
+      card.addEventListener("pointerenter", () => {
+        cancelAnimationFrame(raf);
+        const tick = () => { tt += 0.012; drawThumb(cv, tt); raf = requestAnimationFrame(tick); };
+        raf = requestAnimationFrame(tick);
+      });
+      card.addEventListener("pointerleave", () => cancelAnimationFrame(raf));
+    });
   }
 
-  $search.addEventListener("input", () => { query = $search.value.trim().toLowerCase(); render(); });
-  document.addEventListener("keydown", e => {
-    if (e.key === "/" && document.activeElement !== $search) { e.preventDefault(); $search.focus(); }
-    if (e.key === "Escape" && document.activeElement === $search) { $search.value = ""; query = ""; render(); $search.blur(); }
-  });
+  /* ── post list ───────────────────────────────────────── */
+  (function postList() {
+    const posts = (window.POSTS || []).slice().sort((a, b) =>
+      (b.date || "").localeCompare(a.date || "") || (a.title || "").localeCompare(b.title || ""));
 
-  sync();
+    const $list = document.getElementById("list");
+    const $chips = document.getElementById("chips");
+    const $search = document.getElementById("search");
+    const $meta = document.getElementById("heroMeta");
+    const $controls = document.getElementById("controls");
+
+    let activeTag = null, query = "", firstRender = true;
+
+    const tagClass = t => {
+      let h = 0;
+      for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      return "t" + (h % 5);
+    };
+
+    if (posts.length) {
+      $meta.textContent = `${posts.length} post${posts.length > 1 ? "s" : ""} · last updated ${fmtDate(posts[0].date)}`;
+      $controls.hidden = posts.length < 2 && !posts.some(p => (p.tags || []).length);
+    } else {
+      $meta.textContent = "0 posts — coming soon";
+    }
+
+    const counts = new Map();
+    posts.forEach(p => (p.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+    const chipEls = [];
+    const mkChip = (label, tag, n) => {
+      const b = document.createElement("button");
+      b.className = "chip";
+      b.innerHTML = `${esc(label)}<span class="n">${n}</span>`;
+      b.dataset.tag = tag ?? "";
+      b.onclick = () => { activeTag = (activeTag === tag) ? null : tag; sync(); };
+      chipEls.push(b);
+      $chips.appendChild(b);
+    };
+    if (counts.size) {
+      mkChip("전체", null, posts.length);
+      [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .forEach(([t, n]) => mkChip(t, t, n));
+    }
+
+    const matches = p => {
+      if (activeTag && !(p.tags || []).includes(activeTag)) return false;
+      if (!query) return true;
+      return `${p.title} ${p.description || ""} ${(p.tags || []).join(" ")}`
+        .toLowerCase().includes(query);
+    };
+
+    function render() {
+      if (!posts.length) {
+        $list.innerHTML = `<div class="empty">아직 아무것도 없어요.<br>
+          <code>./new-post.sh &lt;html&gt;</code> 로 첫 글을 올려보세요 ✏️</div>`;
+        return;
+      }
+      const shown = posts.filter(matches);
+      if (!shown.length) {
+        $list.innerHTML = `<div class="empty">검색 결과가 없어요 — try another word.</div>`;
+        return;
+      }
+      $list.classList.toggle("anim", firstRender);
+      $list.innerHTML = shown.map((p, i) => `
+        <a class="card" href="posts/${encodeURIComponent(p.slug)}/" style="--i:${i}">
+          <div class="body">
+            <div class="meta">${fmtDate(p.date)}${p.lang ? ` &nbsp;·&nbsp; ${esc(p.lang)}` : ""}</div>
+            <h2>${esc(p.title)}</h2>
+            ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ""}
+            ${(p.tags || []).length ? `<div class="tags">${p.tags.map(t =>
+              `<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join("")}</div>` : ""}
+          </div>
+          ${p.cover
+            ? `<img class="thumb" src="${esc(p.cover)}" alt="" loading="lazy">`
+            : `<canvas class="thumb" width="184" height="184" data-seed="${hash32(p.slug)}" aria-hidden="true"></canvas>`}
+        </a>`).join("");
+      initThumbs($list);
+      firstRender = false;
+    }
+
+    function sync() {
+      chipEls.forEach(b => b.classList.toggle("on",
+        (b.dataset.tag || null) === activeTag || (!activeTag && b.dataset.tag === "")));
+      render();
+    }
+
+    $search.addEventListener("input", () => { query = $search.value.trim().toLowerCase(); render(); });
+    document.addEventListener("keydown", e => {
+      if (e.key === "/" && document.activeElement !== $search) { e.preventDefault(); $search.focus(); }
+      if (e.key === "Escape" && document.activeElement === $search) {
+        $search.value = ""; query = ""; render(); $search.blur();
+      }
+    });
+
+    sync();
+  })();
 })();
 </script>
 </body>

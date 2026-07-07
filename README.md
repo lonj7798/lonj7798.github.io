@@ -34,6 +34,9 @@ python3 -m http.server 8000
 - **Edit metadata** (title, description, tags, date): just edit `posts.js`
   by hand — it's plain JSON after the `=`. Optional `lang` field
   (e.g. `"en · ko"`) shows next to the date.
+- **Cover art**: every post automatically gets a unique flowing artwork
+  generated from its slug (it gently moves on hover). To use a real image
+  instead, add a `cover` field with an image URL/path.
 - **Remove a post**: delete its entry from `posts.js` and `rm -r posts/<slug>`.
 - **Replace content**: overwrite files in `posts/<slug>/` directly.
 

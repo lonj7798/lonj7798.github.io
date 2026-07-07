@@ -2,7 +2,9 @@
 // Managed by ./new-post.sh, but hand-editing is totally fine.
 // Keep it valid JSON after the "=" (double quotes!). The homepage
 // sorts by date (newest first), so order here doesn't matter.
-// Fields: slug*, title*, date* (YYYY-MM-DD), description, tags[], lang
+// Fields: slug*, title*, date* (YYYY-MM-DD), description, tags[], lang,
+//         cover (optional image URL — otherwise a unique flowing artwork
+//         is generated from the slug)
 window.POSTS = [
   {
     "slug": "dissecting-higgs-tts-v3",
