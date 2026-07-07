@@ -66,16 +66,20 @@ main { padding-top:2px; }
 .chip.on { background:var(--ink); border-color:var(--ink); color:#fff; }
 .chip .n { opacity:.55; margin-left:5px; font-variant-numeric:tabular-nums; }
 
-/* ── post list ───────────────────────────────────────── */
-.list { padding:14px 0 8px; }
-.card { display:flex; align-items:center; gap:20px; background:var(--card);
-  border:1px solid var(--hair); border-radius:14px; padding:20px 22px; margin:0 0 14px;
-  color:inherit; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
-.card:hover { text-decoration:none; transform:translateY(-2px); border-color:var(--hair-dk);
-  box-shadow:0 6px 24px rgba(23,24,28,.07); }
-.card .body { flex:1; min-width:0; }
+/* ── post list · magazine layout ─────────────────────── */
+.list { padding:18px 0 8px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:680px) { .grid { grid-template-columns:1fr; } }
+.card { display:flex; flex-direction:column; background:var(--card);
+  border:1px solid var(--hair); border-radius:18px; overflow:hidden; color:inherit;
+  transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.card:hover { text-decoration:none; transform:translateY(-3px); border-color:var(--hair-dk);
+  box-shadow:0 12px 32px rgba(23,24,28,.09); }
+.card .art { display:block; width:100%; height:148px; border-bottom:1px solid var(--hair);
+  background:var(--bg); object-fit:cover; }
+.card .body { padding:17px 20px 18px; }
 .card .meta { font-size:12.5px; color:var(--mut); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
-.card h2 { font-size:clamp(19px, 3.4vw, 24px); line-height:1.3; letter-spacing:-0.01em;
+.card h2 { font-size:20.5px; line-height:1.32; letter-spacing:-0.01em;
   color:var(--ink); margin:7px 0 6px; font-weight:650;
   font-family:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif; }
 .card .desc { font-size:15px; line-height:1.62; color:#4a4d55; margin:0;
@@ -89,10 +93,15 @@ main { padding-top:2px; }
 .t3 { color:var(--pink);   background:#fbecef; border-color:#f5d9df; }
 .t4 { color:var(--teal);   background:#e7f6f4; border-color:#cfeae6; }
 
-.thumb { flex:0 0 92px; width:92px; height:92px; border-radius:12px;
-  border:1px solid var(--hair); background:var(--bg); object-fit:cover; display:block;
-  transition:border-color .18s ease; }
-.card:hover .thumb { border-color:var(--hair-dk); }
+/* newest post gets the big stage */
+.card.feature { border-radius:22px; margin-bottom:18px; }
+.card.feature .art { height:clamp(170px, 30vw, 264px); }
+.card.feature .body { padding:22px 26px 24px; }
+.card.feature h2 { font-size:clamp(23px, 4.2vw, 31px); margin:8px 0 7px; }
+.card.feature .desc { -webkit-line-clamp:3; font-size:15.5px; }
+.kick { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--orange); background:#fdf3e4; border:1px solid #f0dcc8;
+  padding:2px 10px; border-radius:999px; margin-right:8px; }
 
 .empty { border:1.5px dashed var(--hair-dk); border-radius:14px; padding:52px 24px;
   text-align:center; color:var(--mut); font-size:15px; line-height:1.8; }
@@ -117,8 +126,8 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
 
 @media (max-width:560px) {
   .hero { padding:64px 0 72px; }
-  .card { padding:16px 18px; gap:14px; }
-  .thumb { flex-basis:68px; width:68px; height:68px; }
+  .card .body { padding:15px 17px 16px; }
+  .card.feature .body { padding:18px 20px 20px; }
 }
 </style>
 </head>
@@ -321,48 +330,68 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   })();
 
   /* ── generative cover art per post ───────────────────── */
-  function drawThumb(cv, t) {
-    const ctx = cv.getContext("2d"), s = cv.width;
+  function sizeArt(cv) {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = cv._w = cv.clientWidth || 320;
+    const h = cv._h = cv.clientHeight || 148;
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    cv.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function drawArt(cv, t) {
+    const ctx = cv.getContext("2d"), w = cv._w, h = cv._h;
     if (!cv._ribbons) {
       const seed = (+cv.dataset.seed || 1) >>> 0;
       cv._noise = makeNoise(seed);
       const rand = mulberry32(seed ^ 0xabcdef);
-      cv._ribbons = Array.from({ length: 13 }, () => ({
-        y: rand() * s,
-        o: rand() * 9,
-        amp: 12 + rand() * 26,
-        w: 1.3 + rand() * 3,
+      cv._ribbons = Array.from({ length: 14 }, () => ({
+        yf: rand(),                       // vertical position (fraction of height)
+        o: rand() * 9,                    // noise phase offset
+        ampf: 0.10 + rand() * 0.26,       // wave amplitude (fraction of height)
+        wb: 1.1 + rand() * 2.6,           // stroke width at base scale
         col: rgba(pick(rand), 0.55 + rand() * 0.4),
       }));
     }
     const noise = cv._noise;
-    ctx.fillStyle = BG; ctx.fillRect(0, 0, s, s);
+    const k = Math.sqrt(h / 92);          // strokes grow gently with canvas height
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, w, h);
     ctx.lineCap = "round";
     for (const rb of cv._ribbons) {
-      ctx.strokeStyle = rb.col; ctx.lineWidth = rb.w;
+      ctx.strokeStyle = rb.col; ctx.lineWidth = rb.wb * k;
+      const amp = Math.min(rb.ampf * h, 74);
       ctx.beginPath();
-      for (let x = -8; x <= s + 8; x += 4) {
-        const y = rb.y + noise(x * 0.013, rb.o + t) * rb.amp;
-        x === -8 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      for (let x = -6; x <= w + 6; x += 3) {
+        const y = rb.yf * h + noise(x * 0.016, rb.o + t) * amp;
+        x === -6 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.stroke();
     }
   }
 
-  function initThumbs(root) {
-    root.querySelectorAll("canvas.thumb").forEach(cv => {
-      drawThumb(cv, 0);
+  function initArts(root) {
+    root.querySelectorAll("canvas.art").forEach(cv => {
+      sizeArt(cv);
+      drawArt(cv, cv._t = 0);
       if (REDUCE) return;
       const card = cv.closest(".card");
-      let raf = 0, tt = 0;
+      let raf = 0;
       card.addEventListener("pointerenter", () => {
         cancelAnimationFrame(raf);
-        const tick = () => { tt += 0.012; drawThumb(cv, tt); raf = requestAnimationFrame(tick); };
+        const tick = () => { cv._t += 0.012; drawArt(cv, cv._t); raf = requestAnimationFrame(tick); };
         raf = requestAnimationFrame(tick);
       });
       card.addEventListener("pointerleave", () => cancelAnimationFrame(raf));
     });
   }
+
+  let artRt = 0;
+  addEventListener("resize", () => {
+    clearTimeout(artRt);
+    artRt = setTimeout(() => {
+      document.querySelectorAll("canvas.art").forEach(cv => { sizeArt(cv); drawArt(cv, cv._t || 0); });
+    }, 150);
+  });
 
   /* ── post list ───────────────────────────────────────── */
   (function postList() {
@@ -427,20 +456,25 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
         return;
       }
       $list.classList.toggle("anim", firstRender);
-      $list.innerHTML = shown.map((p, i) => `
-        <a class="card" href="posts/${encodeURIComponent(p.slug)}/" style="--i:${i}">
+      const artOf = p => p.cover
+        ? `<img class="art" src="${esc(p.cover)}" alt="" loading="lazy">`
+        : `<canvas class="art" data-seed="${hash32(p.slug)}" aria-hidden="true"></canvas>`;
+      const cardOf = (p, i, cls, kick) => `
+        <a class="card${cls ? " " + cls : ""}" href="posts/${encodeURIComponent(p.slug)}/" style="--i:${i}">
+          ${artOf(p)}
           <div class="body">
-            <div class="meta">${fmtDate(p.date)}${p.lang ? ` &nbsp;·&nbsp; ${esc(p.lang)}` : ""}</div>
+            <div class="meta">${kick ? `<span class="kick">latest</span>` : ""}${fmtDate(p.date)}${p.lang ? ` &nbsp;·&nbsp; ${esc(p.lang)}` : ""}</div>
             <h2>${esc(p.title)}</h2>
             ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ""}
             ${(p.tags || []).length ? `<div class="tags">${p.tags.map(t =>
               `<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join("")}</div>` : ""}
           </div>
-          ${p.cover
-            ? `<img class="thumb" src="${esc(p.cover)}" alt="" loading="lazy">`
-            : `<canvas class="thumb" width="184" height="184" data-seed="${hash32(p.slug)}" aria-hidden="true"></canvas>`}
-        </a>`).join("");
-      initThumbs($list);
+        </a>`;
+      const [first, ...rest] = shown;
+      $list.innerHTML =
+        cardOf(first, 0, "feature", first === posts[0]) +
+        (rest.length ? `<div class="grid">${rest.map((p, i) => cardOf(p, i + 1, "", false)).join("")}</div>` : "");
+      initArts($list);
       firstRender = false;
     }
 
