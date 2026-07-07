@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jaewon's 이것저것</title>
+<meta name="description" content="papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.">
+<meta property="og:title" content="Jaewon's 이것저것">
+<meta property="og:description" content="papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.">
+<meta name="theme-color" content="#f6f5f1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<style>
+:root {
+  --bg:#f6f5f1; --card:#ffffff; --ink:#17181c; --body:#33353c; --mut:#676b76;
+  --hair:#e3e1da; --hair-dk:#cfccc2;
+  --blue:#2f6bd8; --purple:#7a4fd3; --orange:#e08a1e; --pink:#d34f6e; --teal:#0f9d8c;
+}
+* { box-sizing:border-box; }
+html { -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; scroll-behavior:smooth; }
+body { margin:0; background:var(--bg); color:var(--body);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  font-size:16px; line-height:1.7; }
+.serif { font-family:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif; }
+.wrap { max-width:880px; margin:0 auto; padding:0 24px; }
+a { color:var(--blue); text-decoration:none; }
+a:hover { text-decoration:underline; }
+
+/* ── top bar ─────────────────────────────────────────── */
+.bar { position:sticky; top:0; z-index:50; background:rgba(246,245,241,.86);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom:1px solid var(--hair); }
+.bar-in { max-width:1080px; margin:0 auto; padding:10px 24px; display:flex; align-items:center; gap:18px; }
+.bar-t { font-size:13px; font-weight:650; color:var(--ink); letter-spacing:.02em; }
+.bar-t a { color:inherit; }
+.bar-links { margin-left:auto; display:flex; gap:16px; font-size:13px; }
+
+/* ── hero ────────────────────────────────────────────── */
+.hero { padding:76px 0 8px; }
+.pill { display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--orange); background:#fdf3e4;
+  border:1px solid #f0dcc8; padding:3px 12px; border-radius:999px; }
+h1 { font-size:clamp(42px, 8vw, 62px); line-height:1.06; letter-spacing:-0.02em;
+  color:var(--ink); margin:20px 0 12px; font-weight:650; }
+h1 .hl { background:linear-gradient(180deg, transparent 64%, #f6e2b8 64%); border-radius:2px; padding:0 .04em; }
+.dek { font-size:clamp(17px, 3vw, 21px); line-height:1.5; color:var(--mut); font-style:italic;
+  margin:0 0 14px; max-width:640px; }
+.hero-meta { font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums; }
+
+/* ── controls ────────────────────────────────────────── */
+.controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:30px 0 8px; }
+.search { flex:1 1 220px; min-width:180px; padding:9px 14px; border:1px solid var(--hair);
+  border-radius:10px; background:var(--card); font:inherit; font-size:14px; color:var(--ink); }
+.search::placeholder { color:#9a9da6; }
+.search:focus { outline:none; border-color:var(--hair-dk); box-shadow:0 0 0 3px rgba(23,24,28,.05); }
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip { border:1px solid var(--hair); background:var(--card); border-radius:999px;
+  padding:4px 13px; font-size:12.5px; color:var(--mut); cursor:pointer; font-family:inherit;
+  transition:border-color .12s, background .12s, color .12s; }
+.chip:hover { border-color:var(--hair-dk); color:var(--ink); }
+.chip.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+.chip .n { opacity:.55; margin-left:5px; font-variant-numeric:tabular-nums; }
+
+/* ── post list ───────────────────────────────────────── */
+.list { padding:14px 0 8px; }
+.card { position:relative; display:block; background:var(--card); border:1px solid var(--hair);
+  border-radius:14px; padding:22px 48px 20px 24px; margin:0 0 14px; color:inherit;
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.card:hover { text-decoration:none; transform:translateY(-2px); border-color:var(--hair-dk);
+  box-shadow:0 6px 24px rgba(23,24,28,.07); }
+.card::after { content:"→"; position:absolute; top:22px; right:22px; font-size:16px;
+  color:var(--hair-dk); transition:color .15s, transform .15s; }
+.card:hover::after { color:var(--ink); transform:translateX(3px); }
+.card .meta { font-size:12.5px; color:var(--mut); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
+.card h2 { font-size:clamp(19px, 3.4vw, 24px); line-height:1.3; letter-spacing:-0.01em;
+  color:var(--ink); margin:7px 0 6px; font-weight:650;
+  font-family:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif; }
+.card .desc { font-size:15px; line-height:1.62; color:#4a4d55; margin:0;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.card .tags { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
+.tag { font-size:11.5px; font-weight:600; letter-spacing:.03em; padding:2px 10px;
+  border-radius:999px; border:1px solid transparent; }
+.t0 { color:var(--blue);   background:#eaf0fc; border-color:#d8e3f8; }
+.t1 { color:var(--purple); background:#f1ecfb; border-color:#e5dcf6; }
+.t2 { color:var(--orange); background:#fdf3e4; border-color:#f5e4c8; }
+.t3 { color:var(--pink);   background:#fbecef; border-color:#f5d9df; }
+.t4 { color:var(--teal);   background:#e7f6f4; border-color:#cfeae6; }
+
+.empty { border:1.5px dashed var(--hair-dk); border-radius:14px; padding:52px 24px;
+  text-align:center; color:var(--mut); font-size:15px; line-height:1.8; }
+.empty code { background:var(--card); border:1px solid var(--hair); border-radius:6px;
+  padding:2px 8px; font-size:13px; }
+
+/* ── footer ──────────────────────────────────────────── */
+footer { margin-top:64px; border-top:1px solid var(--hair); }
+.foot-in { max-width:880px; margin:0 auto; padding:26px 24px 52px; display:flex;
+  flex-wrap:wrap; gap:12px; justify-content:space-between; font-size:13px; color:var(--mut); }
+.foot-in a { color:var(--mut); }
+.foot-in a:hover { color:var(--ink); }
+
+@media (max-width:560px) {
+  .hero { padding-top:56px; }
+  .card { padding:18px 40px 17px 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="bar-t"><a href="./">Jaewon's 이것저것</a></div>
+    <div class="bar-links">
+      <a href="https://github.com/lonj7798" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <span class="pill">reading · thinking · building</span>
+    <h1 class="serif">Jaewon's <span class="hl">이것저것</span></h1>
+    <p class="dek serif">papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.</p>
+    <p class="hero-meta" id="heroMeta"></p>
+  </header>
+
+  <div class="controls" id="controls" hidden>
+    <input class="search" id="search" type="search" placeholder="search… ( / )" autocomplete="off">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <section class="list" id="list">
+    <noscript><p class="empty">이 페이지는 JavaScript로 글 목록을 그려요 — JS를 켜주세요.</p></noscript>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-in">
+    <span>© 2026 Jaewon — 이것저것</span>
+    <span><a href="https://github.com/lonj7798" target="_blank" rel="noopener">GitHub</a> · <a href="#top" onclick="scrollTo({top:0,behavior:'smooth'});return false;">↑ top</a></span>
+  </div>
+</footer>
+
+<script src="posts.js"></script>
+<script>
+(function () {
+  const posts = (window.POSTS || []).slice().sort((a, b) =>
+    (b.date || "").localeCompare(a.date || "") || (a.title || "").localeCompare(b.title || ""));
+
+  const $list = document.getElementById("list");
+  const $chips = document.getElementById("chips");
+  const $search = document.getElementById("search");
+  const $meta = document.getElementById("heroMeta");
+  const $controls = document.getElementById("controls");
+
+  let activeTag = null;
+  let query = "";
+
+  const esc = s => String(s ?? "").replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtDate = d => (d || "").replaceAll("-", ".");
+  const tagClass = t => {
+    let h = 0;
+    for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return "t" + (h % 5);
+  };
+
+  // hero meta ─ post count + last update
+  if (posts.length) {
+    $meta.textContent = `${posts.length} post${posts.length > 1 ? "s" : ""} · last updated ${fmtDate(posts[0].date)}`;
+    $controls.hidden = posts.length < 2 && !posts.some(p => (p.tags || []).length);
+  } else {
+    $meta.textContent = "0 posts — coming soon";
+  }
+
+  // tag chips with counts
+  const counts = new Map();
+  posts.forEach(p => (p.tags || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+  const chipEls = [];
+  const mkChip = (label, tag, n) => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.innerHTML = `${esc(label)}<span class="n">${n}</span>`;
+    b.onclick = () => { activeTag = (activeTag === tag) ? null : tag; sync(); };
+    b.dataset.tag = tag ?? "";
+    chipEls.push(b);
+    $chips.appendChild(b);
+  };
+  if (counts.size) {
+    mkChip("전체", null, posts.length);
+    [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .forEach(([t, n]) => mkChip(t, t, n));
+  }
+
+  function matches(p) {
+    if (activeTag && !(p.tags || []).includes(activeTag)) return false;
+    if (!query) return true;
+    const hay = `${p.title} ${p.description || ""} ${(p.tags || []).join(" ")}`.toLowerCase();
+    return hay.includes(query);
+  }
+
+  function render() {
+    if (!posts.length) {
+      $list.innerHTML = `<div class="empty">아직 아무것도 없어요.<br>
+        <code>./new-post.sh &lt;html&gt;</code> 로 첫 글을 올려보세요 ✏️</div>`;
+      return;
+    }
+    const shown = posts.filter(matches);
+    if (!shown.length) {
+      $list.innerHTML = `<div class="empty">검색 결과가 없어요 — try another word.</div>`;
+      return;
+    }
+    $list.innerHTML = shown.map(p => `
+      <a class="card" href="posts/${encodeURIComponent(p.slug)}/">
+        <div class="meta">${fmtDate(p.date)}${p.lang ? ` &nbsp;·&nbsp; ${esc(p.lang)}` : ""}</div>
+        <h2>${esc(p.title)}</h2>
+        ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ""}
+        ${(p.tags || []).length ? `<div class="tags">${p.tags.map(t =>
+          `<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join("")}</div>` : ""}
+      </a>`).join("");
+  }
+
+  function sync() {
+    chipEls.forEach(b => b.classList.toggle("on",
+      (b.dataset.tag || null) === activeTag || (!activeTag && b.dataset.tag === "")));
+    render();
+  }
+
+  $search.addEventListener("input", () => { query = $search.value.trim().toLowerCase(); render(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "/" && document.activeElement !== $search) { e.preventDefault(); $search.focus(); }
+    if (e.key === "Escape" && document.activeElement === $search) { $search.value = ""; query = ""; render(); $search.blur(); }
+  });
+
+  sync();
+})();
+</script>
+</body>
+</html>
