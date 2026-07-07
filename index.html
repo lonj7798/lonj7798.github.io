@@ -40,11 +40,12 @@ a:hover { text-decoration:underline; }
   background:linear-gradient(180deg, rgba(246,245,241,0), #f6f5f1); pointer-events:none; }
 .hero-band .wrap { position:relative; }
 .hero { padding:72px 0 84px; }
-.hero-panel { max-width:680px; background:rgba(255,255,255,.58);
-  border-radius:26px; padding:30px 36px 26px;
+.hero-panel { max-width:690px;
+  background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.55));
+  border-radius:28px; padding:32px 38px 28px;
   box-shadow:0 1px 2px rgba(23,24,28,.03), 0 16px 48px rgba(23,24,28,.07),
-    inset 0 0 0 1px rgba(255,255,255,.7);
-  backdrop-filter:blur(14px) saturate(1.15); -webkit-backdrop-filter:blur(14px) saturate(1.15); }
+    inset 0 0 0 1px rgba(255,255,255,.75);
+  backdrop-filter:blur(16px) saturate(1.2); -webkit-backdrop-filter:blur(16px) saturate(1.2); }
 .pill { display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:700;
   letter-spacing:.14em; text-transform:uppercase; color:var(--mut);
   background:rgba(255,255,255,.85); padding:6px 14px; border-radius:999px;
@@ -58,7 +59,23 @@ h1 .hl { background:linear-gradient(180deg, transparent 64%, #f6e2b8 64%) no-rep
   border-radius:2px; padding:0 .04em; }
 .dek { font-size:clamp(17px, 3vw, 21px); line-height:1.5; color:var(--mut); font-style:italic;
   margin:0 0 14px; max-width:640px; }
-.hero-meta { font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums; }
+.hero-meta { font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums;
+  display:flex; align-items:center; gap:10px; margin:14px 0 0; }
+.mini-wave { display:inline-flex; align-items:flex-end; gap:2.5px; height:14px; }
+.mini-wave i { width:3px; border-radius:2px; }
+.mini-wave i:nth-child(1) { height:6px;  background:var(--blue); }
+.mini-wave i:nth-child(2) { height:12px; background:var(--teal); }
+.mini-wave i:nth-child(3) { height:8px;  background:var(--purple); }
+.mini-wave i:nth-child(4) { height:13px; background:var(--orange); }
+.mini-wave i:nth-child(5) { height:5px;  background:var(--pink); }
+@media (prefers-reduced-motion: no-preference) {
+  .mini-wave i { animation:eq 1.5s ease-in-out infinite; transform-origin:bottom; }
+  .mini-wave i:nth-child(2) { animation-delay:.12s; }
+  .mini-wave i:nth-child(3) { animation-delay:.26s; }
+  .mini-wave i:nth-child(4) { animation-delay:.38s; }
+  .mini-wave i:nth-child(5) { animation-delay:.5s; }
+}
+@keyframes eq { 0%,100% { transform:scaleY(.5); } 50% { transform:scaleY(1.2); } }
 
 /* ── controls ────────────────────────────────────────── */
 main { padding-top:2px; }
@@ -162,7 +179,7 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
         <span class="pill"><span>reading</span><span class="d d0"></span><span>thinking</span><span class="d d1"></span><span>building</span></span>
         <h1 class="serif">Jaewon's <span class="hl">이것저것</span></h1>
         <p class="dek serif">papers, models, and rabbit holes — 읽고, 파헤치고, 남겨두는 곳.</p>
-        <p class="hero-meta" id="heroMeta"></p>
+        <p class="hero-meta"><span class="mini-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span id="heroMeta"></span></p>
       </div>
     </header>
   </div>
@@ -263,8 +280,8 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
     const band = cv.parentElement;
     const ctx = cv.getContext("2d");
     const noise = makeNoise(0x9e3779b9);
-    const WIND = 0.30;      // gentle left→right drift
-    const SCALE = 0.0028;   // field zoom
+    const WIND = 0.34;      // gentle left→right drift
+    const SCALE = 0.0017;   // field zoom — broad, coherent currents
     let W = 0, H = 0, parts = [], raf = 0, t = 0;
     let inView = true, running = false;
 
@@ -272,9 +289,9 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
       p.x = Math.random() * W;
       p.y = Math.random() * H;
       p.vx = WIND; p.vy = 0;
-      p.life = 260 + Math.random() * 420;
-      p.w = 0.8 + Math.random() * 1.1;
-      p.col = rgba(pick(Math.random), 0.26 + Math.random() * 0.22);
+      p.life = 500 + Math.random() * 700;
+      p.w = 1.0 + Math.random() * 1.4;
+      p.col = rgba(pick(Math.random), 0.30 + Math.random() * 0.26);
       return p;
     };
 
@@ -285,19 +302,19 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       ctx.lineCap = "round";
-      const n = Math.min(320, Math.max(90, Math.round(W * H / 3000)));
+      const n = Math.min(420, Math.max(100, Math.round(W * H / 2300)));
       parts = Array.from({ length: n }, () => spawn());
       if (REDUCE) drawStatic();
     }
 
     function step() {
       t += 0.0022;
-      ctx.fillStyle = "rgba(246,245,241,0.045)";   // trails melt back into paper
+      ctx.fillStyle = "rgba(246,245,241,0.022)";   // trails melt back into paper, slowly
       ctx.fillRect(0, 0, W, H);
       for (const p of parts) {
         const a = noise(p.x * SCALE, p.y * SCALE + t) * Math.PI * 2.1;
-        p.vx += (Math.cos(a) * 1.5 + WIND - p.vx) * 0.06;   // steer softly
-        p.vy += (Math.sin(a) * 1.5 - p.vy) * 0.06;
+        p.vx += (Math.cos(a) * 1.7 + WIND - p.vx) * 0.06;   // steer softly
+        p.vy += (Math.sin(a) * 1.7 - p.vy) * 0.06;
         const nx = p.x + p.vx, ny = p.y + p.vy;
         ctx.strokeStyle = p.col; ctx.lineWidth = p.w;
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); ctx.stroke();
