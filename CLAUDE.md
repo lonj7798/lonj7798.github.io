@@ -18,6 +18,9 @@ The blog looks like **ink flowing on paper**. Every visual decision follows from
    field in posts.js (Jaewon asked for visibly *different* covers between neighboring posts —
    don't let two adjacent cards share a motif). No image assets to manage.
    Don't add stock images, icons packs, or emoji noise.
+   **22-motif template library** lives at `../cover-templates/` (gallery: `open index.html`;
+   six designer-persona families — swiss/plotter/tufte/wa/bauhaus/topo; README has the
+   adoption steps for wiring a new motif into this file's `ART` registry).
 3. **Calm interactivity.** Nothing chases the cursor, nothing bursts on click (explicitly
    rejected by Jaewon). Animation is ambient; hover *reveals* (waveform crawls, card lifts).
    Always: respect `prefers-reduced-motion` (static still frame), pause canvases when
