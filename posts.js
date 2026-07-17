@@ -12,7 +12,7 @@ window.POSTS = [
     "date": "2026-07-17",
     "lang": "en · ko",
     "art": "cells",
-    "description": "Measured live on an M1 Max: 13 GB unified memory, first token in 0.7 s — plus an attempt to serve it with SGLang-Omni on Apple Silicon. M1 맥북에서 Higgs TTS v3를 돌리고, SGLang-Omni 서빙까지 실험한 기록.",
+    "description": "Measured live on an M1 Max: 13 GB unified memory, first token in 0.7 s — and could SGLang-Omni run here too? M1 맥북에서 Higgs TTS v3를 돌린 기록 — 그리고 SGLang-Omni는 맥북에서 될까?",
     "tags": [
       "tts",
       "hands-on"
