@@ -9,7 +9,7 @@ window.POSTS = [
     "title": "Running Higgs TTS v3 on a MacBook — a 4B Voice Cloner in 13 GB of Unified Memory",
     "date": "2026-07-17",
     "lang": "en · ko",
-    "description": "The exact venv, load code, and freshly measured numbers for running a 4B voice cloner locally on an M1 Max — 13 GB unified memory, 0.72x realtime, zero CUDA. M1 맥북에서 Higgs TTS v3를 직접 돌린 기록.",
+    "description": "Measured live on an M1 Max: 13 GB unified memory, first token in 0.7 s — plus a three-act attempt to serve it with SGLang on Apple Silicon. M1 맥북에서 Higgs TTS v3를 돌리고, SGLang 서빙까지 실험한 기록.",
     "tags": [
       "tts",
       "hands-on"

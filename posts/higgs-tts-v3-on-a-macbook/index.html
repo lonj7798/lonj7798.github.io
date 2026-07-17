@@ -43,7 +43,7 @@ h1 { font-size:42px; line-height:1.1; letter-spacing:-0.02em; color:var(--ink);
 .byline { font-size:14px; color:var(--mut); margin:0 0 26px; }
 .lede b { color:var(--ink); }
 
-.stats { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:26px 0 8px; }
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:26px 0 8px; }
 .stat { background:var(--card); border-radius:14px; padding:14px 14px 12px;
   box-shadow:0 1px 3px rgba(23,24,28,.06), 0 8px 24px rgba(23,24,28,.05); }
 .stat-v { font-size:24px; color:var(--ink); line-height:1.1; font-weight:650;
@@ -111,15 +111,16 @@ footer { margin-top:70px; padding-top:22px; border-top:1px solid var(--hair);
 <header class="hero">
   <span class="pill"><span class="i18n-en">Local inference · Apple Silicon</span><span class="i18n-ko">로컬 추론 · 애플 실리콘</span></span>
   <h1 class="serif"><span class="i18n-en">Running Higgs TTS v3 on a MacBook</span><span class="i18n-ko">맥북에서 Higgs TTS v3 돌리기</span></h1>
-  <p class="dek serif"><span class="i18n-en">A 4-billion-parameter voice cloner in 13&nbsp;GB of unified memory — no CUDA anywhere.</span><span class="i18n-ko">통합 메모리 13&nbsp;GB로 굴러가는 40억 파라미터 음성 복제 — CUDA는 어디에도 없다.</span></p>
+  <p class="dek serif"><span class="i18n-en">A 4-billion-parameter voice cloner in 13&nbsp;GB of unified memory — no CUDA anywhere.</span><span class="i18n-ko">통합 메모리 13&nbsp;GB로 굴러가는 40억 파라미터 음성 복제기 — CUDA는 어디에도 없다.</span></p>
   <p class="byline"><span class="i18n-en">Jaewon · July 2026 · measured live on the machine this blog is written on</span><span class="i18n-ko">재원 · 2026년 7월 · 이 블로그를 쓰고 있는 바로 그 맥북에서 직접 측정</span></p>
 
-  <p class="lede i18n-blk"><span class="i18n-en">Everything in <a href="../dissecting-higgs-tts-v3/">Dissecting Higgs TTS v3</a> — the 36-layer activation captures, the voice-cloning synthesis, the steering experiments — ran on one laptop: an M1&nbsp;Max MacBook Pro with 32&nbsp;GB of RAM. People assume a 4B-parameter audio LLM needs a CUDA box. It doesn't. This post is the exact recipe: the two traps that cost us a day, the five commands that avoid them, and freshly re-measured numbers for what it actually costs in memory and time.</span><span class="i18n-ko"><a href="../dissecting-higgs-tts-v3/">Higgs TTS v3 해부해보다</a>의 모든 것 — 36개 레이어 활성 캡처, 음성 복제 합성, 스티어링 실험 — 은 노트북 한 대에서 돌았다. 32&nbsp;GB RAM의 M1&nbsp;Max 맥북 프로다. 40억 파라미터 오디오 LLM이라면 CUDA 서버가 필요할 거라 생각하기 쉽지만, 아니다. 이 글은 그 정확한 레시피다: 우리를 하루 잡아먹은 두 개의 함정, 그걸 피하는 다섯 줄의 명령, 그리고 메모리와 시간이 실제로 얼마나 드는지 오늘 다시 측정한 수치들.</span></p>
+  <p class="lede i18n-blk"><span class="i18n-en">Everything behind <a href="../dissecting-higgs-tts-v3/">Dissecting Higgs TTS v3</a> — the 36-layer activation captures, the voice-cloning synthesis, the steering experiments of the wider project — ran on one laptop: an M1&nbsp;Max MacBook Pro with 32&nbsp;GB of RAM. People assume a 4B-parameter audio LLM needs a CUDA box. It doesn't. This post is the exact recipe: the two traps that cost us a day, the five commands that avoid them, freshly re-measured numbers for what it actually costs in memory and time — and a three-act experiment answering whether SGLang, this model's <i>official</i> serving stack, could do it better on the same machine.</span><span class="i18n-ko"><a href="../dissecting-higgs-tts-v3/">Higgs TTS v3 해부해보다</a>를 만든 모든 작업 — 36개 레이어 활성 캡처, 음성 복제 합성, 더 넓은 프로젝트의 스티어링 실험 — 은 노트북 한 대에서 돌았다. 32&nbsp;GB RAM의 M1&nbsp;Max 맥북 프로다. 40억 파라미터 오디오 LLM이라면 CUDA 서버가 필요할 거라 생각하기 쉽지만, 아니다. 이 글은 그 정확한 레시피다: 우리 하루를 잡아먹은 두 개의 함정, 그걸 피하는 명령 다섯 개, 메모리와 시간이 실제로 얼마나 드는지 오늘 다시 측정한 수치들 — 그리고 이 모델의 <i>공식</i> 서빙 스택인 SGLang이 같은 머신에서 더 잘할 수 있는지를 3막으로 검증한 실험까지.</span></p>
 
   <div class="stats">
     <div class="stat"><div class="stat-v">4.04&nbsp;B</div><div class="stat-l"><span class="i18n-en">parameters (7.53 GB in bf16)</span><span class="i18n-ko">파라미터 (bf16으로 7.53 GB)</span></div></div>
     <div class="stat"><div class="stat-v">12.8&nbsp;s</div><div class="stat-l"><span class="i18n-en">model load, cache → MPS</span><span class="i18n-ko">모델 로드, 캐시 → MPS</span></div></div>
     <div class="stat"><div class="stat-v">13.0&nbsp;GB</div><div class="stat-l"><span class="i18n-en">unified memory while speaking</span><span class="i18n-ko">발화 중 통합 메모리</span></div></div>
+    <div class="stat"><div class="stat-v">0.7&nbsp;s</div><div class="stat-l"><span class="i18n-en">to the first audio token (warm)</span><span class="i18n-ko">첫 오디오 토큰까지 (워밍업 후)</span></div></div>
     <div class="stat"><div class="stat-v">0.72×</div><div class="stat-l"><span class="i18n-en">realtime (12.2 s for 8.8 s of audio)</span><span class="i18n-ko">실시간 대비 (8.8초 음성에 12.2초)</span></div></div>
     <div class="stat"><div class="stat-v">0</div><div class="stat-l"><span class="i18n-en">CUDA devices involved</span><span class="i18n-ko">사용된 CUDA 장치</span></div></div>
   </div>
@@ -151,8 +152,36 @@ footer { margin-top:70px; padding-top:22px; border-top:1px solid var(--hair);
 <h3><span class="i18n-en">Trap 2 — your Python environment is probably poisoned</span><span class="i18n-ko">함정 2 — 당신의 파이썬 환경은 아마 오염돼 있다</span></h3>
 <p class="i18n-blk"><span class="i18n-en">Our base anaconda env had NumPy&nbsp;2 with a stack of NumPy-1-compiled packages under it — the model import chain died before reaching the GPU. The fix that stuck: a throwaway venv that <i>inherits</i> the system's working torch (via <code>--system-site-packages</code>) and then shadows exactly the version-sensitive packages with <code>--no-deps</code>, so pip can't "helpfully" upgrade anything else.</span><span class="i18n-ko">우리 기본 아나콘다 환경은 NumPy&nbsp;2 위에 NumPy&nbsp;1로 컴파일된 패키지들이 쌓여 있었고, 모델 임포트 체인은 GPU에 닿기도 전에 죽었다. 결국 통한 해법: 시스템의 멀쩡한 torch를 <code>--system-site-packages</code>로 <i>물려받은</i> 일회용 venv를 만들고, 버전에 민감한 패키지들만 <code>--no-deps</code>로 정확히 덮어써서 pip이 다른 걸 "친절하게" 업그레이드하지 못하게 막는 것.</span></p>
 
+<div class="kicker"><span class="i18n-en">The choice</span><span class="i18n-ko">선택</span></div>
+<h2 class="serif"><span class="i18n-en">Why we skipped the official serving stack</span><span class="i18n-ko">공식 서빙 스택을 건너뛴 이유</span></h2>
+
+<p class="i18n-blk"><span class="i18n-en">Boson AI's intended way to run Higgs Audio v3 is not "load it in transformers" — it's a <b>serving stack</b>: SGLang-Omni / vLLM-Omni, the audio-enabled variants of the two big LLM inference servers. Those are excellent at what they're for — streaming, batching, prefix caching, production endpoints — and they are <b>CUDA software</b>. We chose the plain transformers port instead, for two reasons that matter more than speed.</span><span class="i18n-ko">Boson AI가 의도한 Higgs Audio v3 실행 방식은 "transformers로 로드"가 아니라 <b>서빙 스택</b>이다: SGLang-Omni / vLLM-Omni, 즉 양대 LLM 추론 서버의 오디오 지원 변종들. 스트리밍·배칭·프리픽스 캐싱·프로덕션 엔드포인트라는 본연의 목적에는 탁월하지만, 이들은 <b>CUDA 소프트웨어</b>다. 우리는 대신 순정 transformers 포트를 골랐다 — 속도보다 중요한 두 가지 이유 때문에.</span></p>
+
+<p class="i18n-blk"><span class="i18n-en"><b>Reason 1 — the part that serves TTS doesn't run on this laptop.</b> The audio serving lives in <a href="https://github.com/sgl-project/sglang-omni">SGLang-Omni</a>, a companion runtime built on Triton kernels and <code>sgl-kernel</code>, composing with core SGLang — a stack that assumes Linux + NVIDIA (every published Higgs benchmark is an H100 or H20). Core SGLang did gain an experimental Apple Silicon backend in 2026, but it covers a handful of text-only Qwen architectures — not audio models. We didn't take any of that on faith: the experiment at the bottom of this post is us trying anyway, error messages and all.</span><span class="i18n-ko"><b>이유 1 — TTS를 서빙하는 부분이 이 노트북에서 안 돈다.</b> 오디오 서빙은 <a href="https://github.com/sgl-project/sglang-omni">SGLang-Omni</a>라는 동반 런타임에 있는데, Triton 커널·<code>sgl-kernel</code> 위에 서서 코어 SGLang과 조합되는, Linux + NVIDIA를 전제하는 스택이다 (공개된 Higgs 벤치마크는 전부 H100 아니면 H20이다). 코어 SGLang에 2026년 실험적 Apple Silicon 백엔드가 생기긴 했지만, 텍스트 전용 Qwen 계열 몇 개만 커버한다 — 오디오 모델은 아니다. 어느 것도 말로만 믿지 않았다: 이 글 하단의 실험이 에러 메시지까지 포함해 직접 부딪혀 본 기록이다.</span></p>
+
+<p class="i18n-blk"><span class="i18n-en"><b>Reason 2 — a server gives you audio; we needed the model's thoughts.</b> The whole point of <a href="../dissecting-higgs-tts-v3/">the research</a> was to watch the residual stream <i>while the model speaks</i>. A serving stack hands you an API that returns audio — the activations live in another process, behind kernels you can't hook. In-process transformers gives you the model as a plain PyTorch module, where "looking inside" is genuinely this small:</span><span class="i18n-ko"><b>이유 2 — 서버는 음성을 주지만, 우리는 모델의 생각이 필요했다.</b> <a href="../dissecting-higgs-tts-v3/">연구</a>의 핵심은 <i>모델이 말하는 동안</i> residual stream을 지켜보는 것이었다. 서빙 스택은 음성을 돌려주는 API를 줄 뿐 — 활성값은 다른 프로세스 안, 훅을 걸 수 없는 커널 뒤에 산다. 인프로세스 transformers에서는 모델이 평범한 PyTorch 모듈이라, "안을 들여다보기"가 정말로 이만큼 작아진다:</span></p>
+
+<pre class="code"><u># the model's 36 transformer layers are just… there</u>
+layers = model.model.layers                       <u># Qwen3-style backbone, hidden 2560</u>
+
+acts = {}
+def probe(layer_idx):
+    def hook(module, args, out):
+        h = out[0] if isinstance(out, tuple) else out    <u># residual stream: [1, seq, 2560] at</u>
+        acts.setdefault(layer_idx, []).append(           <u>#   prefill, [1, 1, 2560] per decode step</u>
+            h.detach().<b>mean(dim=(0, 1))</b>.<b>cpu()</b>)          <u># pool + off the GPU, immediately</u>
+    return hook
+
+handles = [l.register_forward_hook(probe(i)) for i, l in enumerate(layers)]
+try:
+    wav = model.generate_speech(text, tok, reference_audio=ref, ...)  <u># hooks fire every token</u>
+finally:
+    for h in handles: h.remove()                  <u># read-only: nothing about the model changed</u></pre>
+
+<p class="i18n-blk"><span class="i18n-en">That's the entire mechanism behind the other post: <code>register_forward_hook</code> fires at every layer for every generated token, we pool each step's output and ship it to CPU on the spot (the per-clip vector is then the mean over all steps — the real capturer keeps a running mean), and the hooks come off in a <code>finally</code>. No weights touched, no forward pass altered — the model never knows it was watched. Every probe, every point cloud, every steering vector in the research started as exactly this dictionary of vectors. This is what a serving stack, for all its speed, cannot give you.</span><span class="i18n-ko">저것이 다른 포스트의 전체 메커니즘이다: <code>register_forward_hook</code>이 생성되는 토큰마다 모든 레이어에서 발화하고, 스텝마다 출력을 풀링해 그 자리에서 CPU로 보내고(클립당 벡터는 전체 스텝의 평균 — 실제 캡처러는 러닝 평균을 유지한다), 훅은 <code>finally</code>에서 걷어낸다. 가중치는 건드리지 않고 forward 연산도 바꾸지 않는다 — 모델은 감시당한 줄도 모른다. 연구의 모든 프로브, 모든 포인트 클라우드, 모든 스티어링 벡터가 정확히 이 벡터 딕셔너리에서 출발했다. 서빙 스택이 아무리 빨라도 줄 수 없는 것이 바로 이것이다.</span></p>
+
 <div class="kicker"><span class="i18n-en">The recipe</span><span class="i18n-ko">레시피</span></div>
-<h2 class="serif"><span class="i18n-en">Five commands to a working voice cloner</span><span class="i18n-ko">음성 복제기까지 다섯 줄</span></h2>
+<h2 class="serif"><span class="i18n-en">Five commands to a working voice cloner</span><span class="i18n-ko">음성 복제기까지 명령 다섯 개</span></h2>
 
 <pre class="code"><u># 1) isolated venv on top of a working MPS torch (ours: torch 2.12.0, python 3.11)</u>
 python3.11 -m venv --system-site-packages /tmp/hav
@@ -163,7 +192,7 @@ python3.11 -m venv --system-site-packages /tmp/hav
 <u># 2) keep TF/JAX out of the import path, let MPS fall back for unsupported ops</u>
 export USE_TF=0 USE_FLAX=0 USE_JAX=0 USE_TORCH=1 <b>PYTORCH_ENABLE_MPS_FALLBACK=1</b></pre>
 
-<p class="i18n-blk"><span class="i18n-en">Then the entire Python side is this (the same code every capture in the research repo runs through):</span><span class="i18n-ko">파이썬 쪽은 이게 전부다 (연구 저장소의 모든 캡처가 통과하는 바로 그 코드):</span></p>
+<p class="i18n-blk"><span class="i18n-en">Then the entire Python side is this (essentially the code every capture in the research repo runs through):</span><span class="i18n-ko">파이썬 쪽은 이게 전부다 (연구 저장소의 모든 캡처가 통과하는 코드와 사실상 같다):</span></p>
 
 <pre class="code">from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch, soundfile as sf
@@ -183,7 +212,7 @@ wav = model.generate_speech(
         max_new_tokens=480, temperature=0.7, top_p=0.95)
 sf.write(<i>"clone.wav"</i>, wav.float().cpu().numpy(), model.config.sample_rate)  <u># 24 kHz</u></pre>
 
-<div class="callout i18n-blk"><span class="i18n-en"><b>Small gotchas, so they don't cost you an afternoon:</b> pass <code>trust_remote_code=True</code> to the <i>tokenizer</i> too, or a hidden <code>[y/N]</code> prompt stalls headless runs. The load report prints <code>audio_head.weight | MISSING</code> — benign for TTS use (that head is re-initialized and unused by <code>generate_speech</code>). And the first generation is slower than every one after it: the audio tower lazy-loads 527 extra weight tensors on first call.</span><span class="i18n-ko"><b>오후를 날리지 않기 위한 소소한 함정들:</b> <code>trust_remote_code=True</code>는 <i>토크나이저</i>에도 넘겨야 한다 — 안 그러면 숨은 <code>[y/N]</code> 프롬프트가 헤드리스 실행을 멈춰 세운다. 로드 리포트에 찍히는 <code>audio_head.weight | MISSING</code>은 TTS 용도로는 무해하다 (그 헤드는 재초기화되고 <code>generate_speech</code>는 쓰지 않는다). 그리고 첫 생성은 이후보다 느리다: 첫 호출에서 오디오 타워가 527개의 추가 가중치 텐서를 지연 로드한다.</span></div>
+<div class="callout i18n-blk"><span class="i18n-en"><b>Small gotchas, so they don't cost you an afternoon:</b> pass <code>trust_remote_code=True</code> to the <i>tokenizer</i> too — without it, transformers raises a <code>[y/N]</code> prompt that blocks in a terminal (headless runs print it and silently decline the tokenizer's custom code). The load report prints <code>audio_head.weight | MISSING</code> — benign for TTS use (that head is re-initialized and unused by <code>generate_speech</code>). And the first generation is slower than every one after it: the audio tower lazy-loads 527 extra weight tensors on first call.</span><span class="i18n-ko"><b>오후를 날리지 않기 위한 소소한 함정들:</b> <code>trust_remote_code=True</code>는 <i>토크나이저</i>에도 넘겨야 한다 — 없으면 transformers가 <code>[y/N]</code> 프롬프트를 띄우는데, 터미널에서는 거기서 멈추고 헤드리스에서는 출력만 남긴 채 토크나이저의 커스텀 코드를 조용히 거절한다. 로드 리포트에 찍히는 <code>audio_head.weight | MISSING</code>은 TTS 용도로는 무해하다 (그 헤드는 재초기화되고 <code>generate_speech</code>는 쓰지 않는다). 그리고 첫 생성은 이후보다 느리다: 첫 호출에서 오디오 타워가 527개의 추가 가중치 텐서를 지연 로드한다.</span></div>
 
 <div class="kicker"><span class="i18n-en">The bill</span><span class="i18n-ko">청구서</span></div>
 <h2 class="serif"><span class="i18n-en">What it costs, measured today</span><span class="i18n-ko">오늘 측정한 실제 비용</span></h2>
@@ -204,16 +233,100 @@ sf.write(<i>"clone.wav"</i>, wav.float().cpu().numpy(), model.config.sample_rate
 <tr><td><span class="i18n-en">2nd generation (steady state, 8.8 s audio)</span><span class="i18n-ko">2차 생성 (정상 상태, 8.8초 음성)</span></td><td><b>12.2 s</b></td><td>8.28 GB</td><td>13.02 GB</td></tr>
 </tbody>
 </table>
-<p class="tnote i18n-blk"><span class="i18n-en">Plus 8.7&nbsp;GB of disk for the downloaded checkpoint (one-time). Steady-state speed: 0.72× realtime — 8.8 seconds of audio in 12.2 seconds, ~220 codec frames at 25&nbsp;fps.</span><span class="i18n-ko">더하기, 체크포인트 다운로드로 디스크 8.7&nbsp;GB (1회). 정상 상태 속도는 실시간의 0.72배 — 8.8초 분량을 12.2초에, 25&nbsp;fps 기준 약 220 코덱 프레임.</span></p>
+<p class="tnote i18n-blk"><span class="i18n-en">Plus 8.7&nbsp;GB of disk for the downloaded checkpoint (one-time). Steady-state speed: 0.72× realtime — 8.8 seconds of audio in 12.2 seconds, ~220 codec frames at 25&nbsp;fps.</span><span class="i18n-ko">여기에 체크포인트 다운로드용 디스크 8.7&nbsp;GB가 추가된다(1회). 정상 상태 속도는 실시간의 0.72배 — 8.8초 분량을 12.2초에, 25&nbsp;fps 기준 약 220 코덱 프레임.</span></p>
 
 <div class="note i18n-blk"><span class="i18n-en"><b>The number that fooled us: RSS.</b> Ask <code>ps</code> and the Python process claims a laughable <b>0.5&nbsp;GB</b> while the GPU is holding a 4B model. On Apple Silicon the weights live in <i>unified</i> memory pages accounted to the Metal driver, not the process — so watch <code>torch.mps.driver_allocated_memory()</code> (13.0&nbsp;GB here), not your process monitor. That 13&nbsp;GB is also the honest sizing answer: comfortable on a 32&nbsp;GB machine alongside a browser and an IDE; on 16&nbsp;GB it would be swap-tight — possible, not pleasant.</span><span class="i18n-ko"><b>우리를 속인 숫자: RSS.</b> <code>ps</code>에게 물으면 GPU가 4B 모델을 들고 있는 동안에도 파이썬 프로세스는 어이없게 <b>0.5&nbsp;GB</b>라고 답한다. 애플 실리콘에서 가중치는 프로세스가 아니라 Metal 드라이버 몫으로 잡히는 <i>통합</i> 메모리 페이지에 살기 때문이다 — 그러니 프로세스 모니터가 아니라 <code>torch.mps.driver_allocated_memory()</code>(여기선 13.0&nbsp;GB)를 봐야 한다. 이 13&nbsp;GB가 정직한 사양 답변이기도 하다: 32&nbsp;GB 머신에선 브라우저와 IDE를 띄워놓고도 여유롭고, 16&nbsp;GB에선 스왑에 시달릴 것이다 — 가능은 하지만 즐겁진 않다.</span></div>
+
+<div class="kicker"><span class="i18n-en">The clock</span><span class="i18n-ko">스톱워치</span></div>
+<h2 class="serif"><span class="i18n-en">Where the seconds go — first token vs first sound</span><span class="i18n-ko">초는 어디로 가는가 — 첫 토큰과 첫 소리</span></h2>
+
+<p class="i18n-blk"><span class="i18n-en">"How fast is it" hides two very different questions: how long until the model starts <i>answering</i> (time to first token), and how long until you <i>hear</i> something. We measured both, using the same trick as the research — a forward pre-hook on layer 0 that timestamps every generation step. The prompt here is 229 tokens (the reference audio's codec tokens + both transcripts); each decode step then produces one new audio token.</span><span class="i18n-ko">"얼마나 빠른가"에는 서로 다른 두 질문이 숨어 있다: 모델이 <i>답을 시작</i>하기까지(첫 토큰까지의 시간), 그리고 실제로 <i>소리가 들리기</i>까지. 둘 다 측정했다 — 연구 때와 같은 트릭으로, 0번 레이어에 forward pre-hook을 걸어 생성 스텝마다 타임스탬프를 찍었다. 여기서 프롬프트는 229 토큰(레퍼런스 오디오의 코덱 토큰 + 두 트랜스크립트)이고, 이후 디코드 스텝 하나가 오디오 토큰 하나를 만든다.</span></p>
+
+<table>
+<thead><tr>
+  <th><span class="i18n-en">Run</span><span class="i18n-ko">런</span></th>
+  <th><span class="i18n-en">First token (prefill)</span><span class="i18n-ko">첫 토큰 (프리필)</span></th>
+  <th><span class="i18n-en">Decode</span><span class="i18n-ko">디코드</span></th>
+  <th><span class="i18n-en">Total</span><span class="i18n-ko">총</span></th>
+  <th><span class="i18n-en">Audio out</span><span class="i18n-ko">출력 음성</span></th>
+</tr></thead>
+<tbody>
+<tr><td><span class="i18n-en">cold (1st ever)</span><span class="i18n-ko">콜드 (최초 1회)</span></td><td>4.65 s</td><td>18.6 tok/s</td><td>16.7 s</td><td>8.76 s</td></tr>
+<tr><td><span class="i18n-en">warm (runs 2–3)</span><span class="i18n-ko">웜 (2–3회차)</span></td><td><b>0.65–0.68 s</b></td><td><b>18.1–18.7 tok/s</b></td><td>12.7–13.1 s</td><td>8.76 s</td></tr>
+</tbody>
+</table>
+<p class="tnote i18n-blk"><span class="i18n-en">226 decode steps ≈ 219 audio frames at 25 fps + a few control tokens. The cold run's 4.65 s is the audio tower's lazy load + MPS warmup, not steady-state prefill.</span><span class="i18n-ko">디코드 226 스텝 ≈ 25 fps 기준 오디오 프레임 219개 + 제어 토큰 몇 개. 콜드 런의 4.65초는 오디오 타워 지연 로드 + MPS 워밍업이지, 정상 상태의 프리필이 아니다.</span></p>
+
+<div class="callout i18n-blk"><span class="i18n-en"><b>The honest catch: first <i>token</i> ≠ first <i>sound</i>.</b> The first audio token exists 0.65 seconds in — but this transformers port only decodes tokens into a waveform after <i>all</i> of them are generated. So the time until you actually hear anything is the full 12.7 seconds. Nothing streams. That gap — 0.65 s of "the model has started" vs 12.7 s of silence — is precisely the problem serving stacks exist to solve, which brings us to the experiment below.</span><span class="i18n-ko"><b>정직한 반전: 첫 <i>토큰</i> ≠ 첫 <i>소리</i>.</b> 첫 오디오 토큰은 0.65초 시점에 이미 존재한다 — 하지만 이 transformers 포트는 토큰이 <i>전부</i> 생성된 뒤에야 파형으로 디코드한다. 그래서 실제로 소리가 들리기까지는 12.7초가 통째로 걸린다. 아무것도 스트리밍되지 않는다. 이 간극 — "모델은 이미 시작했다"의 0.65초와 12.7초의 침묵 — 이 바로 서빙 스택이 존재하는 이유이고, 아래 실험으로 이어진다.</span></div>
+
+<div class="kicker"><span class="i18n-en">The experiment</span><span class="i18n-ko">실험</span></div>
+<h2 class="serif"><span class="i18n-en">So, can SGLang serve it on this MacBook? We tried everything.</span><span class="i18n-ko">그래서, SGLang으로 이 맥북에서 서빙이 되나? 전부 해봤다</span></h2>
+
+<p class="i18n-blk"><span class="i18n-en">That 12.7-second silence begs the question. Higgs TTS v3's official serving stack, <a href="https://github.com/sgl-project/sglang-omni">SGLang-Omni</a>, got day-0 support for this exact model (June 2026, co-announced with Boson AI), and it <i>streams</i>: PCM chunks start flowing after the first codec frames. Their published single-request numbers on one H100 — mean end-to-end latency <b>617&nbsp;ms</b>, RTF 0.147, ~6.8× faster than realtime. Could we have any of that on the laptop? We tried, in three acts.</span><span class="i18n-ko">12.7초의 침묵은 자연스레 질문을 부른다. Higgs TTS v3의 공식 서빙 스택 <a href="https://github.com/sgl-project/sglang-omni">SGLang-Omni</a>는 바로 이 모델의 day-0 지원을 받았고(2026년 6월, Boson AI와 공동 발표), 게다가 <i>스트리밍</i>한다: 첫 코덱 프레임들이 나오는 즉시 PCM 청크가 흐르기 시작한다. H100 한 장에서의 공개 단일 요청 수치 — 평균 end-to-end 지연 <b>617&nbsp;ms</b>, RTF 0.147, 실시간보다 약 6.8배 빠름. 이 중 뭐라도 노트북에서 가질 수 있을까? 3막에 걸쳐 시도했다.</span></p>
+
+<h3><span class="i18n-en">Act 1 — the pip route is a mirage</span><span class="i18n-ko">1막 — pip 경로는 신기루다</span></h3>
+<p class="i18n-blk"><span class="i18n-en"><code>pip install sglang</code> on an Apple Silicon Mac "succeeds" — by silently backtracking to an ancient release (0.5.2 for us), because every recent wheel pins CUDA-only dependencies. What you get is the client/frontend, not a servable runtime. Push further and you hit three independent walls:</span><span class="i18n-ko">Apple Silicon 맥에서 <code>pip install sglang</code>은 "성공"한다 — 조용히 고대 릴리스(우리 경우 0.5.2)로 후퇴하는 방식으로. 최근 휠은 전부 CUDA 전용 의존성을 못박아 두었기 때문이다. 손에 들어오는 건 클라이언트/프론트엔드지 서빙 런타임이 아니다. 더 밀어붙이면 세 개의 독립적인 벽에 부딪힌다:</span></p>
+
+<pre class="code"><u># wall 1 — the full runtime extra tries to build vLLM from source:</u>
+$ pip install "sglang[all]"
+<b>AssertionError: vLLM only supports Linux platform (including WSL).</b>
+
+<u># wall 2 — the kernel package has no macOS build at all:</u>
+$ pip install sgl-kernel
+<b>ERROR: No matching distribution found for sgl-kernel</b>   <u># (from versions: none)</u>
+
+<u># wall 3 — the server imports triton at module level; triton has no macOS wheel:</u>
+$ pip install triton
+<b>ERROR: No matching distribution found for triton</b></pre>
+
+<h3><span class="i18n-en">Act 2 — the official Metal path actually works</span><span class="i18n-ko">2막 — 공식 Metal 경로는 진짜로 돌아간다</span></h3>
+<p class="i18n-blk"><span class="i18n-en">Here's the twist: as of a 2026 Q2 roadmap, SGLang has an <i>experimental, source-build-only</i> Apple Silicon backend that swaps PyTorch for Apple's <a href="https://github.com/ml-explore/mlx">MLX</a> framework. This is the exact setup that worked on our machine:</span><span class="i18n-ko">반전은 여기다: 2026년 2분기 로드맵부터 SGLang에는 PyTorch를 애플의 <a href="https://github.com/ml-explore/mlx">MLX</a> 프레임워크로 갈아끼운 <i>실험적, 소스 빌드 전용</i> Apple Silicon 백엔드가 있다. 우리 머신에서 실제로 통한 정확한 절차:</span></p>
+
+<pre class="code">git clone https://github.com/sgl-project/sglang.git &amp;&amp; cd sglang
+<u># the mac path uses the alternative package manifest</u>
+rm python/pyproject.toml &amp;&amp; mv python/pyproject_other.toml python/pyproject.toml
+uv venv -p 3.12 /tmp/sglang-metal
+VIRTUAL_ENV=/tmp/sglang-metal uv pip install -e <i>"python[all_mps]"</i>
+
+<b>SGLANG_USE_MLX=1</b> python -m sglang.launch_server \
+    --model <i>Qwen/Qwen3-0.6B</i> --disable-cuda-graph --port 30303
+<u># … "The server is fired up and ready to roll!" — on a MacBook.</u></pre>
+
+<h3><span class="i18n-en">Act 3 — but it will not serve Higgs</span><span class="i18n-ko">3막 — 하지만 Higgs는 서빙해주지 않는다</span></h3>
+<p class="i18n-blk"><span class="i18n-en">Point that working server at the voice cloner and it dies instantly, with an unambiguous verdict:</span><span class="i18n-ko">그 멀쩡한 서버를 음성 복제기로 향하게 하면 즉사한다. 판결문은 명료하다:</span></p>
+
+<pre class="code">$ SGLANG_USE_MLX=1 python -m sglang.launch_server \
+      --model multimodalart/higgs-audio-v3-tts-4b-transformers --trust-remote-code …
+<b>ValueError: HiggsMultimodalQwen3ForConditionalGeneration has no SGlang
+implementation and the Transformers implementation is not compatible with SGLang.</b></pre>
+
+<p class="i18n-blk"><span class="i18n-en">The MLX backend covers a handful of text-only Qwen architectures so far; the audio serving — the codec head, the vocoder streaming, the whole SGLang-Omni layer — remains CUDA software. So the honest state of the world, July 2026: <b>SGLang runs on a Mac. Higgs on SGLang does not.</b></span><span class="i18n-ko">MLX 백엔드는 아직 텍스트 전용 Qwen 계열 몇 개만 커버한다. 오디오 서빙 — 코덱 헤드, 보코더 스트리밍, SGLang-Omni 계층 전체 — 은 여전히 CUDA 소프트웨어다. 그러니 2026년 7월 현재의 정직한 상태는 이렇다: <b>SGLang은 맥에서 돈다. 하지만 SGLang 위의 Higgs는 아니다.</b></span></p>
+
+<h3><span class="i18n-en">What we could measure: the same model, with and without SGLang</span><span class="i18n-ko">측정할 수 있었던 것: 같은 모델, SGLang 유무 비교</span></h3>
+<p class="i18n-blk"><span class="i18n-en">Higgs can't do the A/B on this machine — but the serving question still has a measurable core: <i>on this laptop, what does SGLang change for the same model?</i> So we ran Qwen3-0.6B (bf16, the model from SGLang's own Metal docs) both ways: through the SGLang-MLX server's streaming API, and through plain transformers eager <code>generate()</code> on MPS — same prompt, greedy, 128 new tokens, warm numbers:</span><span class="i18n-ko">이 머신에서 Higgs로는 A/B가 불가능하다 — 하지만 서빙 질문에는 여전히 측정 가능한 핵심이 남는다: <i>이 노트북에서, 같은 모델에 대해 SGLang은 무엇을 바꾸는가?</i> 그래서 Qwen3-0.6B(bf16, SGLang Metal 문서가 직접 쓰는 모델)를 두 방식으로 돌렸다: SGLang-MLX 서버의 스트리밍 API로, 그리고 MPS 위 순정 transformers eager <code>generate()</code>로 — 같은 프롬프트, greedy, 새 토큰 128개, 워밍업 후 수치다:</span></p>
+
+<table>
+<thead><tr>
+  <th><span class="i18n-en">Path (same M1 Max)</span><span class="i18n-ko">경로 (같은 M1 Max)</span></th>
+  <th><span class="i18n-en">First token</span><span class="i18n-ko">첫 토큰</span></th>
+  <th><span class="i18n-en">Decode</span><span class="i18n-ko">디코드</span></th>
+  <th><span class="i18n-en">128 tokens in</span><span class="i18n-ko">128 토큰 소요</span></th>
+</tr></thead>
+<tbody>
+<tr><td><span class="i18n-en">SGLang server (MLX backend), streamed over HTTP</span><span class="i18n-ko">SGLang 서버 (MLX 백엔드), HTTP 스트리밍</span></td><td>~0.05 s</td><td><b>167–170 tok/s</b></td><td><b>0.8 s</b></td></tr>
+<tr><td><span class="i18n-en">transformers eager, in-process (MPS)</span><span class="i18n-ko">transformers eager, 인프로세스 (MPS)</span></td><td>~0.04 s</td><td>37.0–37.7 tok/s</td><td>3.4 s</td></tr>
+</tbody>
+</table>
+<p class="tnote i18n-blk"><span class="i18n-en"><b>4.5× faster decode</b>, and the server number <i>includes</i> HTTP/scheduling overhead. (One of the three warm server runs hit a 2.4 s first-token stall and is excluded from the ~0.05 s figure — its decode speed was an unaffected 167.9 tok/s. The server logged 1.11 GB of MLX memory for the weights.) Three honest caveats: part of the gap is MLX's Metal kernels vs torch-MPS eager — a framework difference, not just the serving loop — though on a Mac, "using SGLang" <i>means</i> using MLX, so the bundle is the fair comparison. The multiple shrinks as models grow — at 0.6B the decode loop is overhead-dominated (exactly what serving stacks eliminate); at 4B the GPU math itself takes over. And no clean published batch-1 SGLang-vs-transformers benchmark exists — triangulating from the pieces that are published, a realistic batch-1 gain for mid-size models is roughly 2–4×, not the 24× of throughput marketing.</span><span class="i18n-ko"><b>디코드 4.5배</b>, 게다가 서버 쪽 수치는 HTTP/스케줄링 오버헤드를 <i>포함</i>한 것이다. (웜 서버 런 셋 중 하나는 첫 토큰이 2.4초 걸리는 스톨을 만나 ~0.05초 수치에서 제외했다 — 그 런의 디코드 속도는 167.9 tok/s로 영향이 없었다. 서버가 기록한 가중치용 MLX 메모리는 1.11 GB.) 정직한 주석 셋: 저 격차의 일부는 서빙 루프가 아니라 MLX Metal 커널 대 torch-MPS eager라는 프레임워크 차이다 — 다만 맥에서 "SGLang을 쓴다"는 것 자체가 MLX를 쓴다는 뜻이므로, 묶음 비교가 공정한 비교다. 배수는 모델이 커질수록 줄어든다 — 0.6B에서는 디코드 루프가 오버헤드 지배적(서빙 스택이 정확히 없애주는 부분)이지만 4B에서는 GPU 연산 자체가 지배한다. 그리고 배치-1로 SGLang 대 transformers를 깔끔하게 비교한 공개 벤치마크는 존재하지 않는다 — 공개된 조각들로 삼각측량하면, 중형 모델의 현실적인 배치-1 이득은 대략 2–4배지, 처리량 마케팅의 24배가 아니다.</span></p>
+
+<div class="note i18n-blk"><span class="i18n-en"><b>What Higgs-on-SGLang would actually buy — and how to get it.</b> On supported hardware (a rented CUDA box), <code>sgl-omni serve --model-path bosonai/higgs-tts-3-4b</code> (the repo was renamed from <code>higgs-audio-v3-tts-4b</code>; the old name redirects) gives you the published H100 numbers above — but the deeper win for TTS is <b>streaming</b>: first PCM chunk after the first codec frames (the server defaults its first audio chunk to a single frame), against our port's generate-everything-then-vocode 12.7&nbsp;s. There's also a fit with this project's exact workload: SGLang's RadixAttention reuses the KV cache of a shared prompt prefix, and our 16-direction sweep reuses <i>one reference voice per source language</i> — each source's ~0.65&nbsp;s prefill would be paid once instead of four times, and the steering α-sweep (one fixed reference across every α) would pay it exactly once. For bulk generation, the serving stack is simply the right tool. For watching residual streams with hooks on layer 22 — it never will be, and that's fine. Different instruments, different music.</span><span class="i18n-ko"><b>SGLang 위의 Higgs가 실제로 주는 것 — 그리고 얻는 법.</b> 지원되는 하드웨어(빌린 CUDA 박스)에서 <code>sgl-omni serve --model-path bosonai/higgs-tts-3-4b</code>(저장소가 <code>higgs-audio-v3-tts-4b</code>에서 리네임됐고 옛 이름은 리다이렉트된다)를 치면 위의 공개 H100 수치를 얻는다 — 하지만 TTS에서 더 깊은 이득은 <b>스트리밍</b>이다: 첫 코덱 프레임 직후의 첫 PCM 청크(서버 기본값은 첫 오디오 청크를 프레임 1개로 잡는다) 대 우리 포트의 전부-생성-후-보코딩 12.7초. 이 프로젝트의 워크로드와 맞아떨어지는 지점도 있다: SGLang의 RadixAttention은 공유 프롬프트 프리픽스의 KV 캐시를 재사용하는데, 우리 16방향 스윕은 <i>소스 언어마다 레퍼런스 목소리 하나</i>를 재사용한다 — 소스별 ~0.65초의 프리필을 네 번이 아니라 한 번만 내면 되고, 스티어링 α-스윕(모든 α에 고정 레퍼런스 하나)은 정확히 한 번만 내면 된다. 대량 생성에는 서빙 스택이 그냥 맞는 도구다. 22번 레이어에 훅을 걸고 residual stream을 지켜보는 일에는 — 영원히 아닐 것이고, 그래도 괜찮다. 악기가 다르면 연주도 다르다.</span></div>
 
 <div class="kicker"><span class="i18n-en">Beyond inference</span><span class="i18n-ko">추론 너머</span></div>
 <h2 class="serif"><span class="i18n-en">The same laptop ran the whole research pipeline</span><span class="i18n-ko">같은 노트북이 연구 파이프라인 전체를 돌렸다</span></h2>
 <p class="i18n-blk"><span class="i18n-en">Synthesis was the easy half. The <a href="../dissecting-higgs-tts-v3/">interpretability study</a> also attached read-only forward hooks to all 36 backbone layers <i>during</i> generation and captured a residual-stream vector per layer per clip — hundreds of captures across languages, genders, accents, and emotions. Three habits kept that inside 32&nbsp;GB: hook sparsely (mean-pool per layer instead of storing <code>[seq × hidden]</code>), move every captured tensor to CPU immediately, and <code>del</code> + <code>torch.mps.empty_cache()</code> between runs. Budget roughly the driver's 13&nbsp;GB for the model and keep captures out of GPU memory entirely — then a 4B audio LLM is a perfectly workable interpretability substrate on a laptop.</span><span class="i18n-ko">합성은 쉬운 절반이었다. <a href="../dissecting-higgs-tts-v3/">해석가능성 연구</a>는 생성 <i>도중에</i> 36개 백본 레이어 전부에 읽기 전용 forward hook을 걸고 클립마다 레이어별 residual-stream 벡터를 캡처했다 — 언어·성별·억양·감정에 걸쳐 수백 번의 캡처다. 그걸 32&nbsp;GB 안에 가둔 세 가지 습관: 희소하게 후킹하기(<code>[seq × hidden]</code>을 쌓지 말고 레이어별 mean-pool), 캡처한 텐서는 즉시 CPU로 옮기기, 런 사이마다 <code>del</code> + <code>torch.mps.empty_cache()</code>. 모델 몫으로 드라이버의 13&nbsp;GB쯤을 잡아두고 캡처는 아예 GPU 메모리 밖에 두면 — 4B 오디오 LLM도 노트북 위에서 충분히 작업 가능한 해석가능성 기판이 된다.</span></p>
 
 <footer>
-  <p class="i18n-blk" style="margin:0 0 8px"><span class="i18n-en"><b>Measured setup.</b> MacBook Pro, Apple M1 Max, 32 GB unified memory, macOS 26.5.2 · python 3.11 · torch 2.12.0 (MPS) · transformers 5.12.1 · torchaudio 2.11.0 · numpy 1.26.4. All numbers in this post are from a single instrumented run on 2026-07-17; the audio demo above is that run's unedited output. Model: <a href="https://huggingface.co/bosonai/higgs-audio-v3-tts-4b">bosonai/higgs-audio-v3-tts-4b</a> via the <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers">multimodalart transformers port</a>.</span><span class="i18n-ko"><b>측정 환경.</b> 맥북 프로, Apple M1 Max, 통합 메모리 32 GB, macOS 26.5.2 · python 3.11 · torch 2.12.0 (MPS) · transformers 5.12.1 · torchaudio 2.11.0 · numpy 1.26.4. 이 글의 모든 수치는 2026-07-17 계측 런 1회에서 나왔고, 위 오디오 데모는 그 런의 무편집 출력이다. 모델: <a href="https://huggingface.co/bosonai/higgs-audio-v3-tts-4b">bosonai/higgs-audio-v3-tts-4b</a>, <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers">multimodalart transformers 포트</a> 경유.</span></p>
+  <p class="i18n-blk" style="margin:0 0 8px"><span class="i18n-en"><b>Measured setup.</b> MacBook Pro, Apple M1 Max, 32 GB unified memory, macOS 26.5.2 · python 3.11 · torch 2.12.0 (MPS) · transformers 5.12.1 · torchaudio 2.11.0 · numpy 1.26.4. All numbers in this post are from one instrumented session on 2026-07-17 (memory, first-token, and serving benchmarks are separate processes within it); the audio demo above is that session's unedited output. Model: <a href="https://huggingface.co/bosonai/higgs-tts-3-4b">bosonai/higgs-tts-3-4b</a> (formerly <code>higgs-audio-v3-tts-4b</code>) via the <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers">multimodalart transformers port</a>. SGLang experiment: source build @ <code>2c64b77</code> (dev, 2026-07-17) with MLX 0.32.0 in a uv Python 3.12 venv; server benchmarked through its OpenAI-compatible streaming API; pip probes used sglang 0.5.2 from PyPI. First-token times were measured with a layer-0 forward pre-hook timestamping every generation step.</span><span class="i18n-ko"><b>측정 환경.</b> 맥북 프로, Apple M1 Max, 통합 메모리 32 GB, macOS 26.5.2 · python 3.11 · torch 2.12.0 (MPS) · transformers 5.12.1 · torchaudio 2.11.0 · numpy 1.26.4. 이 글의 모든 수치는 2026-07-17 하루의 계측 세션에서 나왔고(메모리·첫 토큰·서빙 벤치마크는 그 안의 별도 프로세스들이다), 위 오디오 데모는 그 세션의 무편집 출력이다. 모델: <a href="https://huggingface.co/bosonai/higgs-tts-3-4b">bosonai/higgs-tts-3-4b</a>(구 <code>higgs-audio-v3-tts-4b</code>), <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers">multimodalart transformers 포트</a> 경유. SGLang 실험: 소스 빌드 @ <code>2c64b77</code>(dev, 2026-07-17) + MLX 0.32.0, uv Python 3.12 venv; 서버는 OpenAI 호환 스트리밍 API로 벤치마크; pip 탐침은 PyPI의 sglang 0.5.2 사용. 첫 토큰 시간은 0번 레이어 forward pre-hook으로 생성 스텝마다 타임스탬프를 찍어 측정.</span></p>
   <p class="i18n-blk" style="margin:0"><span class="i18n-en">Reference clip: <a href="https://huggingface.co/datasets/google/fleurs">FLEURS</a> (CC-BY-4.0), en_us speaker.</span><span class="i18n-ko">레퍼런스 클립: <a href="https://huggingface.co/datasets/google/fleurs">FLEURS</a> (CC-BY-4.0), en_us 화자.</span></p>
 </footer>
 
