@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running Higgs TTS v3 on a MacBook — a 4B Voice Cloner in 13 GB of Unified Memory</title>
+<meta name="description" content="The exact environment, load code, and freshly measured memory/speed numbers for running the Higgs TTS v3 voice cloner locally on an Apple M1 Max — no CUDA anywhere.">
+<style>
+:root {
+  --bg:#f6f5f1; --card:#ffffff; --ink:#17181c; --body:#33353c; --mut:#676b76;
+  --hair:#e3e1da; --blue:#2f6bd8; --purple:#7a4fd3; --orange:#e08a1e; --pink:#d34f6e; --teal:#0f9d8c;
+  --warn:#b05215; --warnbg:#fdf3ea;
+}
+* { box-sizing:border-box; }
+html { -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; scroll-behavior:smooth; }
+body { margin:0; background:var(--bg); color:var(--body);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  font-size:17px; line-height:1.65; }
+.serif { font-family:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif; }
+a { color:var(--blue); }
+
+/* EN/KO toggle — same mechanism + storage key as the Dissecting post */
+.i18n-ko { display:none; }
+body.ko .i18n-ko { display:inline; }
+body.ko .i18n-en { display:none; }
+
+.bar { position:sticky; top:0; z-index:50; background:rgba(246,245,241,.88);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.bar-in { max-width:820px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; gap:14px; }
+.bar-t { font-size:13px; font-weight:650; color:var(--ink); letter-spacing:.02em; }
+.lang-sw { margin-left:auto; display:flex; gap:6px; }
+.lang-btn { border:1px solid var(--hair); background:transparent; border-radius:999px;
+  padding:4px 12px; font-size:12.5px; font-weight:650; color:var(--mut); cursor:pointer; }
+.lang-btn.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+
+.wrap { max-width:820px; margin:0 auto; padding:0 24px 90px; }
+header.hero { padding:64px 0 8px; }
+.pill { font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--teal); }
+h1 { font-size:42px; line-height:1.1; letter-spacing:-0.02em; color:var(--ink);
+  margin:12px 0 14px; font-weight:650; }
+.dek { font-size:20px; color:var(--mut); font-style:italic; margin:0 0 20px; }
+.byline { font-size:14px; color:var(--mut); margin:0 0 26px; }
+.lede b { color:var(--ink); }
+
+.stats { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:26px 0 8px; }
+.stat { background:var(--card); border-radius:14px; padding:14px 14px 12px;
+  box-shadow:0 1px 3px rgba(23,24,28,.06), 0 8px 24px rgba(23,24,28,.05); }
+.stat-v { font-size:24px; color:var(--ink); line-height:1.1; font-weight:650;
+  font-variant-numeric:tabular-nums; }
+.stat-l { font-size:11.5px; color:var(--mut); margin-top:5px; line-height:1.35; }
+
+h2 { font-size:29px; line-height:1.2; letter-spacing:-0.015em; color:var(--ink);
+  margin:52px 0 14px; font-weight:650; }
+h3 { font-size:19px; color:var(--ink); margin:30px 0 8px; font-weight:650; }
+.kicker { font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--orange); margin-top:54px; }
+.kicker + h2 { margin-top:6px; }
+
+pre.code { background:#1d1f26; color:#e8e6df; border-radius:14px; padding:18px 20px;
+  font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; overflow-x:auto;
+  box-shadow:0 10px 28px rgba(23,24,28,.10); }
+pre.code b { color:#ffd479; font-weight:600; }
+pre.code i { color:#8fd4c2; font-style:normal; }
+pre.code u { color:#9aa3b8; text-decoration:none; }
+code { font:0.92em ui-monospace,SFMono-Regular,Menlo,monospace; background:#ecebe5;
+  border-radius:6px; padding:1px 6px; color:var(--ink); }
+pre.code code { background:none; padding:0; color:inherit; }
+
+table { border-collapse:collapse; width:100%; margin:14px 0 6px; font-size:15px; }
+th { text-align:left; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--mut); font-weight:650; padding:8px 12px; border-bottom:2px solid var(--hair); }
+td { padding:9px 12px; border-bottom:1px solid var(--hair); font-variant-numeric:tabular-nums; }
+td b { color:var(--ink); }
+.tnote { font-size:13px; color:var(--mut); margin-top:6px; }
+
+.callout { background:var(--warnbg); border-radius:14px; padding:16px 20px; margin:18px 0;
+  font-size:15.5px; }
+.callout b { color:var(--warn); }
+.note { background:var(--card); border-radius:14px; padding:16px 20px; margin:18px 0;
+  font-size:15.5px; box-shadow:0 1px 3px rgba(23,24,28,.06), 0 8px 24px rgba(23,24,28,.05); }
+.note b { color:var(--ink); }
+
+.audio-pair { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0; }
+.audio-card { background:var(--card); border-radius:16px; padding:18px 20px 16px;
+  box-shadow:0 1px 3px rgba(23,24,28,.06), 0 10px 28px rgba(23,24,28,.06); }
+.audio-card .who { font-size:12.5px; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; margin-bottom:4px; }
+.audio-card .who.ref { color:var(--blue); } .audio-card .who.gen { color:var(--pink); }
+.audio-card .what { font-size:14px; color:var(--mut); font-style:italic; margin:0 0 12px; line-height:1.5; }
+.audio-card audio { width:100%; height:36px; }
+
+footer { margin-top:70px; padding-top:22px; border-top:1px solid var(--hair);
+  font-size:13.5px; color:var(--mut); }
+@media (max-width:640px){
+  h1{font-size:32px} .stats{grid-template-columns:repeat(2,1fr)}
+  .audio-pair{grid-template-columns:1fr}
+}
+@media print { .bar{display:none} }
+</style>
+</head>
+<body>
+
+<div class="bar"><div class="bar-in">
+  <div class="bar-t"><span class="i18n-en">Higgs TTS v3 · hands-on</span><span class="i18n-ko">Higgs TTS v3 · 실전기</span></div>
+  <div class="lang-sw"><button class="lang-btn" data-l="en">EN</button><button class="lang-btn" data-l="ko">한국어</button></div>
+</div></div>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="pill"><span class="i18n-en">Local inference · Apple Silicon</span><span class="i18n-ko">로컬 추론 · 애플 실리콘</span></span>
+  <h1 class="serif"><span class="i18n-en">Running Higgs TTS v3 on a MacBook</span><span class="i18n-ko">맥북에서 Higgs TTS v3 돌리기</span></h1>
+  <p class="dek serif"><span class="i18n-en">A 4-billion-parameter voice cloner in 13&nbsp;GB of unified memory — no CUDA anywhere.</span><span class="i18n-ko">통합 메모리 13&nbsp;GB로 굴러가는 40억 파라미터 음성 복제 — CUDA는 어디에도 없다.</span></p>
+  <p class="byline"><span class="i18n-en">Jaewon · July 2026 · measured live on the machine this blog is written on</span><span class="i18n-ko">재원 · 2026년 7월 · 이 블로그를 쓰고 있는 바로 그 맥북에서 직접 측정</span></p>
+
+  <p class="lede i18n-blk"><span class="i18n-en">Everything in <a href="../dissecting-higgs-tts-v3/">Dissecting Higgs TTS v3</a> — the 36-layer activation captures, the voice-cloning synthesis, the steering experiments — ran on one laptop: an M1&nbsp;Max MacBook Pro with 32&nbsp;GB of RAM. People assume a 4B-parameter audio LLM needs a CUDA box. It doesn't. This post is the exact recipe: the two traps that cost us a day, the five commands that avoid them, and freshly re-measured numbers for what it actually costs in memory and time.</span><span class="i18n-ko"><a href="../dissecting-higgs-tts-v3/">Higgs TTS v3 해부해보다</a>의 모든 것 — 36개 레이어 활성 캡처, 음성 복제 합성, 스티어링 실험 — 은 노트북 한 대에서 돌았다. 32&nbsp;GB RAM의 M1&nbsp;Max 맥북 프로다. 40억 파라미터 오디오 LLM이라면 CUDA 서버가 필요할 거라 생각하기 쉽지만, 아니다. 이 글은 그 정확한 레시피다: 우리를 하루 잡아먹은 두 개의 함정, 그걸 피하는 다섯 줄의 명령, 그리고 메모리와 시간이 실제로 얼마나 드는지 오늘 다시 측정한 수치들.</span></p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-v">4.04&nbsp;B</div><div class="stat-l"><span class="i18n-en">parameters (7.53 GB in bf16)</span><span class="i18n-ko">파라미터 (bf16으로 7.53 GB)</span></div></div>
+    <div class="stat"><div class="stat-v">12.8&nbsp;s</div><div class="stat-l"><span class="i18n-en">model load, cache → MPS</span><span class="i18n-ko">모델 로드, 캐시 → MPS</span></div></div>
+    <div class="stat"><div class="stat-v">13.0&nbsp;GB</div><div class="stat-l"><span class="i18n-en">unified memory while speaking</span><span class="i18n-ko">발화 중 통합 메모리</span></div></div>
+    <div class="stat"><div class="stat-v">0.72×</div><div class="stat-l"><span class="i18n-en">realtime (12.2 s for 8.8 s of audio)</span><span class="i18n-ko">실시간 대비 (8.8초 음성에 12.2초)</span></div></div>
+    <div class="stat"><div class="stat-v">0</div><div class="stat-l"><span class="i18n-en">CUDA devices involved</span><span class="i18n-ko">사용된 CUDA 장치</span></div></div>
+  </div>
+</header>
+
+<div class="kicker"><span class="i18n-en">The proof, first</span><span class="i18n-ko">증거부터</span></div>
+<h2 class="serif"><span class="i18n-en">Hear it</span><span class="i18n-ko">먼저 들어보기</span></h2>
+<p class="i18n-blk"><span class="i18n-en">These two clips are the actual measurement run from this post, unedited. The model hears the reference voice on the left (a FLEURS speaker it has never seen), then speaks a brand-new sentence in that voice on the right — generated on the laptop's GPU in 12 seconds.</span><span class="i18n-ko">아래 두 클립은 이 글을 쓰며 돌린 측정 런의 결과 그대로다(무편집). 모델은 왼쪽의 레퍼런스 목소리(한 번도 본 적 없는 FLEURS 화자)를 듣고, 오른쪽에서 그 목소리로 완전히 새로운 문장을 말한다 — 노트북 GPU에서 12초 만에 생성됐다.</span></p>
+
+<div class="audio-pair">
+  <div class="audio-card">
+    <div class="who ref"><span class="i18n-en">Reference (input)</span><span class="i18n-ko">레퍼런스 (입력)</span></div>
+    <p class="what">“a tornado is a spinning column of very low-pressure air…”</p>
+    <audio controls preload="none" src="reference.wav"></audio>
+  </div>
+  <div class="audio-card">
+    <div class="who gen"><span class="i18n-en">Clone (generated on the MacBook)</span><span class="i18n-ko">복제 (맥북에서 생성)</span></div>
+    <p class="what">“Running a four billion parameter voice cloner on a laptop sounds unreasonable, but with bfloat sixteen and Apple's unified memory it simply works.”</p>
+    <audio controls preload="none" src="demo_clone.wav"></audio>
+  </div>
+</div>
+
+<div class="kicker"><span class="i18n-en">Why it's not obvious</span><span class="i18n-ko">왜 간단하지 않은가</span></div>
+<h2 class="serif"><span class="i18n-en">Two traps before the first token</span><span class="i18n-ko">첫 토큰 전에 만나는 두 개의 함정</span></h2>
+
+<h3><span class="i18n-en">Trap 1 — the official checkpoint has no engine in it</span><span class="i18n-ko">함정 1 — 공식 체크포인트에는 엔진이 없다</span></h3>
+<p class="i18n-blk"><span class="i18n-en">The official repo, <code>bosonai/higgs-audio-v3-tts-4b</code>, ships weights and a config — but <b>no modeling code</b>. Point <code>AutoModel</code> at it and you get nothing that generates speech. The working path is the community transformers port, <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers"><code>multimodalart/higgs-audio-v3-tts-4b-transformers</code></a>: the same weights repackaged with a <code>trust_remote_code</code> modeling file, so plain <code>transformers</code> (≥5.5) can load it and call <code>generate_speech()</code>. Underneath sits a Qwen3-style backbone — 36 layers, hidden 2560 — with an audio tower and a 25&nbsp;fps, 8-codebook codec head on top.</span><span class="i18n-ko">공식 저장소 <code>bosonai/higgs-audio-v3-tts-4b</code>에는 가중치와 config만 있고 <b>모델링 코드가 없다</b>. <code>AutoModel</code>을 갖다 대도 음성을 생성하는 무언가는 나오지 않는다. 작동하는 경로는 커뮤니티 transformers 포트인 <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers"><code>multimodalart/higgs-audio-v3-tts-4b-transformers</code></a>다: 같은 가중치를 <code>trust_remote_code</code> 모델링 파일과 함께 재포장한 것으로, 순정 <code>transformers</code>(≥5.5)가 로드해서 <code>generate_speech()</code>를 부를 수 있다. 그 아래에는 Qwen3 계열 백본(36 레이어, hidden 2560)과 오디오 타워, 그리고 25&nbsp;fps 8-코드북 코덱 헤드가 있다.</span></p>
+
+<h3><span class="i18n-en">Trap 2 — your Python environment is probably poisoned</span><span class="i18n-ko">함정 2 — 당신의 파이썬 환경은 아마 오염돼 있다</span></h3>
+<p class="i18n-blk"><span class="i18n-en">Our base anaconda env had NumPy&nbsp;2 with a stack of NumPy-1-compiled packages under it — the model import chain died before reaching the GPU. The fix that stuck: a throwaway venv that <i>inherits</i> the system's working torch (via <code>--system-site-packages</code>) and then shadows exactly the version-sensitive packages with <code>--no-deps</code>, so pip can't "helpfully" upgrade anything else.</span><span class="i18n-ko">우리 기본 아나콘다 환경은 NumPy&nbsp;2 위에 NumPy&nbsp;1로 컴파일된 패키지들이 쌓여 있었고, 모델 임포트 체인은 GPU에 닿기도 전에 죽었다. 결국 통한 해법: 시스템의 멀쩡한 torch를 <code>--system-site-packages</code>로 <i>물려받은</i> 일회용 venv를 만들고, 버전에 민감한 패키지들만 <code>--no-deps</code>로 정확히 덮어써서 pip이 다른 걸 "친절하게" 업그레이드하지 못하게 막는 것.</span></p>
+
+<div class="kicker"><span class="i18n-en">The recipe</span><span class="i18n-ko">레시피</span></div>
+<h2 class="serif"><span class="i18n-en">Five commands to a working voice cloner</span><span class="i18n-ko">음성 복제기까지 다섯 줄</span></h2>
+
+<pre class="code"><u># 1) isolated venv on top of a working MPS torch (ours: torch 2.12.0, python 3.11)</u>
+python3.11 -m venv --system-site-packages /tmp/hav
+/tmp/hav/bin/pip install --no-deps \
+    <i>'numpy==1.26.4'</i> <i>'transformers==5.12.1'</i> <i>'tokenizers==0.22.2'</i> \
+    <i>'huggingface_hub==1.22.0'</i> <i>hf_xet</i> <i>safetensors</i> <i>'torchaudio==2.11.0'</i>
+
+<u># 2) keep TF/JAX out of the import path, let MPS fall back for unsupported ops</u>
+export USE_TF=0 USE_FLAX=0 USE_JAX=0 USE_TORCH=1 <b>PYTORCH_ENABLE_MPS_FALLBACK=1</b></pre>
+
+<p class="i18n-blk"><span class="i18n-en">Then the entire Python side is this (the same code every capture in the research repo runs through):</span><span class="i18n-ko">파이썬 쪽은 이게 전부다 (연구 저장소의 모든 캡처가 통과하는 바로 그 코드):</span></p>
+
+<pre class="code">from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch, soundfile as sf
+
+REPO = <i>"multimodalart/higgs-audio-v3-tts-4b-transformers"</i>
+tok   = AutoTokenizer.from_pretrained(REPO, <b>trust_remote_code=True</b>)
+model = AutoModelForCausalLM.from_pretrained(
+            REPO, <b>trust_remote_code=True</b>, dtype=<b>torch.bfloat16</b>
+        ).to(<b>"mps"</b>).eval()                     <u># 12.8 s from local cache</u>
+
+ref, sr = sf.read(<i>"reference.wav"</i>, dtype="float32")   <u># the voice to clone</u>
+wav = model.generate_speech(
+        <i>"Any sentence you want, in that voice."</i>, tok,
+        reference_audio=torch.from_numpy(ref).unsqueeze(0),
+        reference_sample_rate=sr,
+        reference_text=<i>"…transcript of the reference clip…"</i>,
+        max_new_tokens=480, temperature=0.7, top_p=0.95)
+sf.write(<i>"clone.wav"</i>, wav.float().cpu().numpy(), model.config.sample_rate)  <u># 24 kHz</u></pre>
+
+<div class="callout i18n-blk"><span class="i18n-en"><b>Small gotchas, so they don't cost you an afternoon:</b> pass <code>trust_remote_code=True</code> to the <i>tokenizer</i> too, or a hidden <code>[y/N]</code> prompt stalls headless runs. The load report prints <code>audio_head.weight | MISSING</code> — benign for TTS use (that head is re-initialized and unused by <code>generate_speech</code>). And the first generation is slower than every one after it: the audio tower lazy-loads 527 extra weight tensors on first call.</span><span class="i18n-ko"><b>오후를 날리지 않기 위한 소소한 함정들:</b> <code>trust_remote_code=True</code>는 <i>토크나이저</i>에도 넘겨야 한다 — 안 그러면 숨은 <code>[y/N]</code> 프롬프트가 헤드리스 실행을 멈춰 세운다. 로드 리포트에 찍히는 <code>audio_head.weight | MISSING</code>은 TTS 용도로는 무해하다 (그 헤드는 재초기화되고 <code>generate_speech</code>는 쓰지 않는다). 그리고 첫 생성은 이후보다 느리다: 첫 호출에서 오디오 타워가 527개의 추가 가중치 텐서를 지연 로드한다.</span></div>
+
+<div class="kicker"><span class="i18n-en">The bill</span><span class="i18n-ko">청구서</span></div>
+<h2 class="serif"><span class="i18n-en">What it costs, measured today</span><span class="i18n-ko">오늘 측정한 실제 비용</span></h2>
+
+<p class="i18n-blk"><span class="i18n-en">Re-measured while writing this post (M1&nbsp;Max, 32&nbsp;GB, macOS&nbsp;26.5.2, torch&nbsp;2.12.0): one process, load the model, clone a voice twice, log memory at every stage.</span><span class="i18n-ko">이 글을 쓰면서 다시 측정했다 (M1&nbsp;Max, 32&nbsp;GB, macOS&nbsp;26.5.2, torch&nbsp;2.12.0): 프로세스 하나에서 모델을 로드하고 목소리를 두 번 복제하며 단계마다 메모리를 기록.</span></p>
+
+<table>
+<thead><tr>
+  <th><span class="i18n-en">Stage</span><span class="i18n-ko">단계</span></th>
+  <th><span class="i18n-en">Wall time</span><span class="i18n-ko">소요 시간</span></th>
+  <th><span class="i18n-en">MPS allocator</span><span class="i18n-ko">MPS 할당</span></th>
+  <th><span class="i18n-en">Driver total</span><span class="i18n-ko">드라이버 총량</span></th>
+</tr></thead>
+<tbody>
+<tr><td><span class="i18n-en">import torch</span><span class="i18n-ko">import torch</span></td><td>1.0 s</td><td>0</td><td>0</td></tr>
+<tr><td><span class="i18n-en">model loaded (bf16 → MPS)</span><span class="i18n-ko">모델 로드 (bf16 → MPS)</span></td><td>12.8 s</td><td><b>7.53 GB</b></td><td>7.73 GB</td></tr>
+<tr><td><span class="i18n-en">1st generation (audio tower + warmup)</span><span class="i18n-ko">1차 생성 (오디오 타워 + 워밍업)</span></td><td>19.5 s</td><td>8.28 GB</td><td><b>13.02 GB</b></td></tr>
+<tr><td><span class="i18n-en">2nd generation (steady state, 8.8 s audio)</span><span class="i18n-ko">2차 생성 (정상 상태, 8.8초 음성)</span></td><td><b>12.2 s</b></td><td>8.28 GB</td><td>13.02 GB</td></tr>
+</tbody>
+</table>
+<p class="tnote i18n-blk"><span class="i18n-en">Plus 8.7&nbsp;GB of disk for the downloaded checkpoint (one-time). Steady-state speed: 0.72× realtime — 8.8 seconds of audio in 12.2 seconds, ~220 codec frames at 25&nbsp;fps.</span><span class="i18n-ko">더하기, 체크포인트 다운로드로 디스크 8.7&nbsp;GB (1회). 정상 상태 속도는 실시간의 0.72배 — 8.8초 분량을 12.2초에, 25&nbsp;fps 기준 약 220 코덱 프레임.</span></p>
+
+<div class="note i18n-blk"><span class="i18n-en"><b>The number that fooled us: RSS.</b> Ask <code>ps</code> and the Python process claims a laughable <b>0.5&nbsp;GB</b> while the GPU is holding a 4B model. On Apple Silicon the weights live in <i>unified</i> memory pages accounted to the Metal driver, not the process — so watch <code>torch.mps.driver_allocated_memory()</code> (13.0&nbsp;GB here), not your process monitor. That 13&nbsp;GB is also the honest sizing answer: comfortable on a 32&nbsp;GB machine alongside a browser and an IDE; on 16&nbsp;GB it would be swap-tight — possible, not pleasant.</span><span class="i18n-ko"><b>우리를 속인 숫자: RSS.</b> <code>ps</code>에게 물으면 GPU가 4B 모델을 들고 있는 동안에도 파이썬 프로세스는 어이없게 <b>0.5&nbsp;GB</b>라고 답한다. 애플 실리콘에서 가중치는 프로세스가 아니라 Metal 드라이버 몫으로 잡히는 <i>통합</i> 메모리 페이지에 살기 때문이다 — 그러니 프로세스 모니터가 아니라 <code>torch.mps.driver_allocated_memory()</code>(여기선 13.0&nbsp;GB)를 봐야 한다. 이 13&nbsp;GB가 정직한 사양 답변이기도 하다: 32&nbsp;GB 머신에선 브라우저와 IDE를 띄워놓고도 여유롭고, 16&nbsp;GB에선 스왑에 시달릴 것이다 — 가능은 하지만 즐겁진 않다.</span></div>
+
+<div class="kicker"><span class="i18n-en">Beyond inference</span><span class="i18n-ko">추론 너머</span></div>
+<h2 class="serif"><span class="i18n-en">The same laptop ran the whole research pipeline</span><span class="i18n-ko">같은 노트북이 연구 파이프라인 전체를 돌렸다</span></h2>
+<p class="i18n-blk"><span class="i18n-en">Synthesis was the easy half. The <a href="../dissecting-higgs-tts-v3/">interpretability study</a> also attached read-only forward hooks to all 36 backbone layers <i>during</i> generation and captured a residual-stream vector per layer per clip — hundreds of captures across languages, genders, accents, and emotions. Three habits kept that inside 32&nbsp;GB: hook sparsely (mean-pool per layer instead of storing <code>[seq × hidden]</code>), move every captured tensor to CPU immediately, and <code>del</code> + <code>torch.mps.empty_cache()</code> between runs. Budget roughly the driver's 13&nbsp;GB for the model and keep captures out of GPU memory entirely — then a 4B audio LLM is a perfectly workable interpretability substrate on a laptop.</span><span class="i18n-ko">합성은 쉬운 절반이었다. <a href="../dissecting-higgs-tts-v3/">해석가능성 연구</a>는 생성 <i>도중에</i> 36개 백본 레이어 전부에 읽기 전용 forward hook을 걸고 클립마다 레이어별 residual-stream 벡터를 캡처했다 — 언어·성별·억양·감정에 걸쳐 수백 번의 캡처다. 그걸 32&nbsp;GB 안에 가둔 세 가지 습관: 희소하게 후킹하기(<code>[seq × hidden]</code>을 쌓지 말고 레이어별 mean-pool), 캡처한 텐서는 즉시 CPU로 옮기기, 런 사이마다 <code>del</code> + <code>torch.mps.empty_cache()</code>. 모델 몫으로 드라이버의 13&nbsp;GB쯤을 잡아두고 캡처는 아예 GPU 메모리 밖에 두면 — 4B 오디오 LLM도 노트북 위에서 충분히 작업 가능한 해석가능성 기판이 된다.</span></p>
+
+<footer>
+  <p class="i18n-blk" style="margin:0 0 8px"><span class="i18n-en"><b>Measured setup.</b> MacBook Pro, Apple M1 Max, 32 GB unified memory, macOS 26.5.2 · python 3.11 · torch 2.12.0 (MPS) · transformers 5.12.1 · torchaudio 2.11.0 · numpy 1.26.4. All numbers in this post are from a single instrumented run on 2026-07-17; the audio demo above is that run's unedited output. Model: <a href="https://huggingface.co/bosonai/higgs-audio-v3-tts-4b">bosonai/higgs-audio-v3-tts-4b</a> via the <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers">multimodalart transformers port</a>.</span><span class="i18n-ko"><b>측정 환경.</b> 맥북 프로, Apple M1 Max, 통합 메모리 32 GB, macOS 26.5.2 · python 3.11 · torch 2.12.0 (MPS) · transformers 5.12.1 · torchaudio 2.11.0 · numpy 1.26.4. 이 글의 모든 수치는 2026-07-17 계측 런 1회에서 나왔고, 위 오디오 데모는 그 런의 무편집 출력이다. 모델: <a href="https://huggingface.co/bosonai/higgs-audio-v3-tts-4b">bosonai/higgs-audio-v3-tts-4b</a>, <a href="https://huggingface.co/multimodalart/higgs-audio-v3-tts-4b-transformers">multimodalart transformers 포트</a> 경유.</span></p>
+  <p class="i18n-blk" style="margin:0"><span class="i18n-en">Reference clip: <a href="https://huggingface.co/datasets/google/fleurs">FLEURS</a> (CC-BY-4.0), en_us speaker.</span><span class="i18n-ko">레퍼런스 클립: <a href="https://huggingface.co/datasets/google/fleurs">FLEURS</a> (CC-BY-4.0), en_us 화자.</span></p>
+</footer>
+
+</div>
+
+<script>
+var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+function setLang(l) {
+  document.body.classList.toggle('ko', l === 'ko');
+  $$('.lang-btn').forEach(function(b){ b.classList.toggle('on', b.dataset.l === l); });
+  try { localStorage.setItem('blogv2lang', l); } catch (e) {}
+}
+$$('.lang-btn').forEach(function(b){ b.addEventListener('click', function(){ setLang(b.dataset.l); }); });
+try { setLang(localStorage.getItem('blogv2lang') || 'en'); } catch (e) { setLang('en'); }
+</script>
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+</body>
+</html>
