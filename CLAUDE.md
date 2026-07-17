@@ -12,8 +12,11 @@ The blog looks like **ink flowing on paper**. Every visual decision follows from
    (`Iowan Old Style / Palatino / Georgia` + `Apple SD Gothic Neo`), generous line-height,
    muted grays. Clicking from home into a post should feel like turning a page, not switching sites.
 2. **Generative, not decorated.** All imagery is code — the hero is a seeded Perlin flow field
-   ("ink currents" drifting eastward), every post cover is a **soundwave** generated from
-   `hash32(slug)`. No image assets to manage; a new post gets unique art for free.
+   ("ink currents" drifting eastward), every post cover is drawn from a small **motif family**
+   (`wave` soundwave · `ridge` stacked profiles · `cells` breathing grid · `ribbon` ink band),
+   structure + palette both seeded by `hash32(slug)`. Pin a motif per post with the `art`
+   field in posts.js (Jaewon asked for visibly *different* covers between neighboring posts —
+   don't let two adjacent cards share a motif). No image assets to manage.
    Don't add stock images, icons packs, or emoji noise.
 3. **Calm interactivity.** Nothing chases the cursor, nothing bursts on click (explicitly
    rejected by Jaewon). Animation is ambient; hover *reveals* (waveform crawls, card lifts).
@@ -49,9 +52,10 @@ Branch policy: work on `dev`, publish by merging to `main` and pushing (Pages re
 The homepage card (미리보기) is built *entirely* from the `posts.js` entry. When adding a
 post (via `./new-post.sh <folder-or-html> <slug>` or by hand), craft the entry like this:
 
-- **slug** — short kebab-case, and **stable**: it seeds the cover soundwave
-  (`hash32(slug)` → colors, envelope, rhythm). Renaming the slug changes the artwork.
-  If a slug's auto-colors happen to clash, adjust the slug (suffix) rather than the art code.
+- **slug** — short kebab-case, and **stable**: it seeds the cover art
+  (`hash32(slug)` → palette, phases, and the default motif). Renaming the slug changes the
+  artwork. Prefer setting the **art** field (`wave`/`ridge`/`cells`/`ribbon`) over renaming;
+  if auto-colors clash, adjust the slug suffix rather than the art code.
 - **title** — keep the post's own `<title>` (auto-detected). Serif-rendered; reads best at
   8–14 words. An em-dash subtitle ("Main Title — What It Actually Shows") works well.
 - **description** — 1–2 sentences. It is **clamped to 2 lines** on grid cards (3 on the

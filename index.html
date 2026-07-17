@@ -370,40 +370,110 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
     cv.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  // soundwave cover — amplitude bars around a centerline, seeded per slug
+  // per-post generative cover — a MOTIF (structure) + palette, both seeded by slug.
+  // posts.js can pin the motif via "art": "wave" | "ridge" | "cells" | "ribbon";
+  // unset posts draw from the family by hash, so no two neighbors need to match.
+  const MOTIFS = ["wave", "ridge", "cells", "ribbon"];
+  const mixc = (a, b, u, al) =>
+    `rgba(${(a[0] + (b[0] - a[0]) * u) | 0},${(a[1] + (b[1] - a[1]) * u) | 0},${(a[2] + (b[2] - a[2]) * u) | 0},${al})`;
+
   function drawArt(cv, t) {
-    const ctx = cv.getContext("2d"), w = cv._w, h = cv._h;
-    if (!cv._wave) {
+    const ctx = cv.getContext("2d");
+    if (!cv._art) {
       const seed = (+cv.dataset.seed || 1) >>> 0;
       cv._noise = makeNoise(seed);
       const rand = mulberry32(seed ^ 0xabcdef);
       const i1 = (rand() * PAL.length) | 0;
       const i2 = (i1 + 1 + ((rand() * (PAL.length - 1)) | 0)) % PAL.length;
-      cv._wave = {
+      cv._art = {
+        motif: MOTIFS.includes(cv.dataset.art) ? cv.dataset.art : MOTIFS[seed % MOTIFS.length],
         o1: rand() * 20, o2: rand() * 20,     // noise phases: envelope / detail
         sp: 0.85 + rand() * 0.5,              // per-post frequency character
         c1: PAL[i1], c2: PAL[i2],             // gradient endpoints
       };
     }
-    const noise = cv._noise, wv = cv._wave;
-    const mid = h / 2, maxA = h * 0.40;
-    const bw = Math.max(2.2, h * 0.022);      // bar width scales with banner
-    const pitch = bw * 2.15;
-    const drift = t * 46;                     // waveform crawls on hover
-    ctx.fillStyle = BG; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "rgba(23,24,28,.07)"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(6, mid); ctx.lineTo(w - 6, mid); ctx.stroke();
-    ctx.lineCap = "round"; ctx.lineWidth = bw;
-    const mix = (a, b, u) => (a + (b - a) * u) | 0;
-    for (let x = bw * 1.5; x <= w - bw * 1.5; x += pitch) {
-      const u = x / w;
-      const env = Math.abs(noise((x + drift) * 0.0055 * wv.sp, wv.o1));       // slow bursts
-      const det = Math.abs(noise((x + drift) * 0.030 * wv.sp, wv.o2 + t * 0.7)); // fine texture
-      const a = Math.max(maxA * (0.18 + 0.82 * env) * (0.30 + 0.70 * det), h * 0.016);
-      ctx.strokeStyle = `rgba(${mix(wv.c1[0], wv.c2[0], u)},${mix(wv.c1[1], wv.c2[1], u)},${mix(wv.c1[2], wv.c2[2], u)},0.82)`;
-      ctx.beginPath(); ctx.moveTo(x, mid - a); ctx.lineTo(x, mid + a); ctx.stroke();
-    }
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, cv._w, cv._h);
+    ART[cv._art.motif](ctx, cv, t);
   }
+
+  const ART = {
+    // soundwave — amplitude bars around a centerline (the original)
+    wave(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const mid = h / 2, maxA = h * 0.40;
+      const bw = Math.max(2.2, h * 0.022);
+      const pitch = bw * 2.15;
+      const drift = t * 46;                   // waveform crawls on hover
+      ctx.strokeStyle = "rgba(23,24,28,.07)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(6, mid); ctx.lineTo(w - 6, mid); ctx.stroke();
+      ctx.lineCap = "round"; ctx.lineWidth = bw;
+      for (let x = bw * 1.5; x <= w - bw * 1.5; x += pitch) {
+        const env = Math.abs(noise((x + drift) * 0.0055 * a.sp, a.o1));
+        const det = Math.abs(noise((x + drift) * 0.030 * a.sp, a.o2 + t * 0.7));
+        const amp = Math.max(maxA * (0.18 + 0.82 * env) * (0.30 + 0.70 * det), h * 0.016);
+        ctx.strokeStyle = mixc(a.c1, a.c2, x / w, 0.82);
+        ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
+      }
+    },
+
+    // ridgeline — quiet stacked profiles, drawn back to front (occluding fills)
+    ridge(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const rows = Math.max(4, Math.round(h / 42));
+      const top = h * 0.32, gap = (h * 0.58) / (rows - 1), amp = gap * 2.2;
+      const drift = t * 30;
+      for (let r = 0; r < rows; r++) {
+        const y0 = top + r * gap, u = rows > 1 ? r / (rows - 1) : 0;
+        ctx.beginPath();
+        for (let x = -4; x <= w + 4; x += 3) {
+          const n = Math.abs(noise((x + drift) * 0.006 * a.sp, a.o1 + r * 2.7));
+          const d = Math.abs(noise((x + drift) * 0.020 * a.sp, a.o2 + r * 1.3 + t * 0.5));
+          ctx.lineTo(x, y0 - amp * n * (0.55 + 0.45 * d));
+        }
+        ctx.lineTo(w + 4, h + 8); ctx.lineTo(-4, h + 8); ctx.closePath();
+        ctx.fillStyle = BG; ctx.fill();
+        ctx.strokeStyle = mixc(a.c1, a.c2, u, 0.78 - u * 0.30);
+        ctx.lineWidth = 1.8; ctx.stroke();
+      }
+    },
+
+    // cells — a breathing grid of rounded blocks (memory pages)
+    cells(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const s = Math.max(10, h / 6.4), g = Math.max(3, s * 0.26);
+      const cols = Math.ceil(w / (s + g)), rows = Math.ceil(h / (s + g));
+      const ox = (w - cols * (s + g) + g) / 2, oy = (h - rows * (s + g) + g) / 2;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = Math.abs(noise(c * 0.55 + a.o1 + t * 0.35, r * 0.7 + a.o2));
+        ctx.fillStyle = mixc(a.c1, a.c2, cols > 1 ? c / (cols - 1) : 0, 0.08 + 0.74 * v);
+        ctx.beginPath();
+        const x = ox + c * (s + g), y = oy + r * (s + g), rd = s * 0.22;
+        ctx.roundRect ? ctx.roundRect(x, y, s, s, rd) : ctx.rect(x, y, s, s);
+        ctx.fill();
+      }
+    },
+
+    // ribbon — one flowing ink band, echoing the hero currents
+    ribbon(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const mid = h / 2, drift = t * 40;
+      const edge = (x, o) => noise((x + drift) * 0.0045 * a.sp, o) * h * 0.26;
+      const grd = ctx.createLinearGradient(0, 0, w, 0);
+      grd.addColorStop(0, mixc(a.c1, a.c2, 0, 0.30));
+      grd.addColorStop(1, mixc(a.c1, a.c2, 1, 0.30));
+      ctx.beginPath();
+      for (let x = -4; x <= w + 4; x += 3) ctx.lineTo(x, mid + edge(x, a.o1) - h * 0.10);
+      for (let x = w + 4; x >= -4; x -= 3) ctx.lineTo(x, mid + edge(x, a.o2) + h * 0.10);
+      ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        for (let x = -4; x <= w + 4; x += 3)
+          ctx.lineTo(x, mid + edge(x, a.o1 + k * 1.7) * (0.55 + k * 0.18));
+        ctx.strokeStyle = mixc(a.c1, a.c2, k / 2, 0.50 - k * 0.12);
+        ctx.lineWidth = 1.4; ctx.stroke();
+      }
+    },
+  };
 
   function initArts(root) {
     root.querySelectorAll("canvas.art").forEach(cv => {
@@ -494,7 +564,7 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
       $list.classList.toggle("anim", firstRender);
       const artOf = p => p.cover
         ? `<img class="art" src="${esc(p.cover)}" alt="" loading="lazy">`
-        : `<canvas class="art" data-seed="${hash32(p.slug)}" aria-hidden="true"></canvas>`;
+        : `<canvas class="art" data-seed="${hash32(p.slug)}"${p.art ? ` data-art="${esc(p.art)}"` : ""} aria-hidden="true"></canvas>`;
       const cardOf = (p, i, cls, kick) => `
         <a class="card${cls ? " " + cls : ""}" href="posts/${encodeURIComponent(p.slug)}/" style="--i:${i}">
           ${artOf(p)}
