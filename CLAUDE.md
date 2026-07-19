@@ -13,7 +13,8 @@ The blog looks like **ink flowing on paper**. Every visual decision follows from
    muted grays. Clicking from home into a post should feel like turning a page, not switching sites.
 2. **Generative, not decorated.** All imagery is code — the hero is a seeded Perlin flow field
    ("ink currents" drifting eastward), every post cover is drawn from a small **motif family**
-   (`wave` soundwave · `ridge` stacked profiles · `cells` breathing grid · `ribbon` ink band),
+   (`wave` soundwave · `ridge` stacked profiles · `cells` breathing grid · `ribbon` ink band
+   · `synapse` knowledge-constellation: a query fans out through graph nodes and reconverges on an answer),
    structure + palette both seeded by `hash32(slug)`. Pin a motif per post with the `art`
    field in posts.js (Jaewon asked for visibly *different* covers between neighboring posts —
    don't let two adjacent cards share a motif). No image assets to manage.
@@ -57,7 +58,7 @@ post (via `./new-post.sh <folder-or-html> <slug>` or by hand), craft the entry l
 
 - **slug** — short kebab-case, and **stable**: it seeds the cover art
   (`hash32(slug)` → palette, phases, and the default motif). Renaming the slug changes the
-  artwork. Prefer setting the **art** field (`wave`/`ridge`/`cells`/`ribbon`) over renaming;
+  artwork. Prefer setting the **art** field (`wave`/`ridge`/`cells`/`ribbon`/`synapse`) over renaming;
   if auto-colors clash, adjust the slug suffix rather than the art code.
 - **title** — keep the post's own `<title>` (auto-detected). Serif-rendered; reads best at
   8–14 words. An em-dash subtitle ("Main Title — What It Actually Shows") works well.

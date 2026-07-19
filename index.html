@@ -373,7 +373,7 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   // per-post generative cover — a MOTIF (structure) + palette, both seeded by slug.
   // posts.js can pin the motif via "art": "wave" | "ridge" | "cells" | "ribbon";
   // unset posts draw from the family by hash, so no two neighbors need to match.
-  const MOTIFS = ["wave", "ridge", "cells", "ribbon"];
+  const MOTIFS = ["wave", "ridge", "cells", "ribbon", "synapse"];
   const mixc = (a, b, u, al) =>
     `rgba(${(a[0] + (b[0] - a[0]) * u) | 0},${(a[1] + (b[1] - a[1]) * u) | 0},${(a[2] + (b[2] - a[2]) * u) | 0},${al})`;
 
@@ -390,6 +390,7 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
         o1: rand() * 20, o2: rand() * 20,     // noise phases: envelope / detail
         sp: 0.85 + rand() * 0.5,              // per-post frequency character
         c1: PAL[i1], c2: PAL[i2],             // gradient endpoints
+        seed,                                 // for motifs that need their own RNG stream
       };
     }
     ctx.fillStyle = BG; ctx.fillRect(0, 0, cv._w, cv._h);
@@ -397,6 +398,90 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   }
 
   const ART = {
+    // synapse — a knowledge constellation: one query fans out through the graph
+    // and reconverges on an answer (the retrieval journey, drawn as ink)
+    synapse(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const rand = mulberry32((a.seed >>> 0) ^ 0x51A95E);
+      const mx = w * 0.055, my = h * 0.16;
+      const N = Math.max(15, Math.round(w / 33));
+      // knowledge nodes — organic scatter, nudged off a loose grid so no two collide
+      const nodes = [];
+      for (let i = 0; i < N; i++) {
+        const gx = (i + 0.5) / N;
+        nodes.push({
+          x: mx + (w - 2 * mx) * (gx + (rand() - 0.5) * 0.55 / N * 4),
+          y: my + (h - 2 * my) * rand(),
+          r: 1 + rand() * 1.6, ph: rand() * 20,
+        });
+      }
+      nodes.sort((p, q) => p.x - q.x);
+      // edges — each node reaches to its 2 nearest rightward neighbors (a DAG flowing east)
+      const edges = [];
+      for (let i = 0; i < N; i++) {
+        const cand = [];
+        for (let j = i + 1; j < N; j++) {
+          const dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+          cand.push([dx * dx + dy * dy * 1.7, j]);
+        }
+        cand.sort((p, q) => p[0] - q[0]);
+        nodes[i].out = cand.slice(0, 2).map(c => c[1]);
+        for (const j of nodes[i].out) edges.push([i, j]);
+      }
+      const bend = (p, q, k) =>          // gentle noise-bowed control point
+        [(p.x + q.x) / 2 + noise(p.x * 0.01, k) * h * 0.10,
+         (p.y + q.y) / 2 + noise(q.x * 0.01, k + 7) * h * 0.14];
+      // substrate: every association, barely-there ink
+      ctx.lineWidth = 1;
+      for (const [i, j] of edges) {
+        const p = nodes[i], q = nodes[j], c = bend(p, q, a.o2);
+        ctx.strokeStyle = "rgba(23,24,28,.065)";
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.quadraticCurveTo(c[0], c[1], q.x, q.y); ctx.stroke();
+      }
+      // three retrieval paths from the same query node — fan out, often reconverge
+      const paths = [];
+      for (let k = 0; k < 3; k++) {
+        let i = 0; const path = [0];
+        while (nodes[i].out.length) {
+          i = nodes[i].out[nodes[i].out.length > 1 && rand() < 0.45 ? 1 : 0];
+          path.push(i);
+        }
+        paths.push(path);
+      }
+      const drift = t * 0.05;
+      paths.forEach((path, k) => {
+        ctx.lineWidth = Math.max(1.3, h * 0.010); ctx.lineCap = "round";
+        for (let s2 = 0; s2 < path.length - 1; s2++) {
+          const p = nodes[path[s2]], q = nodes[path[s2 + 1]], c = bend(p, q, a.o2);
+          ctx.strokeStyle = mixc(a.c1, a.c2, (p.x + q.x) / 2 / w, 0.34 + k * 0.05);
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.quadraticCurveTo(c[0], c[1], q.x, q.y); ctx.stroke();
+        }
+        // one slow pulse per path (complete artwork at t=0: pulses rest mid-path)
+        const u = (0.22 + k * 0.27 + drift) % 1;
+        const s3 = Math.min(path.length - 2, (u * (path.length - 1)) | 0);
+        const f = u * (path.length - 1) - s3;
+        const p = nodes[path[s3]], q = nodes[path[s3 + 1]], c = bend(p, q, a.o2);
+        const px = (1 - f) * (1 - f) * p.x + 2 * (1 - f) * f * c[0] + f * f * q.x;
+        const py = (1 - f) * (1 - f) * p.y + 2 * (1 - f) * f * c[1] + f * f * q.y;
+        ctx.fillStyle = mixc(a.c1, a.c2, px / w, 0.9);
+        ctx.beginPath(); ctx.arc(px, py, Math.max(2, h * 0.016), 0, 7); ctx.fill();
+      });
+      // nodes on top: on-path nodes filled with gradient ink, the rest quiet hollow dots
+      const onPath = new Set(paths.flat());
+      nodes.forEach((p, i) => {
+        const breathe = 1 + 0.10 * noise(p.ph, t * 0.25);
+        const r = (p.r + (onPath.has(i) ? 1.1 : 0)) * Math.max(1, h / 190) * breathe;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7);
+        if (onPath.has(i)) { ctx.fillStyle = mixc(a.c1, a.c2, p.x / w, 0.85); ctx.fill(); }
+        else { ctx.fillStyle = "rgba(23,24,28,.30)"; ctx.fill(); }
+      });
+      // the query (west) and the answer (east): ringed, like pins on a map
+      const ring = (p, cc) => { ctx.strokeStyle = cc; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(4.5, h * 0.036), 0, 7); ctx.stroke(); };
+      ring(nodes[0], mixc(a.c1, a.c2, 0, 0.9));
+      ring(nodes[paths[0][paths[0].length - 1]], mixc(a.c1, a.c2, 1, 0.9));
+    },
+
     // soundwave — amplitude bars around a centerline (the original)
     wave(ctx, cv, t) {
       const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;

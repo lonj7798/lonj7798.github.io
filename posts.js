@@ -15,7 +15,7 @@ window.POSTS = [
       "deep-dive"
     ],
     "lang": "ko · en",
-    "art": "ridge"
+    "art": "synapse"
   },
   {
     "slug": "higgs-tts-v3-on-a-macbook",
