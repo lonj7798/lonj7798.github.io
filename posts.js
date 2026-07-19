@@ -2,10 +2,21 @@
 // Managed by ./new-post.sh, but hand-editing is totally fine.
 // Keep it valid JSON after the "=" (double quotes!). The homepage
 // sorts by date (newest first), so order here doesn't matter.
-// Fields: slug*, title*, date* (YYYY-MM-DD), description, tags[], lang,
-//         art ("wave" | "ridge" | "cells" | "ribbon" — cover motif; unset = by hash),
-//         cover (optional image URL — overrides the generative art)
+// Fields: slug*, title*, date* (YYYY-MM-DD), description, tags[], lang
 window.POSTS = [
+  {
+    "slug": "company-brain-part-2",
+    "title": "기업들은 실제로 어떻게 굴리나 — 지식베이스 검색·갱신 여정 해부",
+    "date": "2026-07-19",
+    "description": "Glean, M365 Copilot, Rovo, Slack AI, Uber, LinkedIn, DoorDash — how a user message becomes a prompt, how new information lands (overlap · new · similar), and the vertical-domain playbook. 질문이 프롬프트가 되기까지, 새 정보의 세 갈래 갱신, 수직 도메인 플레이북까지 해부.",
+    "tags": [
+      "rag",
+      "knowledge-base",
+      "deep-dive"
+    ],
+    "lang": "ko · en",
+    "art": "ridge"
+  },
   {
     "slug": "higgs-tts-v3-on-a-macbook",
     "title": "Running Higgs TTS v3 on a MacBook — a 4B Voice Cloner in 13 GB of Unified Memory",

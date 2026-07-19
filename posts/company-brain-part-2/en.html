@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Companies Actually Run This — Anatomy of Knowledge-Base Retrieval &amp; Update Journeys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F2F4EF; --card:#FBFCF9; --ink:#1B241F; --mut:#5B6A61;
+  --line:#D6DCD2; --line-soft:#E4E8E0;
+  --green:#2F6B4F; --blue:#35618E; --amber:#A8741B; --purple:#7A4FA3; --red:#A34848;
+  --green-bg:#E4EEE7; --blue-bg:#E2EAF3; --amber-bg:#F3ECDB; --purple-bg:#EDE6F4; --red-bg:#F3E3E3;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans KR',-apple-system,sans-serif;
+  --serif:'Gowun Batang',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--sans);
+  font-size:15.5px; line-height:1.72; -webkit-font-smoothing:antialiased;
+  background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+a{color:var(--green);text-decoration:none;border-bottom:1px solid rgba(47,107,79,.35)}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:.86em;background:#E9EDE5;padding:.12em .38em;border-radius:4px;overflow-wrap:anywhere}
+
+/* ── scroll progress ── */
+#pbar{position:fixed;top:0;left:0;height:3px;background:var(--green);width:0;z-index:60}
+
+/* ── section rail nav ── */
+.rail{position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:9px}
+.rail a{display:flex;align-items:center;justify-content:flex-end;gap:8px;border:none}
+.rail .lbl{font-family:var(--mono);font-size:10px;color:var(--mut);opacity:0;transform:translateX(5px);transition:.18s;background:var(--card);border:1px solid var(--line);padding:2px 8px;border-radius:6px;white-space:nowrap;pointer-events:none}
+.rail .dot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--line);border:1.5px solid var(--mut);transition:.18s}
+.rail a:hover .lbl{opacity:1;transform:none}
+.rail a.on .dot{background:var(--green);border-color:var(--green);transform:scale(1.35)}
+@media(max-width:1180px){.rail{display:none}}
+
+header{padding:60px 0 32px;border-bottom:2px solid var(--ink)}
+.head-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--mut);text-transform:uppercase;margin-bottom:16px}
+.eyebrow .part{background:var(--ink);color:#fff;padding:2px 9px;border-radius:999px;margin-right:8px}
+.lang-link{font-family:var(--mono);font-size:11.5px;padding:4px 11px;border:1.5px solid var(--line);border-radius:999px;color:var(--mut);background:var(--card)}
+.lang-link:hover{border-color:var(--mut)}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(28px,5.6vw,44px);line-height:1.3;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--blue)}
+.lede{margin-top:18px;max-width:660px;color:#33403A;font-size:16px}
+
+section{padding:44px 0 10px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.sec-no{font-family:var(--mono);font-size:13px;color:var(--mut);letter-spacing:.08em}
+h2{font-family:var(--serif);font-weight:700;font-size:clamp(22px,4.4vw,29px);line-height:1.3}
+.sec-sub{color:var(--mut);margin-bottom:24px;max-width:660px}
+h3{font-weight:700;font-size:17px;margin:24px 0 8px}
+p{margin:0 0 14px}
+
+/* ── project cards ── */
+.pcard{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--blue);border-radius:14px;padding:26px 24px 18px;margin:26px 0;box-shadow:0 1px 0 rgba(27,36,31,.05)}
+.pcard.g{border-left-color:var(--green)} .pcard.a{border-left-color:var(--amber)} .pcard.p{border-left-color:var(--purple)}
+.pcard-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:4px}
+.pcard h3{margin:0;font-size:20px;font-family:var(--serif)}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;font-weight:500;background:var(--blue-bg);color:var(--blue)}
+.pcard.g .tag{background:var(--green-bg);color:var(--green)}
+.pcard.a .tag{background:var(--amber-bg);color:#7A5410}
+.pcard.p .tag{background:var(--purple-bg);color:var(--purple)}
+.pcard .sub{font-family:var(--mono);font-size:12px;color:var(--mut);margin-bottom:14px}
+.pcard p{font-size:15px}
+
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 10px}
+@media(max-width:640px){.facts{grid-template-columns:1fr}}
+.fact{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#FEFEFC}
+.fact .fl{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--mut);text-transform:uppercase;margin-bottom:5px}
+.fact .fv{font-size:14px;line-height:1.62}
+.uniq{border-radius:10px;padding:13px 15px;margin:10px 0 8px;font-size:14px;line-height:1.62;border:1px solid var(--line);background:var(--blue-bg)}
+.uniq .fl{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;font-weight:600;color:var(--blue)}
+.pcard.g .uniq{background:var(--green-bg)} .pcard.g .uniq .fl{color:var(--green)}
+.pcard.a .uniq{background:var(--amber-bg)} .pcard.a .uniq .fl{color:#7A5410}
+.pcard.p .uniq{background:var(--purple-bg)} .pcard.p .uniq .fl{color:var(--purple)}
+.note{border-left:3px solid var(--amber);background:#F6F1E2;border-radius:0 10px 10px 0;padding:12px 16px;font-size:14px;color:#4A4433;margin:14px 0}
+
+/* ── animated retrieval journey ── */
+.journey{margin:16px 0 8px}
+.journey-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--mut);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.jsteps{display:flex;flex-direction:column;gap:0;position:relative;padding-left:30px}
+.jsteps::before{content:"";position:absolute;left:11px;top:14px;bottom:14px;width:2px;background:var(--line)}
+.jstep{position:relative;padding:9px 12px;margin:3px 0;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:14px;line-height:1.55;
+  animation:steplight var(--total) infinite; animation-delay:var(--d)}
+.jstep b{font-weight:600}
+.jstep .m{font-family:var(--mono);font-size:10.5px;color:var(--mut);display:block;margin-top:2px}
+.jstep::before{content:attr(data-n);position:absolute;left:-30px;top:12px;width:22px;height:22px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--mut);color:var(--mut);font:600 10.5px var(--mono);
+  display:flex;align-items:center;justify-content:center;
+  animation:dotlight var(--total) infinite; animation-delay:var(--d)}
+@keyframes steplight{
+  0%,4%{background:#fff;border-color:var(--line);transform:none}
+  6%,16%{background:var(--ac-bg,#E2EAF3);border-color:var(--ac,#35618E);transform:translateX(3px)}
+  22%,100%{background:#fff;border-color:var(--line);transform:none}
+}
+@keyframes dotlight{
+  0%,4%{border-color:var(--mut);color:var(--mut);background:var(--paper)}
+  6%,16%{border-color:var(--ac,#35618E);color:#fff;background:var(--ac,#35618E)}
+  22%,100%{border-color:var(--mut);color:var(--mut);background:var(--paper)}
+}
+.pcard .jstep{--ac:var(--blue);--ac-bg:var(--blue-bg)}
+.pcard.g .jstep{--ac:var(--green);--ac-bg:var(--green-bg)}
+.pcard.a .jstep{--ac:var(--amber);--ac-bg:var(--amber-bg)}
+.pcard.p .jstep{--ac:var(--purple);--ac-bg:var(--purple-bg)}
+
+/* ── interactive player ── */
+.player{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin-top:18px}
+.ptabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+.ptab{font-family:var(--mono);font-size:11.5px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+.ptab:hover{border-color:var(--mut)}
+.ptab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ptab:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.pmeta{font-family:var(--mono);font-size:11.5px;color:var(--mut);margin:10px 2px 12px;min-height:18px}
+.psteps{display:flex;flex-direction:column;gap:8px}
+.pstep{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:9px;background:#fff;padding:10px 13px;
+  opacity:0;transform:translateY(6px);animation:pin .45s ease forwards}
+.pstep .pn{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font:600 10.5px var(--mono);display:flex;align-items:center;justify-content:center;margin-top:2px}
+.pstep .pt{font-size:14px;line-height:1.55}
+.pstep .pt .m{font-family:var(--mono);font-size:10.5px;color:var(--mut);display:block}
+@keyframes pin{to{opacity:1;transform:none}}
+
+/* ── landscape duo ── */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+@media(max-width:680px){.duo{grid-template-columns:1fr}}
+.duo-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.duo-card h4{font-family:var(--serif);font-size:16.5px;margin-bottom:10px}
+.duo-card ul{padding-left:18px;font-size:14px}
+.duo-card li{margin-bottom:8px}
+
+/* ── platform matrix ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-top:18px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:780px;font-size:13px}
+th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft);line-height:1.55}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);background:#F4F6F1}
+td:first-child{font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.c{text-align:center}
+.pm{display:inline-block;width:11px;height:11px;border-radius:50%}
+.pm.y{background:var(--green)} .pm.h{background:#C9B36A} .pm.n{background:#E0E4DC;border:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card)}
+
+/* ── prompt anatomy explorer (sec 03) ── */
+.anatomy{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:18px;margin:20px 0 10px}
+@media(max-width:760px){.anatomy{grid-template-columns:1fr}}
+.pstack{display:flex;flex-direction:column;gap:7px}
+.pstack-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--mut);text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.ablock{border:1.5px solid var(--line);border-left-width:5px;border-radius:10px;padding:10px 13px;cursor:pointer;background:#fff;transition:transform .15s,box-shadow .15s;text-align:left;width:100%;font-family:inherit}
+.ablock:hover{box-shadow:0 2px 8px rgba(27,36,31,.08)}
+.ablock.on{transform:translateX(5px);box-shadow:0 2px 10px rgba(27,36,31,.12)}
+.ablock .ab-t{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--ink)}
+.ablock .ab-s{font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.5}
+.ablock .ab-pct{float:right;font-family:var(--mono);font-size:10px;color:var(--mut)}
+.ablock.sys{border-left-color:var(--green);background:linear-gradient(to right,var(--green-bg),#fff 40%)}
+.ablock.ctx{border-left-color:var(--blue);background:linear-gradient(to right,var(--blue-bg),#fff 40%)}
+.ablock.his{border-left-color:var(--amber);background:linear-gradient(to right,var(--amber-bg),#fff 40%)}
+.ablock.usr{border-left-color:var(--purple);background:linear-gradient(to right,var(--purple-bg),#fff 40%)}
+.ablock.out{border-left-color:var(--red);background:linear-gradient(to right,var(--red-bg),#fff 40%)}
+.adetail{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:18px 20px;font-size:14px;line-height:1.66;align-self:start;position:sticky;top:18px}
+.adetail .ad-t{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.adetail ul{padding-left:17px;margin:8px 0}
+.adetail li{margin-bottom:7px}
+.adetail .ad-note{font-size:12.5px;color:var(--mut);border-top:1px dashed var(--line);margin-top:10px;padding-top:9px}
+
+/* ── query transform stepper (sec 03) ── */
+.qlab{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin-top:22px}
+.qstage{border:1px solid var(--line);border-radius:10px;background:#fff;padding:12px 15px;margin:10px 0;position:relative}
+.qstage .qs-t{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.qstage .qs-io{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:#F4F6F1;border-radius:8px;padding:9px 12px;overflow-x:auto;white-space:pre-wrap}
+.qstage .qs-x{font-size:13px;color:#3B4741;margin-top:7px;line-height:1.6}
+.qarrow{text-align:center;color:var(--mut);font-family:var(--mono);font-size:12px;margin:2px 0}
+
+/* ── prompt template code block ── */
+pre.tmpl{font-family:var(--mono);font-size:12px;line-height:1.66;background:#212822;color:#D8E1D4;border-radius:12px;padding:18px 20px;overflow-x:auto;margin:16px 0;white-space:pre}
+pre.tmpl .t-sys{color:#8FC1A2} pre.tmpl .t-ctx{color:#9BB8DC} pre.tmpl .t-his{color:#D9BC85} pre.tmpl .t-usr{color:#C7A9E3} pre.tmpl .t-cmt{color:#78857C;font-style:italic}
+
+/* ── update decision tree (sec 06) ── */
+.dtree{margin:24px 0 10px}
+.dt-root{max-width:420px;margin:0 auto;text-align:center;background:var(--ink);color:#fff;border-radius:12px;padding:13px 18px;font-size:14px;position:relative}
+.dt-root .m{font-family:var(--mono);font-size:10.5px;color:#B9C4BC;display:block;margin-top:2px}
+.dt-gate{max-width:340px;margin:0 auto;text-align:center;background:var(--card);border:1.5px dashed var(--mut);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--mut)}
+.dt-gate b{color:var(--ink)}
+.dt-stem{width:2px;height:22px;background:var(--mut);margin:0 auto}
+.dt-fork{position:relative;height:26px;max-width:760px;margin:0 auto}
+.dt-fork::before{content:"";position:absolute;left:16.6%;right:16.6%;top:0;height:2px;background:var(--mut)}
+.dt-fork::after{content:"";position:absolute;left:50%;top:-22px;width:2px;height:22px;background:var(--mut);transform:translateX(-50%)}
+.dt-fork .fk{position:absolute;top:0;width:2px;height:26px;background:var(--mut)}
+.dt-fork .fk.f1{left:16.6%} .dt-fork .fk.f2{left:50%;transform:translateX(-50%)} .dt-fork .fk.f3{right:16.6%}
+.dt-branches{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:920px;margin:0 auto}
+@media(max-width:760px){.dt-branches{grid-template-columns:1fr}.dt-fork{display:none}}
+.branch{border:1px solid var(--line);border-top:4px solid var(--green);border-radius:12px;background:var(--card);padding:15px 16px 12px;cursor:pointer;transition:box-shadow .15s;font-family:inherit;text-align:left}
+.branch:hover{box-shadow:0 3px 12px rgba(27,36,31,.1)}
+.branch.b-dup{border-top-color:var(--amber)} .branch.b-new{border-top-color:var(--green)} .branch.b-sim{border-top-color:var(--purple)}
+.branch .b-k{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;margin-bottom:4px}
+.branch.b-dup .b-k{color:#7A5410} .branch.b-new .b-k{color:var(--green)} .branch.b-sim .b-k{color:var(--purple)}
+.branch .b-t{display:block;font-family:var(--serif);font-weight:700;font-size:16.5px;margin-bottom:6px;color:var(--ink)}
+.branch .b-s{font-size:13px;color:var(--mut);line-height:1.6}
+.branch .bx{display:none;margin-top:11px;border-top:1px dashed var(--line);padding-top:11px;font-size:13.5px;line-height:1.62}
+.branch.open .bx{display:block}
+.branch .bx ul{padding-left:16px;margin:6px 0}
+.branch .bx li{margin-bottom:7px}
+.branch .b-hint{font-family:var(--mono);font-size:10px;color:var(--mut);margin-top:9px}
+.branch .who{display:inline-block;font-family:var(--mono);font-size:10px;padding:1.5px 7px;border-radius:99px;background:#EDF0EA;border:1px solid var(--line);color:var(--mut);margin:1px 2px 1px 0;white-space:nowrap}
+
+/* ── vertical domain explorer (sec 08) ── */
+.vwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin-top:20px}
+.vmeta{font-family:var(--mono);font-size:11.5px;color:var(--mut);margin:10px 2px 4px;min-height:18px}
+.vbody{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:18px;margin-top:10px}
+@media(max-width:760px){.vbody{grid-template-columns:1fr}}
+.vdesc{font-size:14px;line-height:1.66}
+.vdesc .vd-num{font-family:var(--mono);font-size:12px;background:#F4F6F1;border-radius:8px;padding:8px 11px;margin:9px 0;line-height:1.6}
+.levers{display:flex;flex-direction:column;gap:8px;align-self:start}
+.lever{display:grid;grid-template-columns:118px 1fr;gap:10px;align-items:center}
+.lever .ln{font-family:var(--mono);font-size:10.5px;color:var(--mut);text-align:right;line-height:1.3}
+.lever .lb{height:9px;border-radius:99px;background:var(--line-soft);overflow:hidden}
+.lever .lf{height:100%;border-radius:99px;background:var(--green);transition:width .5s ease}
+.lever.l2 .lf{background:var(--blue)} .lever.l3 .lf{background:var(--purple)} .lever.l4 .lf{background:var(--amber)} .lever.l5 .lf{background:#5B8A8A} .lever.l6 .lf{background:#8A6D5B} .lever.l7 .lf{background:var(--red)}
+.lever .lv{font-family:var(--mono);font-size:10px;color:var(--mut)}
+
+/* ── deep-dive expandables ── */
+details.deep{border:1px solid var(--line);border-radius:11px;background:var(--card);margin:12px 0;overflow:hidden}
+details.deep summary{cursor:pointer;padding:12px 16px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px}
+details.deep summary::-webkit-details-marker{display:none}
+details.deep summary::before{content:"+";font-family:var(--mono);color:var(--mut);font-weight:400;font-size:15px}
+details.deep[open] summary::before{content:"−"}
+details.deep summary .m{font-family:var(--mono);font-size:10.5px;color:var(--mut);font-weight:400}
+details.deep .deep-body{padding:2px 16px 14px;font-size:14px;border-top:1px dashed var(--line-soft)}
+
+.src-list{font-size:13px;padding-left:18px}
+.src-list li{margin-bottom:7px;line-height:1.55;color:#3B4741}
+footer{margin-top:52px;padding:24px 0 46px;border-top:2px solid var(--ink);font-family:var(--mono);font-size:12px;color:var(--mut)}
+
+@media(prefers-reduced-motion:reduce){
+  .jstep,.jstep::before,.live-dot{animation:none!important}
+  .pstep{animation:none;opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div id="pbar"></div>
+
+<nav class="rail" id="rail" aria-label="Section navigation">
+  <a href="#map"><span class="lbl">01 Landscape</span><span class="dot"></span></a>
+  <a href="#player-sec"><span class="lbl">02 Journey Player</span><span class="dot"></span></a>
+  <a href="#query-sec"><span class="lbl">03 Query Anatomy</span><span class="dot"></span></a>
+  <a href="#platforms"><span class="lbl">04 Platform Camp</span><span class="dot"></span></a>
+  <a href="#inhouse"><span class="lbl">05 In-House Camp</span><span class="dot"></span></a>
+  <a href="#update-sec"><span class="lbl">06 Update Forks</span><span class="dot"></span></a>
+  <a href="#matrix"><span class="lbl">07 Connector Matrix</span><span class="dot"></span></a>
+  <a href="#vertical-sec"><span class="lbl">08 Vertical Domains</span><span class="dot"></span></a>
+  <a href="#observations"><span class="lbl">09 Observations · Sources</span><span class="dot"></span></a>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="head-top">
+      <div class="eyebrow"><span class="part">Part 2</span>Research Dossier · 2026-07</div>
+      <a class="lang-link" href="./">KO ↗</a>
+    </div>
+    <h1>How Companies Actually Run This<br><em>Anatomy of Retrieval &amp; Update Journeys</em></h1>
+    <p class="lede">
+      Part 1 dissected the design philosophies of open-source projects; this time we tear down
+      the things that actually run in production. Commercial platforms — Glean, Microsoft 365 Copilot,
+      Atlassian Rovo, Slack AI — plus the in-house builds at Uber, LinkedIn, and DoorDash.
+      This revised edition digs three layers deeper:
+      <strong>the full path a user message travels before it becomes a prompt</strong>,
+      <strong>the three-way update decision when new information arrives</strong>, and
+      <strong>the vertical-domain playbook for turning AI into a domain expert</strong>.
+      Each card's retrieval journey lights up in actual processing order.
+    </p>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ══ 01 landscape ══ -->
+<section id="map">
+  <div class="sec-head"><span class="sec-no">01</span><h2>Two Camps — Hire a Librarian, or Build the Library</h2></div>
+  <p class="sec-sub">
+    Line up the company cases and they split into two camps. Either way, the underlying structure
+    is the same five-stage pipeline from Part 1. What differs is who owns that pipeline.
+  </p>
+  <div class="duo">
+    <div class="duo-card">
+      <h4>The platform camp — connect and go</h4>
+      <ul>
+        <li><strong>Glean</strong> — a standalone search platform with 100+ connectors. The prototype of the commercialized "company brain."</li>
+        <li><strong>Microsoft 365 Copilot</strong> — auto-provisions a semantic index per tenant; the largest deployment of the bunch.</li>
+        <li><strong>Atlassian Rovo</strong> — builds a Teamwork Graph of 150 billion objects and relationships centered on Jira and Confluence.</li>
+        <li><strong>Slack AI</strong> — builds no new index; reuses Slack's existing search stack as the RAG retriever.</li>
+      </ul>
+      <p style="font-size:13.5px;color:var(--mut);margin-top:6px">The shared battleground: connector breadth and permission sync. They sell "who may see what" as much as they sell search quality.</p>
+    </div>
+    <div class="duo-card">
+      <h4>The in-house camp — dig narrow, go deep</h4>
+      <ul>
+        <li><strong>Cerebras Knowledge</strong> — the system dissected in Part 1 §06. An internal ecosystem on a single Postgres table.</li>
+        <li><strong>Uber Genie</strong> — an on-call copilot guarding Slack support channels that field 45,000 questions a month.</li>
+        <li><strong>LinkedIn Support KG-RAG</strong> — turned historical tickets into a knowledge graph, cutting resolution time 28.6%.</li>
+        <li><strong>DoorDash Dasher bot</strong> — a support chatbot that cut hallucinations 90% with guardrails and an LLM Judge.</li>
+      </ul>
+      <p style="font-size:13.5px;color:var(--mut);margin-top:6px">The shared battleground: pick one domain and push accuracy to human level. Generality is abandoned from day one.</p>
+    </div>
+  </div>
+  <div class="note">
+    Postscript: Notion is on this board too. It runs enterprise-search inference for 100 million users
+    on Cerebras hardware, streaming results within 300ms — a signal that the knowledge-base race has moved
+    past retrieval algorithms into an inference-latency fight.
+  </div>
+</section>
+
+<!-- ══ 02 interactive journey player ══ -->
+<section id="player-sec">
+  <div class="sec-head"><span class="sec-no">02</span><h2>Retrieval Journey Player — Click to Compare</h2></div>
+  <p class="sec-sub">
+    Click a name and the steps one question travels to become an answer appear in order.
+    The open-source projects from Part 1 are included, so commercial, in-house, and OSS
+    can be compared side by side.
+  </p>
+  <div class="player">
+    <div class="ptabs" id="ptabs" role="tablist" aria-label="Select a system"></div>
+    <div class="pmeta" id="pmeta"></div>
+    <div class="psteps" id="psteps" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ══ 03 query anatomy ══ -->
+<section id="query-sec">
+  <div class="sec-head"><span class="sec-no">03</span><h2>Anatomy of a Question — From User Message to Prompt</h2></div>
+  <p class="sec-sub">
+    The first edition of Part 2 mapped which system runs which journey; this chapter opens every cell
+    of that journey. How a single typed sentence gets processed, and where — in what form — it lands,
+    reconstructed from published pipeline docs and actual prompt source text.
+  </p>
+  <p>
+    One conclusion up front. In every system surveyed, <strong>the user's raw text never goes straight into the search engine.</strong>
+    Azure's intent prompt, LangChain's condense prompt, Uber's Query Optimizer, DoorDash's conversation summarization,
+    Cerebras's planner, LinkedIn's entity-and-intent extraction — between the chat box and the index there is always at least one LLM call.
+    At the far end, the opposite holds: <strong>the generation model almost always gets the original.</strong>
+    The rewrite is a tool for aiming retrieval; the original goes to answer generation with its nuance intact.
+    This division of labor — rewrites for retrieval, originals for generation — is the single most consistent pattern across these systems.
+  </p>
+
+  <!-- interactive: query transformation lab -->
+  <div class="qlab">
+    <div class="journey-title"><span class="live-dot"></span>Query transformation tracer — pick an example and follow each stage</div>
+    <div class="ptabs" id="qtabs" role="tablist" aria-label="Select an example query"></div>
+    <div class="pmeta" id="qmeta"></div>
+    <div id="qstages" aria-live="polite"></div>
+    <p style="font-size:12px;color:var(--mut);margin:10px 2px 0">
+      * Examples reconstructed from mechanisms described in each system's public docs (Azure intent generation,
+      M365 adjacent-term expansion, the E5 prefix contract, Azure AI Search ACL filter syntax, and so on).
+      The actual internal strings differ per company.
+    </p>
+  </div>
+
+  <h3>Stage 0 — The Gate: Classifiers Come Before Rewriting</h3>
+  <p>
+    Before the raw text ever reaches an LLM rewriter, it passes a battery of cheap classifiers running in parallel.
+    None of them rewrite — they all judge: is this an attack, is PII mixed in, is this even a question worth answering?
+  </p>
+  <div class="facts">
+    <div class="fact"><div class="fl">Prompt-attack classification</div><div class="fv">
+      M365 Copilot runs a <strong>jailbreak (UPIA) classifier and an XPIA (cross-prompt injection attack) classifier</strong>
+      before model execution to block high-risk prompts. The same capability is sold as parts:
+      Azure Prompt Shields (dual checks on user prompts and documents), AWS Bedrock's <code>PROMPT_ATTACK</code> filter,
+      Google Model Armor, Meta Prompt Guard 2 (a tiny 22M-parameter classifier).
+      Glean publishes numbers for its own gate (Glean Protect): 97.8% detection for direct injection, 90% for indirect.
+    </div></div>
+    <div class="fact"><div class="fl">Trust-boundary tagging — one detail</div><div class="fv">
+      Bedrock wraps user input in <code>&lt;amazon-bedrock-guardrails-guardContent_xyz&gt;</code> tags and recommends
+      <strong>generating the <code>xyz</code> suffix randomly per request</strong>. An attack sentence is indistinguishable
+      from system instructions, so you mark "where user input ends" with an unpredictable tag.
+      The docs state explicitly that without the tags, the attack filter does not run at all.
+    </div></div>
+    <div class="fact"><div class="fl">PII masking</div><div class="fv">
+      Personal data gets substituted before flowing to search or logs. Bedrock's sensitive-information filter masks
+      31 entity types as <code>{NAME}</code>, <code>{EMAIL}</code>, and so on (mask on input, block on output —
+      policies can differ per direction). The open-source default is Microsoft Presidio. But the warning in
+      Bedrock's own docs stings: CloudWatch invocation logs keep <strong>the pre-masking original, verbatim.</strong>
+    </div></div>
+    <div class="fact"><div class="fl">Query-type classification → polite refusal</div><div class="fv">
+      Vertex AI Search's answer API classifies queries as <code>ADVERSARIAL_QUERY</code>, <code>NON_ANSWER_SEEKING_QUERY</code> (chitchat),
+      <code>JAIL_BREAKING_QUERY</code>, and more; on a hit it declines generation and returns a fixed phrase
+      ("A summary could not be generated…") plus the plain search results. The point: the default behavior is
+      <strong>feature degradation</strong>, not blocking.
+    </div></div>
+  </div>
+  <div class="note">
+    The gate is probabilistic. <strong>EchoLeak</strong> (CVE-2025-32711), disclosed in 2025, bypassed
+    M365 Copilot's XPIA classifier with a single crafted email and reached zero-click data exfiltration.
+    Microsoft itself writes "always add extra validation layers" in its docs. And one more for Korean-language users:
+    Korean is not on Prompt Shields' list of training languages (Model Armor has it).
+    Stage 0 of a Korean-language company brain starts with validating the off-the-shelf parts yourself.
+  </div>
+
+  <h3>Stage 1 — Rewriting: Conversation to Standalone Query</h3>
+  <p>
+    The last message of a multi-turn conversation is unsearchable on its own ("so how did that go?").
+    So the first LLM call in every system is the conversion <strong>chat history + last message → standalone query</strong>.
+    This is the most-copied prompt in RAG history:
+  </p>
+  <pre class="tmpl"><span class="t-cmt"># LangChain CONDENSE_QUESTION_PROMPT — verbatim</span>
+<span class="t-sys">Given the following conversation and a follow up question, rephrase the
+follow up question to be a standalone question, in its original language.</span>
+
+<span class="t-his">Chat History:
+{chat_history}</span>
+<span class="t-usr">Follow Up Input: {question}</span>
+<span class="t-sys">Standalone question:</span></pre>
+  <div class="facts">
+    <div class="fact"><div class="fl">Azure — rewriting is a separately billed item</div><div class="fv">
+      Azure OpenAI "On Your Data" runs this stage as a separate model call named the <strong>intent prompt</strong>.
+      The output is not one query but a <strong>list of search intents</strong> (rewrite and decomposition in one shot).
+      Even the measured cost is public: intent prompt 811–1,385 tokens, output 18–27 tokens.
+      Each intent gets its own search.
+    </div></div>
+    <div class="fact"><div class="fl">DoorDash — summarization, not rewriting</div><div class="fv">
+      A Dasher's problem arrives scattered across several messages. So instead of "rewrite the last message,"
+      it compresses <strong>the whole conversation → one sentence of core issue</strong>, and that summary becomes the search key.
+      KB articles are likewise split into [issue|resolution] structure with <strong>only the issue part embedded</strong>,
+      so the match ends up issue-to-issue.
+    </div></div>
+    <div class="fact"><div class="fl">Uber — the corpus catalog goes into the rewrite prompt</div><div class="fv">
+      EAg-RAG's Query Optimizer polishes vague queries and splits complex ones — and
+      <strong>the document-list artifact (titles, summaries, FAQs) is fed in as prompt context.</strong>
+      It rewrites knowing "what we actually have." The Source Identifier that follows
+      narrows down which document sets should hold the answer.
+    </div></div>
+    <div class="fact"><div class="fl">The limits</div><div class="fv">
+      Vertex AI Search's automatic rewriting (<code>maxRephraseSteps</code>) caps at 5 steps.
+      Azure truncates question+history at 2,000 tokens combined. Cerebras has its planner pick tools
+      from "a compressed description of what is in the index" —
+      rewriting and routing fused into a single call.
+    </div></div>
+  </div>
+
+  <h3>Stage 2 — Expansion and Decomposition: One Query Becomes Many</h3>
+  <p>
+    One standalone query still is not enough. Embedding similarity misses when vocabulary diverges, and multi-hop questions do not resolve in a single search.
+  </p>
+  <div class="duo">
+    <div class="duo-card">
+      <h4>Expansion — same meaning, different words</h4>
+      <ul>
+        <li><strong>M365 semantic index</strong> — search for emails that "praised" the design and adjacent terms elated, excited, amazed join the search scope. Inflections (tech/technology/technologies) and synonyms get absorbed too.</li>
+        <li><strong>Glean</strong> — treats expansion as an enterprise-vocabulary problem: acronyms, project names, internal jargon. Its docs name the four rewrite artifacts it logs: spelling correction · synonym expansion · query expansion · intent routing.</li>
+        <li><strong>LangChain MultiQueryRetriever</strong> — paraphrase expansion via a "generate 3 different versions of this question" prompt. Routes around the limits of distance-based similarity search through query diversification.</li>
+        <li><strong>HyDE</strong> — generate a fake answer document from the question and embed that. Turns hard question→document matching into easy document→document similarity.</li>
+      </ul>
+    </div>
+    <div class="duo-card">
+      <h4>Decomposition — one question, several searches</h4>
+      <ul>
+        <li><strong>Bedrock Knowledge Bases</strong> — a single <code>QUERY_DECOMPOSITION</code> flag turns it on. The docs' example: "Who scored more in the 2022 World Cup, Argentina or France?" → two sub-queries, "How much did Argentina score?" + "How much did France score?"</li>
+        <li><strong>Azure</strong> — the intent list itself is the decomposition. Per-intent search → chunk collection → merge.</li>
+        <li><strong>Vertex</strong> — its docs carry an example splitting "What professions and hobbies do Andie Ram and Arnaud Clément share?" into four sub-queries.</li>
+        <li><strong>LinkedIn KG-RAG</strong> — not decomposition but <strong>extraction</strong>: an LLM pulls named entities (as a Map) and an intent set, used to match graph entry points. The query ultimately gets translated all the way into a Cypher query.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Stage 3 — The Three Bodies of a Query</h3>
+  <p>
+    The moment a rewritten, expanded query heads for the retrievers, it splits into <strong>three physical forms</strong>.
+    The same sentence becomes an embedding string, a lexical search expression, and a filter expression, fired in parallel — results fused later (RRF and friends).
+  </p>
+  <div class="facts">
+    <div class="fact"><div class="fl">① The embedding string — prefixes are a contract with the encoder</div><div class="fv">
+      The E5 family <strong>requires</strong> the <code>query:</code> prefix on questions and <code>passage:</code> on documents.
+      The maker's FAQ, in essence: that is how the model was trained; skip them and you will see degraded performance.
+      BGE attaches an instruction only on the query side ("Represent this sentence for searching relevant passages:"),
+      Cohere uses an API parameter instead of a prefix (<code>input_type=search_query/search_document</code>),
+      and OpenAI text-embedding-3 attaches nothing. <strong>Whether you need a prefix is a property of the encoder,
+      not of your RAG framework.</strong>
+    </div></div>
+    <div class="fact"><div class="fl">② The lexical expression — field boosts</div><div class="fv">
+      The Elasticsearch classic: <code>"fields": ["subject^3", "message"]</code> — a title hit scores 3× a body hit.
+      Glean layers freshness weighting, authority scores, and popularity signals on top, and pushes different fields per intent cohort
+      (ticket IDs hit exact-match fields, policy questions favor canonical sources, how-tos favor the latest procedure docs).
+      Cerebras's rationale is crisp: "when an engineer pastes an error message verbatim, an exact lexical match
+      is almost always the best evidence. No semantic similarity should beat it."
+    </div></div>
+    <div class="fact"><div class="fl">③ The filter expression — permissions, metadata, time</div><div class="fv">
+      ACLs are not post-retrieval filtering — they are <strong>filters attached to the query</strong>. Azure AI Search's canonical syntax:
+      <code>group_ids/any(g:search.in(g, 'g1,g2'))</code> — the asker's group list rides along on every query.
+      In M365 the grounding stage itself touches only "content the asker has permission to see," and Slack AI
+      operates "only on data the user can already see." Scoping — Cerebras's project scope,
+      M365's SharePoint library scope — <strong>is a species of filter too</strong>.
+    </div></div>
+    <div class="fact"><div class="fl">Parallel fan-out</div><div class="fv">
+      Cerebras: the executor runs the planner's chosen tools in parallel → normalizes into a shared evidence schema.
+      Anthropic's contextual-retrieval reference architecture likewise runs two retrievers per query — BM25 + embeddings —
+      and rank-fuses. The M365 orchestrator fills five candidate-skill slots, lexical match first, then semantic.
+      Azure fires a search per intent. <strong>No system on this board finishes with a single search call.</strong>
+    </div></div>
+  </div>
+
+  <h3>Stage 4 — Prompt Assembly: The Geography of the Final Prompt</h3>
+  <p>
+    Once retrieval is done, the prompt for the final LLM call gets assembled. This is the heart of the chapter —
+    <strong>what you put where creates measurable performance differences.</strong>
+    Click a block to see each zone's rules.
+  </p>
+
+  <!-- interactive: prompt anatomy -->
+  <div class="anatomy">
+    <div class="pstack">
+      <div class="pstack-title"><span class="live-dot"></span>Structure of the final prompt — click a block</div>
+      <button class="ablock sys on" data-a="sys"><span class="ab-pct">system message</span><span class="ab-t">① SYSTEM — persona + grounding rules</span><span class="ab-s">"Answer only from the provided context" · citation directives · refusal rules</span></button>
+      <button class="ablock ctx" data-a="ctx"><span class="ab-pct">largest share</span><span class="ab-t">② CONTEXT — the retrieved chunks</span><span class="ab-s">XML tags + citation IDs + source metadata, placed up top</span></button>
+      <button class="ablock his" data-a="his"><span class="ab-pct">capped</span><span class="ab-t">③ HISTORY — conversation history</span><span class="ab-s">Azure: question+history capped at 2,000 tokens combined</span></button>
+      <button class="ablock usr" data-a="usr"><span class="ab-pct">last</span><span class="ab-t">④ QUESTION — the user's original question</span><span class="ab-s">the original, not the rewrite, below the context</span></button>
+      <button class="ablock out" data-a="out"><span class="ab-pct">~20% reserved</span><span class="ab-t">⑤ RESPONSE — reserved response tokens</span><span class="ab-s">Azure: 20% of available tokens held back for the answer</span></button>
+    </div>
+    <div class="adetail" id="adetail"></div>
+  </div>
+
+  <pre class="tmpl"><span class="t-cmt"># The canonical assembled prompt — Anthropic document structure + LlamaIndex QA template</span>
+<span class="t-sys">[SYSTEM]
+You are an expert Q&amp;A system that is trusted around the world.
+Always answer the query using the provided context information,
+and not prior knowledge.                    <span class="t-cmt">← LlamaIndex system prompt, verbatim</span>
+Please generate citations to retrieved documents
+for every claim in your answer.             <span class="t-cmt">← Azure's recommended citation directive, verbatim</span></span>
+
+<span class="t-ctx">&lt;documents&gt;                                  <span class="t-cmt">← long material goes up top</span>
+  &lt;document index="1"&gt;
+    &lt;source&gt;wiki/deploy-runbook.md#rollback&lt;/source&gt;
+    &lt;document_content&gt;…retrieved chunk body…&lt;/document_content&gt;
+  &lt;/document&gt;
+  &lt;document index="2"&gt;…&lt;/document&gt;           <span class="t-cmt">← index doubles as citation ID</span>
+&lt;/documents&gt;</span>
+
+<span class="t-his">[HISTORY] …conversation history (cap applied)…</span>
+
+<span class="t-usr">[USER] that deploy rollback procedure we discussed — what's current now?
+                                             <span class="t-cmt">← original question, at the very end</span></span></pre>
+
+  <div class="facts">
+    <div class="fact"><div class="fl">Why the question goes last — the 2023 evidence</div><div class="fv">
+      Liu et al., <em>Lost in the Middle</em> (2023): performance dips in a U-shape when relevant information
+      sits mid-context. GPT-3.5-Turbo, 20 documents — 75.8% with the answer document at position 1,
+      53.8% at the middle (position 10), 63.2% at the end (position 20). Middle placement was worse than
+      giving no documents at all (56.1%). Anthropic's prescription ("long material up top, query at the end —
+      up to 30% improvement") survives verbatim in the Claude 5-generation docs as of 2026; Google gives
+      the same advice, and OpenAI recommends the "instructions on both ends" variant.
+    </div></div>
+    <div class="fact"><div class="fl">The 2026 update — the problem is not 'middle' but 'length'</div><div class="fv">
+      Current models have mostly beaten simple middle-position bias (LongPiBench 2025: "most current models are
+      robust against the lost-in-the-middle issue"). What stays alive is <strong>length and interference</strong>:
+      NoLiMa (ICML 2025) measured that once lexical overlap is removed, models advertising 128K+ shrink to an
+      effective context of 1–8K; even the Gemini 3 Pro model card admits 26.3% on 8-needle at 1M tokens.
+      Chroma's Context Rot study (18 models): even trivial tasks degrade as input grows.
+      Conclusion — the pipeline that reranks down to top-10 and compresses is now justified not as
+      "middle avoidance" but as <strong>context hygiene</strong>.
+    </div></div>
+    <div class="fact"><div class="fl">Token budget — the only published formula (Azure)</div><div class="fv">
+      Question+history ≤ 2,000 tokens · 20% reserved for the response · system message capped per model
+      (400–4,000 tokens; it is <strong>appended</strong> to an internal base prompt, so overflow gets truncated) ·
+      everything left goes to chunks (default 5 × 1,024 tokens). Measured prompt sizes: 3,997–4,854 tokens.
+      Meanwhile Anthropic's contextual-retrieval experiments report top-<strong>20</strong> chunks beat 5 or 10 —
+      the budget-versus-quality trade-off has no consensus yet.
+    </div></div>
+    <div class="fact"><div class="fl">Citations — from etiquette to structure</div><div class="fv">
+      Three generations coexist. ① Prompt directive: "cite every claim" (Azure; uncited documents come back
+      flagged <code>UNCITED_REFERENCE</code>). ② API structure: Anthropic Citations API —
+      pass documents in chunks and <strong>validity-guaranteed citation pointers</strong> attach to the response,
+      with the quoted text (cited_text) excluded from output-token billing. ③ Post-hoc verification: DoorDash's
+      two-tier guardrail — tier 1 is response-to-evidence semantic similarity (a cheap check); on failure,
+      tier 2 is an LLM evaluation ruling on groundedness and compliance.
+    </div></div>
+  </div>
+
+  <details class="deep">
+    <summary>Deeper: the practice of chunk formatting and context ordering <span class="m">— XML tags · contextual headers · LongContextReorder</span></summary>
+    <div class="deep-body">
+      <p style="margin-top:10px">
+        <strong>Chunk format.</strong> Anthropic's official recommendation is XML structure — per document,
+        <code>&lt;source&gt;</code> and <code>&lt;document_content&gt;</code> inside <code>&lt;document index="n"&gt;</code>.
+        The index attribute becomes the citation ID directly. The rationale: when instructions, context, and input mix,
+        XML tags make the boundaries unambiguous. Cerebras cites this doc as a reference for its thread-normalization format.
+      </p>
+      <p>
+        <strong>Contextual headers (contextual retrieval).</strong> Before embedding, an LLM generates one or two sentences per chunk
+        answering "where does this chunk sit in the whole document." By Anthropic's measurements, retrieval failure rate
+        drops 5.7%→3.7% (−35%), 2.9% (−49%) with BM25 combined, 1.9% (−67%) with reranking on top.
+      </p>
+      <p style="margin-bottom:6px">
+        <strong>Ordering.</strong> Descending relevance is the default, but LangChain actually ships a transformer called <code>LongContextReorder</code> —
+        from the source docstring: "the less relevant documents will be at the middle of the list and more relevant elements at
+        beginning / end." The algorithm is four lines: reverse the relevance-sorted list, then alternate odd-indexed items to the tail
+        and even-indexed to the head (1st at one end, 2nd at the opposite end, the stragglers in the middle). On 2025 benchmarks,
+        with absolute positional bias reduced in current models, the expected gain has shrunk — a "2023-era mitigation, still shipping" part.
+      </p>
+    </div>
+  </details>
+
+  <div class="uniq"><div class="fl">This chapter in one line</div>
+    A query splits into a <strong>retrieval copy</strong> (rewrites, expansions, prefixes, filters) and a
+    <strong>generation original</strong>. Cerebras states it hands the reranker and synthesis LLM the "original question,"
+    and Azure ships the "user question and conversation history" verbatim next to the chunks.
+    Retrieval wants a machine-readable query; generation wants the query exactly as the human wrote it —
+    one sentence living two lives is the default design of modern RAG.
+  </div>
+</section>
+
+<!-- ══ 04 platform camp ══ -->
+<section id="platforms">
+  <div class="sec-head"><span class="sec-no">04</span><h2>The Platform Camp in Detail</h2></div>
+  <p class="sec-sub">Each card's "retrieval journey" lights up in actual processing order. If the animation bothers you, your OS's reduce-motion setting stops it.</p>
+
+  <!-- Glean -->
+  <div class="pcard">
+    <div class="pcard-top"><h3>Glean</h3><span class="tag">Prototype of the commercial company brain</span><span class="tag">100+ connectors</span></div>
+    <div class="sub">Founded 2019 · core team of early Google Search engineers · valued around $7B</div>
+    <p>
+      The reference point for this board. The founders came from Google Search and the approach shows it:
+      they reinvented PageRank for the enterprise to score document "authority," refused to bet on a single
+      embedding — running lexical, vector, and graph signals all together — and then spent a long time grinding
+      on ranking. By their own account, the secret is not algorithmic complexity but the tedious iteration
+      of polishing the ranker.
+    </p>
+    <div class="facts">
+      <div class="fact"><div class="fl">How it gets built</div><div class="fv">
+        Connectors scrape three things from every app: content, metadata, and the <strong>permission map</strong>.
+        Identities from Okta/Azure AD get unified with per-app accounts ("Anthony on Slack" and "Anthony on Salesforce" are the same person),
+        and on top sits an Enterprise Knowledge Graph linking content, people, and activity.
+        Even the embedding model is not used off the shelf — it gets re-refined on that company's language (acronyms, product names, team names).
+      </div></div>
+      <div class="fact"><div class="fl">What it connects</div><div class="fv">
+        Slack, Google Drive, Confluence, Jira, GitHub, SharePoint, Salesforce, Zendesk and 100+ more ·
+        custom sources via a developer API. File parsing covers PDF and Office documents.
+      </div></div>
+      <div class="fact"><div class="fl">Knowledge updates</div><div class="fv">
+        Tracked on a three-rung ladder: webhooks processed within 5 minutes, incremental crawls per connector
+        from 10 minutes to 6 hours (Salesforce 10 min · Slack/Drive 3 h · Jira 6 h), full crawls typically on a 28-day cycle.
+        Permission changes sync along the same paths. The ranking model is self-tuning, so it gets better for that
+        company as usage accumulates — self-reported: roughly 20% search-quality improvement over 6 months of continuous learning.
+      </div></div>
+      <div class="fact"><div class="fl">Where its permission handling is a class apart</div><div class="fv">
+        Not an index-time snapshot, not a post-generation filter — <strong>ACLs are enforced at query time, every time</strong>.
+        That one line is why it can be deployed in regulated industries.
+      </div></div>
+    </div>
+    <div class="journey">
+      <div class="journey-title"><span class="live-dot"></span>Retrieval journey — one question, five steps</div>
+      <div class="jsteps">
+        <div class="jstep" data-n="1" style="--total:9s;--d:0s"><b>Query + context join</b><span class="m">role, department, recent activity attach to the query</span></div>
+        <div class="jstep" data-n="2" style="--total:9s;--d:1.5s"><b>Hybrid candidate collection</b><span class="m">lexical + enterprise-tuned embeddings + graph signals queried at once</span></div>
+        <div class="jstep" data-n="3" style="--total:9s;--d:3s"><b>Query-time permission filter</b><span class="m">documents this user cannot see right now drop out here</span></div>
+        <div class="jstep" data-n="4" style="--total:9s;--d:4.5s"><b>Personalization + authority ranking</b><span class="m">re-sorted by team relationships, interaction history, authority score</span></div>
+        <div class="jstep" data-n="5" style="--total:9s;--d:6s"><b>Answer generation</b><span class="m">citation-backed answer from top evidence</span></div>
+      </div>
+    </div>
+    <div class="uniq"><div class="fl">The takeaway</div>
+      Personalization of the "an engineer is probably not looking for a Salesforce doc" kind is half of search quality.
+      The axis open-source RAG stacks miss — <strong>who is asking</strong> — is what Glean turned into
+      a first-class ranking signal. That is the moat.
+    </div>
+  </div>
+
+  <!-- M365 Copilot -->
+  <div class="pcard g">
+    <div class="pcard-top"><h3>Microsoft 365 Copilot</h3><span class="tag">Largest deployment</span><span class="tag">Auto-built index</span></div>
+    <div class="sub">Semantic Index + Microsoft Graph · auto-created per tenant, no admin setup</div>
+    <div class="facts">
+      <div class="fact"><div class="fl">How it gets built</div><div class="fv">
+        The customer does not build it. Flip the license on and Microsoft builds two index layers on its own:
+        a <strong>tenant index</strong> from SharePoint documents and connector data, and a
+        <strong>user index</strong> from personal mail and chat. "Zero build cost" is this case's identity —
+        and, conversely, why organizations with messy data get their garbage served right back in search.
+      </div></div>
+      <div class="fact"><div class="fl">What it connects</div><div class="fv">
+        Outlook, Teams, SharePoint, OneDrive, and Calendar are native. External systems — Jira, ServiceNow,
+        Salesforce — attach via Graph connectors; sync cadence follows connector config, but incoming data
+        rides the same vectorization pipeline.
+      </div></div>
+      <div class="fact"><div class="fl">Knowledge updates</div><div class="fv">
+        Native data is maintained automatically by Microsoft. External data follows the connector cadence.
+        What operators can actually touch boils down to "what to exclude from the index" (exposure management).
+      </div></div>
+      <div class="fact"><div class="fl">What retrieval looks like</div><div class="fv">
+        The semantic expansion is unabashedly practical: search for emails that "praised" the design and
+        it widens the net to praised's neighbors (elated, excited, amazed).
+        Generated output passes one more safety and compliance post-process.
+      </div></div>
+    </div>
+    <div class="journey">
+      <div class="journey-title"><span class="live-dot"></span>Retrieval journey</div>
+      <div class="jsteps">
+        <div class="jstep" data-n="1" style="--total:9s;--d:0s"><b>Prompt → grounding</b><span class="m">evidence collection before any answer</span></div>
+        <div class="jstep" data-n="2" style="--total:9s;--d:1.5s"><b>Graph + Semantic Index lookup</b><span class="m">lexical + semantic, adjacent-term expansion</span></div>
+        <div class="jstep" data-n="3" style="--total:9s;--d:3s"><b>RBAC scoping</b><span class="m">documents outside the asker's permissions never enter the search</span></div>
+        <div class="jstep" data-n="4" style="--total:9s;--d:4.5s"><b>Augmented prompt → LLM</b><span class="m">multi-model routing (GPT-5.x default + optional Claude)</span></div>
+        <div class="jstep" data-n="5" style="--total:9s;--d:6s"><b>Post-process → app display</b><span class="m">safety and compliance filters</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rovo -->
+  <div class="pcard p">
+    <div class="pcard-top"><h3>Atlassian Rovo · Teamwork Graph</h3><span class="tag">Graph-first</span><span class="tag">150B objects &amp; relations</span></div>
+    <div class="sub">Jira · Confluence · JSM · Loom · Bitbucket native + 75+ third-party · custom connectors via Forge</div>
+    <div class="facts">
+      <div class="fact"><div class="fl">How it gets built</div><div class="fv">
+        The core is a <strong>unified object model</strong>. A Jira issue, an Asana task, a GitHub PR — all normalized
+        into the same "work item" type in one graph, with the relationships between objects wired in (this PR closes
+        this issue; this issue came from the plan in this doc). Not a pile of documents but a map of how work flows.
+      </div></div>
+      <div class="fact"><div class="fl">Retrieval strategy</div><div class="fv">
+        <strong>Relationship traversal</strong> comes before vector similarity. "What shipped to Titan this week?"
+        gets answered by stitching merged PRs + in-flight Jira issues + launch-prep docs through their relations.
+        The MCP-exposed pair getTeamworkGraphContext (relationship map) / getTeamworkGraphObject (read the body)
+        lets agents chain recursively, digging as many hops as needed.
+      </div></div>
+      <div class="fact"><div class="fl">Knowledge updates</div><div class="fv">
+        Connectors sync continuously and an admin console watches sync state. Third-party permissions sync too,
+        and per-user data only appears once the user connects their own account.
+        Connectors themselves can be built with Forge, so internal systems can join the graph.
+      </div></div>
+      <div class="fact"><div class="fl">One-line verdict</div><div class="fv">
+        Part 1's GraphRAG question ("how do you answer queries where the relationship is the answer") solved
+        not with LLM extraction but with <strong>the structured relations work tools already have</strong>.
+        Extraction cost is zero; the trade is that relationships outside the Atlassian ecosystem stay shallow.
+      </div></div>
+    </div>
+    <div class="journey">
+      <div class="journey-title"><span class="live-dot"></span>Retrieval journey</div>
+      <div class="jsteps">
+        <div class="jstep" data-n="1" style="--total:9s;--d:0s"><b>Graph entry</b><span class="m">match relevant objects (tickets, pages, PRs)</span></div>
+        <div class="jstep" data-n="2" style="--total:9s;--d:1.5s"><b>Relation traversal</b><span class="m">ticket↔doc↔PR↔person, recursive multi-hop</span></div>
+        <div class="jstep" data-n="3" style="--total:9s;--d:3s"><b>Read object bodies</b><span class="m">status, comments, body, author</span></div>
+        <div class="jstep" data-n="4" style="--total:9s;--d:4.5s"><b>Source-app permission filter</b><span class="m">each app's permissions apply as-is</span></div>
+        <div class="jstep" data-n="5" style="--total:9s;--d:6s"><b>Synthesis</b><span class="m">shared across search, chat, agents</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slack AI -->
+  <div class="pcard a">
+    <div class="pcard-top"><h3>Slack AI</h3><span class="tag">Index reuse</span><span class="tag">Stateless</span></div>
+    <div class="sub">No fine-tuning · off-the-shelf LLMs run in Slack's own AWS escrow VPC</div>
+    <div class="facts">
+      <div class="fact"><div class="fl">How it gets built — it doesn't</div><div class="fv">
+        No new knowledge base was created. Slack reuses its <strong>existing search ranking stack</strong>
+        (lexical + embedding-based ranking ML), tuned over years, as the RAG retriever, unchanged.
+        Message data stays where it always lived; the model just takes those search results and writes the answer.
+      </div></div>
+      <div class="fact"><div class="fl">Why fine-tuning got dropped</div><div class="fv">
+        They judged that a generative model could not guarantee the principle that customer data never leaks
+        across workspaces, so instead of training a model they chose <strong>stateless RAG that stuffs the full
+        context in per request</strong>. The model runs in a Slack-controlled VPC and remembers nothing.
+      </div></div>
+      <div class="fact"><div class="fl">Knowledge updates</div><div class="fv">
+        There are none — the search target is the live message index itself, so a message is in scope the moment
+        it lands. The 2025 enterprise-search expansion pushed the same philosophy: external apps (Drive, GitHub,
+        Jira, ~10 in all) get federated search at query time via the user's OAuth, <strong>with nothing stored</strong>.
+        In their words: "nothing stored on our side means nothing can go stale."
+      </div></div>
+      <div class="fact"><div class="fl">Permissions</div><div class="fv">
+        Only channels and DMs the asker could already see get searched. Neither summaries nor answers exceed the user's own visibility.
+      </div></div>
+    </div>
+    <div class="journey">
+      <div class="journey-title"><span class="live-dot"></span>Retrieval journey</div>
+      <div class="jsteps">
+        <div class="jstep" data-n="1" style="--total:7.5s;--d:0s"><b>Candidates via the existing search stack</b><span class="m">years-tuned lexical + embedding ranking</span></div>
+        <div class="jstep" data-n="2" style="--total:7.5s;--d:1.5s"><b>Restricted to own visibility</b><span class="m">workspace isolation principle</span></div>
+        <div class="jstep" data-n="3" style="--total:7.5s;--d:3s"><b>Stateless hand-off to the model</b><span class="m">off-the-shelf LLM in an escrow VPC</span></div>
+        <div class="jstep" data-n="4" style="--total:7.5s;--d:4.5s"><b>Cited answer</b><span class="m">links to source threads included</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 05 in-house camp ══ -->
+<section id="inhouse">
+  <div class="sec-head"><span class="sec-no">05</span><h2>The In-House Camp in Detail</h2></div>
+  <p class="sec-sub">
+    All three start the same way: the same questions keep landing in one channel. And none of them built
+    general-purpose search. They picked one domain and built retrieval shaped to that domain's data structure.
+  </p>
+
+  <!-- Uber -->
+  <div class="pcard">
+    <div class="pcard-top"><h3>Uber Genie</h3><span class="tag">On-call copilot</span><span class="tag">Agentic-RAG migration</span></div>
+    <div class="sub">45,000 questions/month across 154 support channels · 70,000+ answers since 2023-09 · v1: vanilla RAG → v2: EAg-RAG (acceptance relative +27%, wrong answers relative −60%)</div>
+    <p>
+      It started in the Slack support channels of platform teams like Michelangelo. With questions flooding in
+      and on-call engineers wearing down, they picked RAG over fine-tuning — no reason to shoulder the
+      data-curation and retraining costs.
+    </p>
+    <div class="facts">
+      <div class="fact"><div class="fl">How it gets built</div><div class="fv">
+        A Spark batch pipeline scrapes the internal wiki (Engwiki), internal Stack Overflow, and engineering
+        requirement docs, converts them with OpenAI embeddings, and loads a vector DB. Textbook RAG
+        construction — and v1 shipped with exactly that and nothing more.
+      </div></div>
+      <div class="fact"><div class="fl">Where v1 broke</div><div class="fv">
+        When they attached ~40 security and privacy policy documents and tested against a golden set,
+        the SMEs rejected it. Answers were incomplete, wrong, or missing the needed details.
+        Vanilla chunk-and-embed collapsed on table-heavy policy documents.
+      </div></div>
+      <div class="fact"><div class="fl">The v2 (EAg-RAG) prescription</div><div class="fv">
+        Agents on both sides of retrieval. A pre-processing agent polishes the query and identifies which
+        document sets should hold the answer; a post-processing agent refines the collected context.
+        Documents got fixed too — a custom Google Docs loader plus LLM-based table extraction and metadata
+        enrichment raised ingest quality itself. In Part 1 terms, <strong>they rediscovered Cerebras's distillation, late</strong>.
+      </div></div>
+      <div class="fact"><div class="fl">Knowledge updates / platforms</div><div class="fv">
+        Re-collection and re-embedding by rerunning the batch pipeline. Interface: a Slack bot.
+        Sources: Engwiki · internal SO · ERDs · policy docs.
+      </div></div>
+    </div>
+    <div class="journey">
+      <div class="journey-title"><span class="live-dot"></span>Retrieval journey (v2)</div>
+      <div class="jsteps">
+        <div class="jstep" data-n="1" style="--total:9s;--d:0s"><b>Question arrives in Slack</b><span class="m">a thread in a support channel</span></div>
+        <div class="jstep" data-n="2" style="--total:9s;--d:1.5s"><b>Pre-processing agent</b><span class="m">query optimization + identifying likely sources</span></div>
+        <div class="jstep" data-n="3" style="--total:9s;--d:3s"><b>Vector search</b><span class="m">wiki, internal SO, policy embeddings</span></div>
+        <div class="jstep" data-n="4" style="--total:9s;--d:4.5s"><b>Post-processing agent</b><span class="m">context refinement, noise removal</span></div>
+        <div class="jstep" data-n="5" style="--total:9s;--d:6s"><b>Answer or on-call escalation</b><span class="m">citations included</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LinkedIn -->
+  <div class="pcard p">
+    <div class="pcard-top"><h3>LinkedIn Support KG-RAG</h3><span class="tag">Tickets → knowledge graph</span><span class="tag">SIGIR 2024</span></div>
+    <div class="sub">6 months in production · retrieval MRR +77.6% · median per-issue resolution time -28.6%</div>
+    <div class="facts">
+      <div class="fact"><div class="fl">The problem statement came first</div><div class="fv">
+        Chunk historical support tickets as plain text and you shatter the ticket's structure. A ticket is
+        natively a tree of title, symptoms, cause, and resolution, and tickets link to each other through
+        relations like "same root cause" or "follow-up issue." That structure is the retrieval signal —
+        and chunking grinds it away.
+      </div></div>
+      <div class="fact"><div class="fl">How it gets built</div><div class="fv">
+        Convert the entire ticket history into a knowledge graph. Inside each ticket, keep the tree as nodes
+        (intra-issue); wire tickets to each other as links (inter-issue); embed every node
+        as a semantic-search entry point.
+      </div></div>
+      <div class="fact"><div class="fl">Knowledge updates</div><div class="fv">
+        New tickets attach onto the graph. The paper itself leaves automatic graph-template extraction and
+        query-driven dynamic updates as future work — refreshingly honest, as in-house system papers go.
+      </div></div>
+      <div class="fact"><div class="fl">Where it meets Part 1</div><div class="fv">
+        Unlike GraphRAG, no LLM extracted these relations — the graph came from <strong>preserving structure
+        the data already had</strong>. Same vein as Rovo, at a fraction of the cost.
+        The lesson: if your domain data has structure, preservation beats extraction.
+      </div></div>
+    </div>
+    <div class="journey">
+      <div class="journey-title"><span class="live-dot"></span>Retrieval journey</div>
+      <div class="jsteps">
+        <div class="jstep" data-n="1" style="--total:7.5s;--d:0s"><b>Query parsing</b><span class="m">named entities (NER) + intent extraction</span></div>
+        <div class="jstep" data-n="2" style="--total:7.5s;--d:1.5s"><b>Entry-node matching</b><span class="m">node embeddings pick the graph entry points</span></div>
+        <div class="jstep" data-n="3" style="--total:7.5s;--d:3s"><b>Subgraph collection</b><span class="m">traverse intra-issue trees + inter-issue links</span></div>
+        <div class="jstep" data-n="4" style="--total:7.5s;--d:4.5s"><b>Subgraph-grounded generation</b><span class="m">assemble the answer with ticket structure intact</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DoorDash -->
+  <div class="pcard g">
+    <div class="pcard-top"><h3>DoorDash Dasher Support Bot</h3><span class="tag">Guardrails-first</span><span class="tag">Thousands of Dashers served daily</span></div>
+    <div class="sub">Replaced a flow-based bot · hallucinations -90% · severe compliance issues -99%</div>
+    <div class="facts">
+      <div class="fact"><div class="fl">How it gets built</div><div class="fv">
+        Two source types: existing support knowledge-base (KB) articles, and transcripts of previously
+        resolved cases. The focus was making already-validated assets searchable rather than writing new documents.
+        Since Dashers use the bot mid-delivery, multilingual support and response latency were design constraints too.
+      </div></div>
+      <div class="fact"><div class="fl">The heart of retrieval — summarize first</div><div class="fv">
+        A Dasher's problem arrives scattered across messages. So before any search, <strong>the whole conversation
+        is compressed into a one-sentence core issue</strong>; that summary finds similar past cases, and each case
+        drags along its mapped KB articles. The search key is not the question — it is the "summarized problem."
+      </div></div>
+      <div class="fact"><div class="fl">The quality triad</div><div class="fv">
+        After generation, a <strong>Guardrail</strong> checks every response for groundedness and compliance
+        in real time, handing failures to a human agent. A separate <strong>LLM Judge</strong> scores continuously
+        on five metrics — retrieval accuracy, response accuracy, grammar, coherence, relevance — and those
+        results feed back into the improvement pipeline.
+      </div></div>
+      <div class="fact"><div class="fl">Knowledge updates</div><div class="fv">
+        KB articles are the single source of truth, so fix the article and the bot follows. Newly resolved
+        cases accumulating in the similar-case pool is the second update axis.
+      </div></div>
+    </div>
+    <div class="journey">
+      <div class="journey-title"><span class="live-dot"></span>Retrieval journey</div>
+      <div class="jsteps">
+        <div class="jstep" data-n="1" style="--total:9s;--d:0s"><b>Conversation summary</b><span class="m">multi-turn conversation → one-sentence core issue</span></div>
+        <div class="jstep" data-n="2" style="--total:9s;--d:1.5s"><b>Similar-case retrieval</b><span class="m">past resolved cases → their mapped KB articles</span></div>
+        <div class="jstep" data-n="3" style="--total:9s;--d:3s"><b>Prompt assembly → generation</b><span class="m">conversation + summary + article template</span></div>
+        <div class="jstep" data-n="4" style="--total:9s;--d:4.5s"><b>Guardrail check</b><span class="m">real-time groundedness and compliance verification</span></div>
+        <div class="jstep" data-n="5" style="--total:9s;--d:6s"><b>Respond or hand to an agent</b><span class="m">LLM Judge monitors on five metrics, continuously</span></div>
+      </div>
+    </div>
+    <div class="uniq"><div class="fl">The takeaway</div>
+      They spent the money on verification, not retrieval. A knowledge base earns trust not from the retriever
+      but from <strong>the machinery that stops wrong answers from shipping</strong> — a very support-domain conclusion.
+    </div>
+  </div>
+</section>
+
+<!-- ══ 06 the three update forks ══ -->
+<section id="update-sec">
+  <div class="sec-head"><span class="sec-no">06</span><h2>The Three Forks of Updating — When New Information Arrives</h2></div>
+  <p class="sec-sub">
+    If the retrieval journey is the read path, this chapter is the write path. When new information arrives,
+    the system compares it against existing knowledge and routes it down one of three forks:
+    it overlaps, it does not, or it is similar-but-different.
+    Each fork has real mechanisms behind it, with names and thresholds on the public record.
+  </p>
+  <p>
+    Before the fork there is a <strong>gate zero</strong> — identity checks that finish cheaply, before any LLM:
+    Cerebras drops duplicate deliveries via Slack's <strong>unique event ID</strong>;
+    the LlamaIndex ingestion pipeline skips "same document, unchanged" via a <strong>doc_id + content-hash</strong> map;
+    Google's crawler treats a 64-bit <strong>SimHash within Hamming distance ≤ 3</strong> as a near-duplicate (a parameter validated at multi-billion-page scale);
+    and SemDeDup, the standard for training-data dedup, calls <strong>cosine similarity ≥ 0.99</strong> (ε=0.01, the NVIDIA NeMo default) a semantic duplicate.
+    Only candidates that pass this gate — i.e., are not obvious duplicates — enter the decision tree below.
+  </p>
+
+  <!-- interactive: decision tree -->
+  <div class="dtree">
+    <div class="dt-root">New information arrives<span class="m">Slack thread · document edit · resolved case · extracted fact</span></div>
+    <div class="dt-stem"></div>
+    <div class="dt-gate">Compare against existing knowledge — <b>similar-item search</b> (Mem0: top-10 similar memories per candidate fact)</div>
+    <div class="dt-fork"><span class="fk f1"></span><span class="fk f2"></span><span class="fk f3"></span></div>
+    <div class="dt-branches">
+      <button class="branch b-dup" data-b="dup">
+        <div class="b-k">Fork A — It overlaps</div>
+        <span class="b-t">Already known → do nothing</span>
+        <div class="b-s">"Do nothing" is an explicit operation too. Mem0's NOOP, Cerebras's embedding admission gate.</div>
+        <div class="bx">
+          <ul>
+            <li><strong>Mem0 NOOP/NONE</strong> — the decision prompt's rule: if a retrieved fact is information already present in memory, make no change. Paraphrases that differ only in wording ("likes cheese pizza" vs "loves cheese pizza") are NONE, not UPDATE — the prompt nails this down explicitly.</li>
+            <li><strong>Graphiti edge dedup</strong> — the similar-edge search for a new edge is <strong>restricted to the same entity pair</strong>. Duplicates get merged; no new edge is created.</li>
+            <li><strong>Cerebras admission gate</strong> — questions whether the content is worth storing at all: rare tokens (IDF ≥ 4.0), 200+ characters combined, emoji reactions present — only bursts whose weighted sum clears the threshold get embedded. Chitchat never even enters the index.</li>
+          </ul>
+          <div class="b-hint">No write = no index pollution + zero cost</div>
+        </div>
+      </button>
+      <button class="branch b-new" data-b="new">
+        <div class="b-k">Fork B — It doesn't overlap</div>
+        <span class="b-t">New knowledge → append</span>
+        <div class="b-s">The easiest fork. The real question is whether an append triggers global recomputation.</div>
+        <div class="bx">
+          <ul>
+            <li><strong>Mem0 ADD</strong> — if none of the top-10 similar memories is semantically equivalent, add under a new ID.</li>
+            <li><strong>LightRAG incremental insertion</strong> — run the same graph indexing on the new document and merge nodes and edges by <strong>set union</strong>. With no community hierarchy, there is no global recomputation at all — in the paper's legal-dataset example, GraphRAG spends ~13.99M tokens rebuilding communities while LightRAG pays only the extraction cost of the new text.</li>
+            <li><strong>The GraphRAG update command</strong> — computes the delta, folds new entities <strong>into existing communities</strong> where possible, and re-summarizes only communities whose membership changed. The official remedy for "new content shakes the community structure and forces recomputing most of the index."</li>
+            <li><strong>The Karpathy wiki rule</strong> — "a new page if it is a standalone entity/concept other pages would link to" — the cleanest natural-language rule for splitting (B) from (C).</li>
+          </ul>
+          <div class="b-hint">Letta archival_memory_insert and LangMem create live on this fork too</div>
+        </div>
+      </button>
+      <button class="branch b-sim" data-b="sim">
+        <div class="b-k">Fork C — Similar but different</div>
+        <span class="b-t">Update, contradiction, refinement → three schools</span>
+        <div class="b-s">The hardest fork. Three engineering answers to what survives — the old fact, the new one, or both.</div>
+        <div class="bx">
+          <ul>
+            <li><strong>① Destructive overwrite</strong> — upsert by ID and the previous version is gone (Pinecone: "if the ID exists, the entire record is overwritten"). LlamaIndex reprocesses and updates when the hash for the same doc_id changes. Cerebras <strong>rewrites the whole thread as one row</strong> whenever a reply lands — the update unit is the thread, not the message. The Karpathy wiki: do not append — "reconcile and rewrite coherently" — with git commits carrying the version history instead.</li>
+            <li><strong>② LLM-adjudicated merge</strong> — Mem0 UPDATE's rule: when information about the same subject partially overlaps, <strong>keep whichever side carries more information.</strong> Contradiction means DELETE. The judgment itself is implemented as a function call (tool call) — the LLM's tool choice, not a classifier.</li>
+            <li><strong>③ Temporal invalidation — nothing gets deleted</strong> — Zep/Graphiti: set the <code>invalid_at</code> of any existing edge contradicted by a new edge to that new edge's <code>valid_at</code>. "Maria is a junior manager" is not deleted; it becomes "a fact that was true until the promotion." Every fact carries four timestamps (created/expired × valid-from/valid-to) — a bi-temporal model. Glean's Deprecated badge is the human-scale version of the same philosophy — instead of deleting a stale doc, slap a warning label on it and keep it in search.</li>
+          </ul>
+          <div class="b-hint">Picking a school: need history (③), cheap storage and coarse units (①), fact-level precision (②)</div>
+        </div>
+      </button>
+    </div>
+    <p style="font-size:12px;color:var(--mut);text-align:center;margin-top:10px">Click a fork card to unfold the per-system mechanisms</p>
+  </div>
+
+  <h3>The Adjudicator in the Flesh — Mem0's Two Phases</h3>
+  <p>
+    The most concrete public version of "compare, then route three ways" comes from the memory system Mem0 (2025 paper + open source).
+    In the <strong>extraction phase</strong> an LLM pulls candidate facts from the conversation; in the <strong>update phase</strong>,
+    each candidate gets its top-10 similar memories via vector search and is put in front of an LLM through a function-calling interface —
+    four options: ADD / UPDATE / DELETE / NOOP. This chapter's three forks, reified as four tools.
+    The headline numbers: p95 latency down 91% versus full-context (17.1s → 1.44s), token costs cut 90%+
+    — but the competitive comparisons come from Mem0's own paper, so trust them exactly that far.
+  </p>
+
+  <h3>The Problem at Scale — The Connector Sync Ladder</h3>
+  <p>
+    In document-level systems, the three forks are implemented as connector sync. The pattern is the same three-rung ladder everywhere:
+    <strong>webhooks (minutes) → incremental crawls (minutes to hours) → full crawls (weekly-ish, the final consistency guarantee)</strong>.
+    The figures below are the defaults each vendor publishes in its docs, not per-deployment guarantees.
+  </p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>System</th><th>Real-time tier</th><th>Incremental tier</th><th>Full re-check</th><th>The fate of deletions &amp; permission revocations</th></tr></thead>
+      <tbody>
+        <tr><td>Glean</td><td>Webhooks processed within 5 min</td><td>Per connector: Salesforce 10 min · Confluence/SharePoint 1 h · Slack/Drive 3 h · Jira 6 h</td><td>Typically a 28-day cycle (webhook-less sources like Notion get only a 6-hour full crawl)</td><td>Removed within minutes-to-hours if notified; otherwise the full crawl is the janitor. But <strong>the last line of defense is query-time ACL</strong>, so sync lag is a recall problem, not a leak.</td></tr>
+        <tr><td>M365 Copilot</td><td>Edits to existing documents <strong>reindex immediately</strong> · personal mailboxes near-real-time</td><td>New SharePoint documents <strong>daily</strong> (documents shared with 2+ people)</td><td>Graph connectors: configurable 15-min to 12-h cadence</td><td>The docs' warning, verbatim: <strong>"incremental crawls do not support permission updates; run full crawls periodically."</strong> — meaning a permission revocation can lag by a full-crawl cycle.</td></tr>
+        <tr><td>Slack (enterprise search)</td><td colspan="3">No tiers — external sources are <strong>never stored</strong>; partner search APIs are called at query time with the user's OAuth (federated)</td><td>In their words: "nothing stored on our side, so nothing can <strong>go stale.</strong>" Permission revocation is instant too — the source app is the truth.</td></tr>
+        <tr><td>Cerebras KB</td><td>Slack Socket Mode push — seconds, whole-thread upsert</td><td>Code: <strong>only changed chunks</strong> re-embedded per commit (CocoIndex sync metadata) · per-channel cadence tuned individually</td><td>— (per-source watermark reset)</td><td>Raw text is keyword-searchable immediately; vector search waits for distillation — <strong>two-speed indexing</strong>.</td></tr>
+        <tr><td>Onyx (OSS)</td><td>—</td><td>Default 30-min polling</td><td>Deletion-detection prune defaults to 30 days</td><td>ACLs enforced against a copy mirrored from the source (enterprise edition) — the mirror's refresh cycle is the revocation lag.</td></tr>
+        <tr><td>Uber Genie</td><td>—</td><td>—</td><td>Spark batch rerun (cadence undisclosed)</td><td>Stale answers until the rerun. Golden-set evaluation is the safety net that catches staleness.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    The hidden fourth fork: <strong>deletion.</strong> Vector indexes (HNSW) cannot truly delete, so they plant
+    tombstones (soft delete) and clean up periodically (Weaviate default cleanup interval: 300 seconds).
+    The 2026 "Ghost Vectors" work showed soft-deleted vectors are <strong>recoverable</strong> before cleanup —
+    if your ACL revocation is implemented as soft delete, it is not cryptographic erasure.
+    Deletion belongs to none of the three forks and is the most frequently forgotten write operation.
+  </div>
+
+  <h3>When a Conflict Survives to Query Time — Ranking Adjudicates</h3>
+  <p>
+    Contradictions the write path failed to catch (old policy doc vs new policy doc) end up refereed by ranking.
+    Glean's signal stack: freshness weighting + authority score + usage signals. The balance they articulate in
+    the docs is good — "an over-tuned recency boost lifts new-but-wrong documents above the canonical policy page,"
+    and "a WiFi-password doc untouched for years is still authoritative if people keep finding it."
+    Cerebras solves the same problem by mixing age decay into RRF: on a tie, the newer thread wins.
+    Staleness that resists automatic adjudication goes back to humans: Glean Verification puts re-verification
+    reminders on document owners, and stale docs get the Deprecated badge — <strong>kept in search, flagged, not deleted.</strong>
+  </p>
+
+  <h3>Production in the Flesh — How DoorDash Turns Resolved Cases into Knowledge</h3>
+  <p>
+    DoorDash is the only company to publish, at company scale, the full journey of new information entering
+    a knowledge base (2025). <strong>Escalation to a human agent is itself treated as the bot's failure signal</strong>,
+    and those conversations become knowledge candidates.
+  </p>
+  <div class="facts">
+    <div class="fact"><div class="fl">The eight-stage pipeline</div><div class="fv">
+      Select only escalated conversations from the anonymized pool → embed, then <strong>cluster online</strong>
+      (each new conversation compared by cosine to existing cluster centroids; below a <strong>0.70–0.90</strong> threshold,
+      spawn a new cluster) → human review of top clusters (manual merge of duplicate clusters) → classify clusters
+      as "actionable problems vs informational questions" → for informational ones, an LLM drafts an article from
+      the issue summary + exemplary resolutions → content-expert review (policy accuracy, tone, edge cases) →
+      embed and deploy approved articles → serve through the existing RAG.
+    </div></div>
+    <div class="fact"><div class="fl">Results — read with the caveats attached</div><div class="fv">
+      Escalation rate on high-traffic clusters: control 78% → treatment 43% (A/B experiment).
+      About 75% of treatment-group KB retrieval events returned only content this pipeline created (UGC-derived).
+      Not a global number — high-traffic clusters only, period and volume undisclosed: the classic limits of
+      company-blog figures. Also: DoorDash has a separate −90% — the 2026 simulation flywheel cut hallucination
+      rates ~90% <strong>pre-deployment</strong>, a different value from the 2024 guardrail's production −90%. Do not conflate them.
+    </div></div>
+    <div class="fact"><div class="fl">Mapping to the three forks</div><div class="fv">
+      Fork B (new-knowledge discovery and drafting) is done by machine. Fork A (overlap) is the cluster
+      threshold + manual merges. But <strong>Fork C — contradiction with existing articles — has no automation</strong>:
+      no conflict-check mechanism between generated and existing KB articles appears anywhere in the public
+      material; human review doubles as that layer.
+    </div></div>
+    <div class="fact"><div class="fl">Contrast with memory systems</div><div class="fv">
+      Mem0, Graphiti, and Letta automate all three forks — at the scale of one user's memory.
+      DoorDash automates detection and drafting but <strong>puts humans in front of the write</strong> —
+      because this is knowledge the whole company sees.
+      The variable is not the technology but <strong>the blast radius of a badly written fact</strong>.
+    </div></div>
+  </div>
+
+  <div class="uniq"><div class="fl">This chapter in one line</div>
+    The practice of updating is less "fix the knowledge" and more <strong>design the forks</strong>.
+    Overlap → discard (as an explicit operation, no less); new → append without global recomputation;
+    similar → pick whichever of the three schools (overwrite / LLM adjudication / temporal invalidation)
+    fits the data. And what to automate versus what to put behind a human is decided by blast radius, not accuracy.
+  </div>
+</section>
+
+<!-- ══ 07 platform connector matrix ══ -->
+<section id="matrix">
+  <div class="sec-head"><span class="sec-no">07</span><h2>What Connects to What</h2></div>
+  <p class="sec-sub">Connection targets per case. Solid dot: core source. Pale dot: attachable via connector. Empty dot: out of scope.</p>
+  <div class="legend">
+    <span class="chip"><span class="pm y"></span>Core source</span>
+    <span class="chip"><span class="pm h"></span>Extend via connector</span>
+    <span class="chip"><span class="pm n"></span>Out of scope</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>System</th><th>Messaging</th><th>Wiki · docs</th><th>Tickets · issues</th><th>Code</th><th>Email</th><th>CRM</th><th>Custom DB</th><th>Scale notes</th></tr></thead>
+      <tbody>
+        <tr><td>Glean</td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm h"></span></td><td>100+ connectors, custom via API</td></tr>
+        <tr><td>M365 Copilot</td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm h"></span></td><td>Teams, SharePoint, Outlook native + Graph connectors</td></tr>
+        <tr><td>Atlassian Rovo</td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm h"></span></td><td>Jira/Confluence core + 75+ · custom via Forge</td></tr>
+        <tr><td>Slack AI</td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm n"></span></td><td>Messages are the live index · Enterprise+ federates ~10 external apps, storage-free (2025)</td></tr>
+        <tr><td>Cerebras KB</td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm y"></span></td><td>Down to netlists and PRMs — team self-serve plugins</td></tr>
+        <tr><td>Uber Genie</td><td class="c"><span class="pm h"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td>Engwiki · internal SO · policy docs (Slack is the interface)</td></tr>
+        <tr><td>LinkedIn Support</td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td>Historical support tickets only — hence the depth</td></tr>
+        <tr><td>DoorDash Bot</td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td class="c"><span class="pm n"></span></td><td>KB articles + past case transcripts</td></tr>
+        <tr><td>Onyx (OSS reference)</td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm y"></span></td><td class="c"><span class="pm h"></span></td><td>40+ connectors — the platform camp's open-source counterpart</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══ 08 vertical domains ══ -->
+<section id="vertical-sec">
+  <div class="sec-head"><span class="sec-no">08</span><h2>Vertical Domains — How to Make an AI a Domain Expert</h2></div>
+  <p class="sec-sub">
+    Push the company-brain playbook (ingest → structure → retrieve → synthesize → verify) wholesale into
+    one professional field and you get vertical-domain AI. Harvey in law, Hebbia in finance,
+    OpenEvidence and Abridge in medicine — and in fact this report's in-house cases are all verticals too.
+    Cerebras KB's vertical is semiconductor engineering; DoorDash's is delivery-logistics support.
+  </p>
+  <p>
+    To make the cases comparable, we decompose them into <strong>seven levers</strong>:
+    ① <strong>corpus</strong> (did you secure domain data experts already trust — licensed or self-accumulated),
+    ② <strong>structure</strong> (did you impose the domain's ontology and schema on the data),
+    ③ <strong>workflow</strong> (did you engrave the expert's task decomposition into the product),
+    ④ <strong>evaluation</strong> (do you measure against an expert-built golden set or benchmark),
+    ⑤ <strong>feedback loop</strong> (do expert corrections flow back into the system),
+    ⑥ <strong>model strategy</strong> (fine-tune, retrieve, or both),
+    ⑦ <strong>interface</strong> (did you move into the tools experts already live in).
+    Click through the tabs for per-case profiles — the lever bars are qualitative reads of the public record.
+  </p>
+
+  <!-- interactive: vertical case explorer -->
+  <div class="vwrap">
+    <div class="ptabs" id="vtabs" role="tablist" aria-label="Select a vertical-domain case"></div>
+    <div class="vmeta" id="vmeta"></div>
+    <div class="vbody">
+      <div class="vdesc" id="vdesc"></div>
+      <div class="levers" id="vlevers"></div>
+    </div>
+  </div>
+
+  <h3>Fine-Tune or Retrieve — Tuition the Industry Already Paid</h3>
+  <div class="facts">
+    <div class="fact"><div class="fl">Cautionary tale — BloombergGPT (2023)</div><div class="fv">
+      Trained a 50B model from scratch on a proprietary 363B-token financial corpus (est. $10M+).
+      The outcome is famous — general-purpose GPT-4 won on most financial tasks.
+      What Bloomberg actually shipped was not that model but <strong>retrieval-grounded products inside the Terminal</strong>:
+      Document Insights over 200M+ documents, transparency links jumping to source excerpts.
+      The strategy "train your own domain GPT" lost to "ground a frontier model in your own corpus."
+    </div></div>
+    <div class="fact"><div class="fl">The exception clause — when a gradable rulebook exists</div><div class="fv">
+      Ambience Healthcare built an ICD-10 medical-coding model with OpenAI RFT (reinforcement fine-tuning)
+      and beat a panel of 18 board-certified physicians by a relative 27% (evaluated against a golden panel
+      labeled by consensus of 4+ specialists). Why did it work here — ICD-10 is a narrow task with a
+      <strong>verifiable rulebook and gradable answers</strong>. Harvey's case-law model (10B tokens of mid/post-training,
+      97% of lawyers preferring it over GPT-4 — announced by OpenAI itself) fits the same pattern.
+      Open-ended understanding goes to retrieval; closed-book grading goes to fine-tuning.
+    </div></div>
+  </div>
+
+  <h3>Vertical vs Horizontal — Both Sides' Logic</h3>
+  <div class="duo">
+    <div class="duo-card">
+      <h4>Why vertical wins (the bull case)</h4>
+      <ul>
+        <li><strong>The market is a different size</strong> — vertical AI attacks labor and services budgets, not IT budgets (Bessemer: "10× the TAM of traditional software markets").</li>
+        <li><strong>They own the yardstick</strong> — every benchmark that matters came from a vertical company. Harvey's BigLaw Bench and LAB (1,200+ tasks, 75,000+ expert-written rubric criteria, all-pass grading where one miss fails the task); Sierra's τ-bench (GPT-4o-class agents succeed under 50% at policy-compliant customer service; pass^8 reliability over 8 retries collapses below 25% in the retail domain).</li>
+        <li><strong>Accountability machinery</strong> — OpenEvidence refuses to answer when evidence is insufficient, Abridge traces every note sentence back to source audio (Linked Evidence), Sierra bills only for resolved cases. A layer frontier models do not ship by default.</li>
+        <li><strong>The data loop</strong> — EvenUp's accumulated settlement-and-verdict DB, Abridge's weekly model updates (folding in physician corrections), Sierra's failure mining. Outcome data no license can buy.</li>
+      </ul>
+    </div>
+    <div class="duo-card">
+      <h4>Why horizontal absorbs it (the bear case)</h4>
+      <ul>
+        <li><strong>Foundation models are absorbing the knowledge layer</strong> — Harvey's own data is the evidence: on BigLaw Bench, base-model scores jumped from ~60% (GPT-4o/Claude 3.5) to ~90% (GPT-5/Claude 4.5/Gemini 3) in two generations.</li>
+        <li><strong>The labs move in directly</strong> — OpenAI's healthcare triple: ChatGPT Health (2026-01-07, consumer) → ChatGPT for Healthcare (01-08, hospital enterprise) → ChatGPT for Clinicians (04-23, free for NPI-verified physicians) — aimed squarely at OpenEvidence's position three months after its $12B round. On HealthBench Professional, ChatGPT for Clinicians (GPT-5.4-based) scores 59.0 and GPT-5.6 Sol 60.5, ahead of physician responses (43.7, under unlimited-time + web-search-allowed conditions) — with the permanent footnote that this is OpenAI grading OpenAI.</li>
+        <li><strong>Horizontal platforms ship vertical packs</strong> — Glean layered on an agent library with 30+ prebuilt agents for sales, engineering, IT, and HR. Incumbents holding the interface loom too — Epic walked into Abridge's front yard with its own "Art for Clinicians."</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">
+    Net: knowledge (memorized domain common sense) is being absorbed by foundation models, at a pace the
+    vertical companies' own benchmarks prove. Where verticals keep winning is five things:
+    <strong>closed-universe work product</strong> (real deliverables graded all-pass),
+    <strong>outcome-data loops</strong>, <strong>accountability and audit machinery</strong>,
+    <strong>living inside the expert's tools</strong> (Word, Epic, the Terminal, Slack), and
+    <strong>outcome-based pricing</strong>. And the two camps interpenetrate as they fight —
+    Harvey went in as an agent inside M365 Copilot, and Sierra agents surface in ChatGPT.
+  </div>
+
+  <h3>Applying It to Your Domain — The Order the Cases Agree On</h3>
+  <div class="duo">
+    <div class="duo-card">
+      <h4>1–5: Laying the foundation</h4>
+      <ul>
+        <li><strong>1. Inventory billable units of work, not topics.</strong> Harvey built BigLaw Bench from lawyers' actual time entries. Start by writing down 10–20 tasks experts get paid for (or worn down by) as "instructions + a closed document universe + expected deliverable."</li>
+        <li><strong>2. Secure a corpus experts already trust.</strong> License it (OpenEvidence × NEJM/JAMA) or accumulate it yourself (Abridge's 1.5M consented clinical conversations). Either way, it is not scraping.</li>
+        <li><strong>3. Impose domain structure before embedding.</strong> SOAP notes, ICD-10, regulatory decision trees (Norm Ai), ticket trees (LinkedIn), Cerebras's {question/summary/resolution/system/code-refs} schema — structure is what turns retrieval into expertise.</li>
+        <li><strong>4. Engrave the expert's task decomposition as workflow.</strong> Not a mega-prompt — Hebbia's ISD steps, Sierra's Journeys, EvenUp's assembly line.</li>
+        <li><strong>5. SME golden set before scaling, graded all-pass.</strong> Uber's v1 survived because there was a golden set to reject it.</li>
+      </ul>
+    </div>
+    <div class="duo-card">
+      <h4>6–10: Scaling without losing it</h4>
+      <ul>
+        <li><strong>6. Default to retrieval + a frontier model. Fine-tune only where a gradable rulebook exists.</strong> BloombergGPT paid the tuition for everyone; Ambience's RFT showed the exception's preconditions. Per-subtask multi-model routing (Harvey's Auto) has become standard too.</li>
+        <li><strong>7. Move into the expert's existing screen.</strong> A Word add-in, Epic's first "Pal," a Terminal panel, a Slack bot, MCP into Claude Code. A new destination app is the last resort.</li>
+        <li><strong>8. Make every answer auditable.</strong> Linked Evidence (note→audio), transparency links (summary→source excerpt), citations (claim→paper), source scores.</li>
+        <li><strong>9. Feed expert corrections back on a fixed cadence.</strong> Abridge turns physician edits into weekly updates; EvenUp turns its 100+ in-house experts' reviews into model improvements.</li>
+        <li><strong>10. Design the refusal path as carefully as the answer path.</strong> OpenEvidence stays silent on insufficient evidence, DoorDash hands guardrail failures to a human, Sierra does not bill failed cases. In expert domains, a safe non-answer is trust itself.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="uniq"><div class="fl">This chapter in one line</div>
+    "Making an AI a domain expert" is not a model swap — it is <strong>working seven levers at once</strong>.
+    The foundation model does exactly one of them for you (the sixth, the model); the other six — corpus,
+    structure, workflow, evaluation, feedback, interface — must be built by whoever knows the domain.
+    That is why vertical teams keep having work no matter how good foundation models get — and also the warning
+    that a vertical selling only knowledge is in danger.
+  </div>
+</section>
+
+<!-- ══ 09 observations ══ -->
+<section id="observations">
+  <div class="sec-head"><span class="sec-no">09</span><h2>What Remains After All the Cases</h2></div>
+  <div class="duo">
+    <div class="duo-card">
+      <h4>Where the cases converge</h4>
+      <ul>
+        <li><strong>Compression comes before retrieval.</strong> Cerebras distills threads, DoorDash summarizes conversations, Uber pre-processes queries. Embedding raw text is the exception, not the rule.</li>
+        <li><strong>A query lives two lives.</strong> Rewrites go to retrieval, originals to generation (§03). We found no system that skips this division of labor.</li>
+        <li><strong>Permissions are the product.</strong> Glean, M365, Rovo, and Slack AI all put "only what the asker can see" at the top of the architecture — and as §06 shows, the real gap between platforms is <em>revocation propagation speed</em> (webhook minutes vs full-crawl weeks).</li>
+        <li><strong>Nobody trusts a single scorer.</strong> Lexical and semantic run together everywhere; only the fusion method differs (RRF, self-tuning rankers, relationship signals).</li>
+        <li><strong>Existing structure gets used first.</strong> Rovo reused work tools' relations, LinkedIn reused ticket trees, Slack AI reused its own search stack. LLM extraction is the fallback for when there is no structure.</li>
+        <li><strong>"Do nothing" is a first-class operation.</strong> Mem0's NOOP, Cerebras's admission gate, LlamaIndex's hash skip — a good knowledge base is as good at not writing as it is at writing.</li>
+      </ul>
+    </div>
+    <div class="duo-card">
+      <h4>If you build one — the order the cases suggest</h4>
+      <ul>
+        <li>Pick one channel where questions pile up (both Uber and Cerebras started there).</li>
+        <li>Check what structure the domain data already has. Trees, relations, fields — preserve them if present; reach for distillation or extraction only if not.</li>
+        <li>Ship v1 as vanilla RAG, fast — but build the golden-set eval alongside it. Uber's v1 rejection turned into improvement precisely because the eval set existed.</li>
+        <li>When accuracy proves to be the problem, invest around retrieval (pre-processing, post-processing, guardrails). Swapping the embedding model is usually the later problem.</li>
+        <li>Design the write path's three forks (overlap/new/similar) explicitly — especially which of overwrite, LLM adjudication, or temporal invalidation handles the "similar" case. Postpone it and the index rots quietly.</li>
+        <li>Design permission sync when it is time to go company-wide — it is the most painful piece to bolt on later, so if company-wide is certain, do it from day one.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Sources</h3>
+  <ul class="src-list">
+    <li><strong>Platform cases</strong> — Glean: docs.glean.com (connectors/crawling-frequency·refresh-rates, verification, search FAQ) · glean.com/perspectives (search-relevance debugging) · Glean Protect announcement (2025-09) / Microsoft 365 Copilot: learn.microsoft.com (semantic-index-for-copilot, 2026-04 revision; copilot-architecture; orchestrator; copilot-privacy) / Atlassian: Teamwork Graph Team '26 announcement · developer.atlassian.com / Slack: slack.engineering ("How we built Slack AI…", "How we built enterprise search…") · Salesforce Engineering</li>
+    <li><strong>In-house cases</strong> — Cerebras: cerebras.ai/blog/how-we-built-our-knowledge-base (local snapshot 2026-07-19) / Uber: uber.com/blog (Genie 2024-10, Enhanced Agentic-RAG 2025) / LinkedIn: Xu et al., SIGIR 2024, arXiv:2404.17723 / DoorDash: careersatdoordash.com trilogy (2024-09 guardrails, 2025-08 UGC→KB, 2026-01 simulation flywheel — originals blocked; cross-checked via ZenML, InfoQ, ByteByteGo mirrors)</li>
+    <li><strong>§03 query pipeline</strong> — Azure OpenAI On Your Data docs (token-budget formula) · LangChain/LlamaIndex prompt source code (GitHub originals) · intfloat/e5 and BAAI/bge model cards · Azure AI Search security trimming · Anthropic long-context tips / contextual retrieval / Citations API · Liu et al. arXiv:2307.03172 · LongPiBench arXiv:2410.14641 · NoLiMa arXiv:2502.05167 · Chroma Context Rot (2025-07) · Gemini 3 Pro Model Card · the gate: M365 privacy docs (UPIA/XPIA), Azure Prompt Shields, Bedrock Guardrails, Vertex answer.proto, EchoLeak arXiv:2509.10540</li>
+    <li><strong>§06 update mechanisms</strong> — Mem0 arXiv:2504.19413 + open-source prompts (GitHub) · Zep/Graphiti arXiv:2501.13956 + getzep blog · Letta/MemGPT docs · LlamaIndex ingestion pipeline docs · SemDeDup arXiv:2303.09540 + NeMo Curator defaults · Manku et al. WWW 2007 (SimHash) · Pinecone/Weaviate docs · Ghost Vectors arXiv:2606.18497 · GraphRAG 1.0 blog, CLI docs, issue #741 · LightRAG arXiv:2410.05779 · Karpathy llm-wiki gist (2026-04)</li>
+    <li><strong>§08 vertical domains</strong> — Harvey: harvey.ai/blog (BigLaw Bench, LAB, multi-model) · openai.com/index/harvey (bot-blocked — Maginative 2024-04 mirror) · sacra.com / Hebbia: hebbia.com/blog (Matrix, multi-agent redesign, Financial AI Benchmark) · openai.com/index/hebbia (blocked — snippet recovered) / OpenEvidence: PR Newswire (USMLE 100%, 2025-08) · Reuters (2026-01) / Abridge·Ambience: contrary.com research · ambiencehealthcare.com (RFT coding) / Bloomberg: arXiv:2303.17564 · PR Newswire (Document Insights 2025-04) / Sierra: τ-bench arXiv:2406.12045 · sierra.ai/blog / EvenUp·Norm Ai: company blogs · Bain Capital Ventures / HealthBench: arXiv:2505.08775 · HealthBench Professional arXiv:2604.27470 · GPT-5.6 system card (deploymentsafety.openai.com) / vertical vs horizontal: Bessemer BVP Atlas · Stanford Law (2026-06)</li>
+    <li><strong>How to read the numbers</strong> — Many are the companies' own announcements. The body text carries qualifiers like "self-reported," "relative improvement," "treatment group only," and "OpenAI grading OpenAI" — always quote the numbers with their conditions attached. Benchmark figures without a separate note were cross-checked against originals as of 2026-07.</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    COMPANY CASES — RETRIEVAL &amp; UPDATE DOSSIER (Part 2, revised) · Part 1: Anatomy of Open-Source Knowledge Bases · based on public sources as of 2026-07
+  </div>
+</footer>
+
+<script>
+/* ── 02 journey comparator ── */
+const SYSTEMS = [
+ {id:'glean', name:'Glean', meta:'Commercial · 100+ connectors · query-time ACL', steps:[
+  ['Query + context join','the user role, department, and recent activity ride along with the query'],
+  ['Hybrid candidate collection','lexical + enterprise-retuned embeddings + knowledge-graph signals queried at once'],
+  ['Query-time permission filter','documents this user cannot see right now drop out of the candidates, even if indexed'],
+  ['Personalization + authority ranking','re-sorted by team relationships, interaction history, PageRank-style authority scores'],
+  ['Answer generation','citation-backed answer over top evidence (shared by search, chat, agents)']]},
+ {id:'m365', name:'M365 Copilot', meta:'Commercial · dual tenant+user index · auto-built', steps:[
+  ['Prompt → grounding begins','the orchestrator collects evidence before generating any answer'],
+  ['Graph + Semantic Index lookup','lexical and semantic together — a search for "emails that praised" expands to neighbors like elated and excited'],
+  ['RBAC scoping','only mail, chats, and documents the asker is entitled to get searched'],
+  ['Prompt augmentation → LLM call','collected evidence attached and sent to the LLM — multi-model since 2025 (GPT-5.x default, optional Claude)'],
+  ['Post-processing','safety and compliance filters, then display in the app']]},
+ {id:'rovo', name:'Atlassian Rovo', meta:'Commercial · Teamwork Graph, 150B objects and relations', steps:[
+  ['Query → graph entry','find the relevant objects (tickets, pages, PRs) in the graph'],
+  ['Relation traversal','follow ticket↔doc↔PR↔person as many hops as needed — recursive getTeamworkGraphContext calls over MCP'],
+  ['Read object bodies','status, comments, body, author via getTeamworkGraphObject'],
+  ['Source-app permission filter','permissions configured in each app apply as-is'],
+  ['Synthesis','search, chat, and agents assemble answers on the same graph']]},
+ {id:'slackai', name:'Slack AI', meta:'Commercial · reuses existing search, no new index', steps:[
+  ['Question → existing search stack','years-tuned Slack search (lexical + embedding ranking) collects candidates'],
+  ['Restricted to own visibility','only messages the asker could already see — workspace isolation principle'],
+  ['Stateless RAG','full context handed to an off-the-shelf LLM inside an escrow VPC; the model stores nothing'],
+  ['Cited answer','comes back with links to the source threads']]},
+ {id:'cerebras', name:'Cerebras KB', meta:'In-house · 15,000+ questions/day · see Part 1 §06', steps:[
+  ['Planner picks tools','judges from the query and project scope which sources likely hold the answer'],
+  ['Parallel fan-out','search · search_slack · ripgrep · recent_prs · who_knows run concurrently'],
+  ['RRF fusion (k=60)','consensus-merges per-retriever rankings; per-file caps preserve diversity'],
+  ['Reranker scoring','a small model scores 0–10 → only the top 10 survive'],
+  ['Context re-expansion','truncated neighboring sections get reattached'],
+  ['Synthesis','answer + citations + caveats']]},
+ {id:'uber', name:'Uber Genie', meta:'In-house · 45,000 questions/month · Slack on-call copilot', steps:[
+  ['Question in a Slack channel','the bot picks up questions posted to support channels'],
+  ['Pre-processing agent','polishes the query for retrieval and identifies which document sets likely hold the answer (EAg-RAG)'],
+  ['Vector search','collects similar chunks from Engwiki, internal Stack Overflow, and policy-doc embeddings'],
+  ['Post-processing agent','refines the collected context, removing noise'],
+  ['Answer or escalation','cited answer in the thread; unsolved cases go to the on-call engineer']]},
+ {id:'linkedin', name:'LinkedIn Support', meta:'In-house · ticket KG · resolution time -28.6%', steps:[
+  ['Query parsing','extracts named entities and intents'],
+  ['Entry-node selection','embedding match decides where to enter the ticket knowledge graph'],
+  ['Subgraph collection','cuts out only the relevant parts along intra-issue trees and inter-issue links'],
+  ['Subgraph-grounded generation','builds the answer keeping the ticket structure plain-text chunking would destroy']]},
+ {id:'doordash', name:'DoorDash Bot', meta:'In-house · thousands daily · hallucinations -90%', steps:[
+  ['Conversation summary','compresses a problem scattered across messages into a one-sentence core issue'],
+  ['Similar-case retrieval','finds previously resolved cases by similarity and pulls the KB articles mapped to each'],
+  ['Prompt assembly → generation','conversation + summary + articles filled into a template for the LLM call'],
+  ['Guardrail check','verifies groundedness and compliance in real time'],
+  ['Respond or hand to an agent','pass → answer, fail → human; a separate LLM Judge continuously monitors quality on five metrics']]},
+ {id:'onyx', name:'Onyx (OSS)', meta:'Open source · see Part 1 §04', steps:[
+  ['Hybrid search','vector + keyword indexes queried together'],
+  ['Permission-graph filter','document-level ACLs mirrored from sources apply'],
+  ['Agent Search / Deep Research','multi-step re-retrieval when needed'],
+  ['Cited answer','with links to source documents']]},
+ {id:'graphrag', name:'MS GraphRAG (OSS)', meta:'Open source · see Part 1 §05', steps:[
+  ['Question-type routing','is this a global (thematic) question or a specific-entity one'],
+  ['If global: community-summary map-reduce','sweeps hierarchical cluster summaries and synthesizes'],
+  ['If local: entity fan-out','expands from matched entities to neighbors and related chunks'],
+  ['DRIFT','mixes community info into local search, generates follow-up queries, re-retrieves and reranks']]},
+ {id:'lightrag', name:'LightRAG (OSS)', meta:'Open source · see Part 1 §05', steps:[
+  ['Dual keyword extraction','low-level (entities) and high-level (concepts) pulled from the query separately'],
+  ['Dual matching','local keywords → entity nodes, global keywords → relation edges, via vector match'],
+  ['1-hop expansion','collects neighbor nodes of the retrieved elements'],
+  ['Degree ranking → synthesis','sorted by structural importance, then answer generation']]},
+ {id:'karpathy', name:'Karpathy Wiki', meta:'Pattern · see Part 1 §03', steps:[
+  ['Start at index.md','the agent reads the global table of contents and decides where to go'],
+  ['Page traversal','follows interlinks and reads the relevant wiki pages directly'],
+  ['Check raw/ if needed','descends to the original evidence behind a claim'],
+  ['Page-cited answer','answers come without embedding search — the knowledge was already written down']]}
+];
+const tabsEl=document.getElementById('ptabs'), stepsEl=document.getElementById('psteps'), metaEl=document.getElementById('pmeta');
+function show(id){
+  document.querySelectorAll('#ptabs .ptab').forEach(b=>{const on=b.dataset.id===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
+  const s=SYSTEMS.find(x=>x.id===id);
+  metaEl.textContent=s.meta;
+  stepsEl.innerHTML='';
+  s.steps.forEach((st,i)=>{
+    const d=document.createElement('div'); d.className='pstep'; d.style.animationDelay=(i*0.28)+'s';
+    d.innerHTML='<div class="pn">'+(i+1)+'</div><div class="pt"><b>'+st[0]+'</b><span class="m">'+st[1]+'</span></div>';
+    stepsEl.appendChild(d);
+  });
+}
+SYSTEMS.forEach(s=>{
+  const b=document.createElement('button'); b.className='ptab'; b.dataset.id=s.id; b.textContent=s.name;
+  b.setAttribute('role','tab'); b.addEventListener('click',()=>show(s.id)); tabsEl.appendChild(b);
+});
+show('glean');
+
+/* ── scroll progress + rail highlight ── */
+const pbar=document.getElementById('pbar');
+addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  pbar.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';
+},{passive:true});
+const railLinks=[...document.querySelectorAll('#rail a')];
+const secObs=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      railLinks.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id));
+    }
+  });
+},{rootMargin:'-40% 0px -55% 0px'});
+document.querySelectorAll('main section, section[id]').forEach(s=>secObs.observe(s));
+</script>
+
+<script>
+/* ── 03 query transformation tracer ── */
+const QEX = [
+ {id:'follow', name:'Follow-up question', meta:'Multi-turn conversation · pronoun resolution is the crux', stages:[
+  ['Input — raw user text', '(chat history: discussion of the payments service deploy rollback)\n"so what happened with that in the end?"',
+   'This sentence alone retrieves nothing — what "that" refers to lives only in the history.'],
+  ['0 Gate — classifiers pass', 'attack classification: pass · PII: none · query type: answer-seeking',
+   'Cheap classifiers judge in parallel, nothing more. No LLM rewriting has happened yet.'],
+  ['1 Rewrite — to a standalone query', '"what is the current resolution status of the payments service deploy rollback issue from last week?"',
+   'What the LangChain condense prompt / Azure intent call does. Chat history + last message → one searchable sentence.'],
+  ['2 Expansion — enterprise terms and neighbors', 'rollback → revert · hotfix · redeploy\npayments → payments-gw, payment gateway',
+   'M365-style adjacent-term expansion + Glean-style internal-vocabulary handling. The net widens so vocabulary mismatches still get caught.'],
+  ['3 Three bodies — parallel launch', 'embedding: "query: payments service deploy rollback last week…" (prefix mandatory if E5)\nBM25: (rollback OR revert) AND payments  [title^3]\nfilter: group_ids/any(g:search.in(g, \'eng,sre\')) + last_30d',
+   'The same query splits into an embedding string, a lexical expression, and an ACL filter, fired simultaneously.'],
+  ['4 Assembly — the original goes last', '[SYSTEM rules] → [retrieved chunks (XML)] → [chat history] → "so what happened with that in the end?" + rewritten query',
+   'The rewrite did the searching, but the generation model gets the original (+history). Question position: below the context, at the very end.']]},
+ {id:'multihop', name:'Comparison question', meta:'Multi-hop · decomposition is the crux', stages:[
+  ['Input — raw user text', '"what changed in the on-call compensation policy between last year and this year?"',
+   'One search cannot solve this — it needs documents from two different points in time.'],
+  ['1 Rewrite → intent list', 'intents: ["2025 on-call compensation policy", "2026 on-call compensation policy", "on-call policy change announcement"]',
+   'The Azure On Your Data way: the rewrite output is a list of search intents, not a single query.'],
+  ['2 Decomposition — sub-queries', 'sub-q1: "2025 on-call compensation policy details"\nsub-q2: "2026 on-call compensation policy details"',
+   'Same pattern as Bedrock QUERY_DECOMPOSITION — like splitting "who scored more" into one query per team.'],
+  ['3 Three bodies — per-intent search', 'sub-q1 → filter: year=2025 · sub-q2 → filter: year=2026\neach runs embedding + BM25 + filter in parallel',
+   'Each intent gets its own search (“For each intent, multiple document chunks are retrieved”), and results are fused and reranked.'],
+  ['4 Assembly — generation does the comparing', '[chunk bundles from both periods] → [original: "…what changed?"]',
+   'Retrieval only gathers per-period facts. Comparing and summarizing "what changed" is the job of the generation model.']]},
+ {id:'error', name:'Pasted error', meta:'Identifier query · lexical match is king', stages:[
+  ['Input — raw user text', '"ERR_CONN_RESET at payments-gw:8443 — why am I getting this?"',
+   'Error string, hostname, port — exact tokens embeddings tend to smear.'],
+  ['0 Gate — secret scan', 'PII/secret scan: pass (internal hostnames are within policy)\n※ hardcoded credentials in pasted code get masked to {SECRET} here',
+   'Bedrock docs state the sensitive-information filter catches credentials even inside code comments and string literals.'],
+  ['1 Rewrite — minimal touch', '"ERR_CONN_RESET payments-gw 8443 root cause" (error string preserved verbatim)',
+   'Cerebras, in their words: "when an engineer pastes an error message, an exact lexical match is almost always the best evidence."'],
+  ['2 Expansion — deliberately skipped', '(classified as an identifier query → no paraphrase expansion)',
+   'Glean intent-cohort logic: expanding identifier and error-code queries breaks precision instead of helping.'],
+  ['3 Three bodies — lexical leads the assault', 'BM25: "ERR_CONN_RESET" AND "payments-gw"  ← primary weapon\nsearch_code(ripgrep): ERR_CONN_RESET  ← code fan-out\nembedding: auxiliary (recalls similar incident threads)',
+   'Glean intent cohorts: "identifiers and ticket IDs prioritize exact-match fields." A Cerebras-style planner would fan out to search_code as well.'],
+  ['4 Assembly', '[similar incident threads + code-matched chunks] → [original error question]',
+   'The {question/resolution} distillate of a resolved similar thread is the best possible evidence — the write path of §06 pays off right here.']]}
+];
+const qtabsEl=document.getElementById('qtabs'), qstagesEl=document.getElementById('qstages'), qmetaEl=document.getElementById('qmeta');
+const QMOTION=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+function showQ(id){
+  document.querySelectorAll('#qtabs .ptab').forEach(b=>{const on=b.dataset.id===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
+  const q=QEX.find(x=>x.id===id);
+  qmetaEl.textContent=q.meta;
+  qstagesEl.innerHTML='';
+  q.stages.forEach((st,i)=>{
+    if(i>0){const a=document.createElement('div');a.className='qarrow';a.textContent='▼';qstagesEl.appendChild(a);}
+    const d=document.createElement('div'); d.className='qstage';
+    if(QMOTION){d.style.animation='pin .4s ease both'; d.style.animationDelay=(i*0.15)+'s';}
+    const t=document.createElement('div'); t.className='qs-t'; t.textContent=st[0];
+    const io=document.createElement('div'); io.className='qs-io'; io.textContent=st[1];
+    const x=document.createElement('div'); x.className='qs-x'; x.textContent=st[2];
+    d.append(t,io,x); qstagesEl.appendChild(d);
+  });
+}
+QEX.forEach(q=>{
+  const b=document.createElement('button'); b.className='ptab'; b.dataset.id=q.id; b.textContent=q.name;
+  b.setAttribute('role','tab'); b.addEventListener('click',()=>showQ(q.id)); qtabsEl.appendChild(b);
+});
+showQ('follow');
+
+/* ── 03 prompt anatomy explorer ── */
+const ADET = {
+ sys:{c:'var(--green)',t:'① SYSTEM — persona + grounding rules',h:'<ul>'+
+  '<li><b>Grounding rule</b> — LlamaIndex system prompt, verbatim: "Always answer the query using the provided context information, and not prior knowledge." Banning prior knowledge is the heart of the rule.</li>'+
+  '<li><b>Citation directive</b> — the Azure-recommended phrasing: generate citations to retrieved documents for every claim in the answer; if the retrieved documents cannot answer, explain why.</li>'+
+  '<li><b>The hidden layer</b> — Azure discloses that the customer system message is <em>appended</em> to an internal base prompt. The customer share is capped at 400–4,000 tokens per model; overflow gets truncated.</li>'+
+  '<li><b>Refusal rules</b> — "say you do not know if there is no evidence" (rlm/rag-prompt), compliance constraints, tone specification.</li></ul>'+
+  '<div class="ad-note">Role (role_information), data description, output format, reaffirmed grounding rules — the four system-message elements Azure documents.</div>'},
+ ctx:{c:'var(--blue)',t:'② CONTEXT — the retrieved chunks (up top)',h:'<ul>'+
+  '<li><b>Format</b> — the official Anthropic structure: <code>&lt;source&gt;</code> + <code>&lt;document_content&gt;</code> inside <code>&lt;document index="n"&gt;</code>. The index attribute doubles as the citation ID.</li>'+
+  '<li><b>Contextual headers</b> — before embedding, have an LLM generate one or two sentences per chunk on its place in the whole document (contextual retrieval): retrieval failure rate 5.7%→1.9% (with reranking, −67%).</li>'+
+  '<li><b>How many?</b> — Azure defaults to 5 (×1,024 tokens); Anthropic experiments found top-20 best. No consensus — a budget-versus-quality trade-off.</li>'+
+  '<li><b>Ordering</b> — descending relevance by default. LangChain LongContextReorder rearranges winners to both ends and stragglers to the middle (a 2023-era mitigation, still shipping).</li></ul>'+
+  '<div class="ad-note">Uber goes the other way — its Post-Processor re-sorts chunks into original document order, to preserve the logical flow of the document.</div>'},
+ his:{c:'#7A5410',t:'③ HISTORY — conversation history (capped)',h:'<ul>'+
+  '<li><b>The Azure cap</b> — truncated at 2,000 tokens for question+history combined. The only explicitly documented history budget.</li>'+
+  '<li><b>Replaced by a summary</b> — Copilot in Teams uses a summary of up to 30 days before the last message. Compressed history, not the full transcript.</li>'+
+  '<li><b>The division of labor</b> — for retrieval, history was already spent at stage 1 (raw material for the rewrite); its role here is letting the generation model carry conversational context and tone.</li></ul>'+
+  '<div class="ad-note">Stuffing the whole history in is "noise that distracts retrieval" (as the LangChain docs put it) — hence the separation between the rewrite and the history slot.</div>'},
+ usr:{c:'var(--purple)',t:'④ QUESTION — the user original, at the very end',h:'<ul>'+
+  '<li><b>The original goes in</b> — Cerebras states it hands the synthesis LLM "the evidence bundle and the original question." Azure likewise ships the verbatim user question next to the chunks. The rewrite was for retrieval only.</li>'+
+  '<li><b>Why last</b> — Anthropic: "long material up top, query at the end — up to 30% improvement on complex multi-document inputs" (still in the docs as of 2026). Google gives the same recommendation.</li>'+
+  '<li><b>The OpenAI variant</b> — repeat instructions on <em>both</em> sides of the context ("if only once, above beats below"). A descendant of the query-aware contextualization in Liu et al.</li>'+
+  '<li><b>2026 footnote</b> — absolute positional bias is mostly mitigated in current models (LongPiBench). The living enemies are length, interference, and multi-needle — so the real rule for this slot is "question at the end, and keep the context short and good in the first place."</li></ul>'+
+  '<div class="ad-note">The 2023 legacy numbers: GPT-3.5, 20 documents, by answer position — 75.8% (start) / 53.8% (middle) / 63.2% (end); middle scored below closed-book (56.1%).</div>'},
+ out:{c:'var(--red)',t:'⑤ RESPONSE — reserved response tokens',h:'<ul>'+
+  '<li><b>The Azure formula</b> — reserve 20% of available tokens for the response first; from the remaining 80%, subtract system+history+question and everything left goes to chunks. Measured prompts: 3,997–4,854 tokens.</li>'+
+  '<li><b>Structured citations</b> — with the Anthropic Citations API, citations attach to the response as "validity-guaranteed pointers," and the quoted source (cited_text) is excluded from output-token billing.</li>'+
+  '<li><b>Post-hoc verification</b> — DoorDash checks groundedness and compliance after generation with a two-tier guardrail (semantic similarity → LLM evaluation), routing failures to a human. There is pipeline even after the response slot.</li></ul>'+
+  '<div class="ad-note">The three generations of citation: prompt etiquette ("cite as [1]") → API structure (Citations) → post-hoc verification (Guardrail). Connects to the trust machinery of §06 and §08.</div>'}
+};
+const adetailEl=document.getElementById('adetail');
+function showA(k){
+  document.querySelectorAll('.ablock').forEach(b=>b.classList.toggle('on',b.dataset.a===k));
+  const d=ADET[k];
+  adetailEl.innerHTML='<div class="ad-t" style="color:'+d.c+'">'+d.t+'</div>'+d.h;
+}
+document.querySelectorAll('.ablock').forEach(b=>b.addEventListener('click',()=>showA(b.dataset.a)));
+showA('sys');
+
+/* ── 06 decision tree ── */
+document.querySelectorAll('.branch').forEach(b=>{
+  b.setAttribute('aria-expanded','false');
+  b.addEventListener('click',e=>{
+    if(e.target.closest('a'))return;
+    const wasOpen=b.classList.contains('open');
+    document.querySelectorAll('.branch').forEach(x=>{x.classList.remove('open');x.setAttribute('aria-expanded','false');});
+    if(!wasOpen){b.classList.add('open');b.setAttribute('aria-expanded','true');}
+  });
+});
+
+/* ── 08 vertical case explorer ── */
+const LEVERS=['Corpus','Structure','Workflow','Evaluation','Feedback','Model strategy','Interface'];
+const VERTS=[
+ {id:'harvey',name:'Harvey',meta:'Legal · $300M ARR (2026-05) · 1,500+ customers, 142,000+ lawyers · $11B',lv:[85,70,90,100,80,90,90],desc:
+  '<p>The vertical with the most instruments on its dashboard. In 2023–24 it co-built a case-law model with OpenAI (10B tokens of mid/post-training, starting from Delaware case law and expanding nationwide — 97% of lawyers at top-10 firms preferred it over GPT-4, announced by OpenAI itself), then switched to multi-model in 2025 with per-task routing (internal evals: Gemini leads on legal drafting, o3 on pre-litigation).</p>'+
+  '<p>The real moat is evaluation. BigLaw Bench, built from real billing time entries, and LAB in 2026 — 24 practice areas, 1,200+ tasks, <b>75,000+ expert-written rubric criteria graded all-pass</b> (fail one criterion, fail the task). Interfaces: Word and Outlook add-ins, plus an agent inside M365 Copilot — a vertical moving into a horizontal platform.</p>'+
+  '<div class="vd-num">Harvey is also the one that measured and published base models climbing from ~60% to ~90% on BLB — a company holding evidence for the bull case and the bear case at once.</div>'},
+ {id:'hebbia',name:'Hebbia',meta:'Finance · Matrix · a third of the top large asset managers as customers · $700M (2024-07)',lv:[70,85,100,75,65,60,85],desc:
+  '<p>The origin story is provocative — "we deployed our first production RAG in 2020 and watched it fail on 84% of user queries" (self-measured, methodology undisclosed). The prescription was not chat but <b>decomposition</b>: Matrix is a grid of rows=documents, columns=questions, splitting complex analysis requests into agent-executable steps (ISD).</p>'+
+  '<p>The multi-agent redesign (2.0) has a striking principle: the orchestrator <b>never calls tools directly</b>, delegating only text goals to sub-agents — "the way a manager assigns work to staff." The lever-② twist: the domain ontology is not a knowledge graph but <b>the Matrix column schema itself</b> (a deal checklist = the analyst mental model).</p>'+
+  '<div class="vd-num">The key number from the OpenAI case study: on their own legal-and-finance benchmark, vanilla RAG 68% → Hebbia+o1 92%. (Cite "automates 90% of finance and legal work" as a headline claim only.)</div>'},
+ {id:'openevidence',name:'OpenEvidence',meta:'Medicine · 20M consultations/month (2026-01) · $12B · free for physicians / ad-funded',lv:[100,60,50,70,55,65,80],desc:
+  '<p>Lever ① (corpus) taken to the extreme. Multi-year licenses with NEJM (back to 1990), JAMA plus 11 specialty journals, and Wiley put citation-backed answers on top of 35 million peer-reviewed papers. Free for US clinicians who pass NPI verification — revenue comes from pharma advertising (a $20B/yr market) and CME.</p>'+
+  '<p>The trust device is the product: <b>if the evidence is insufficient, it does not answer.</b> Self-reported USMLE 100% (2025-08, no third-party verification); company claim (via Reuters) that over 40% of US physicians use it daily.</p>'+
+  '<div class="vd-num">Also the bear case made flesh — three months after the $12B round (2026-01), OpenAI landed on the exact same spot with ChatGPT for Clinicians (NPI-verified, free) on 2026-04-23.</div>'},
+ {id:'abridge',name:'Abridge',meta:'Clinical documentation · 200+ health systems · 50M clinical conversations/yr · $5.3B',lv:[90,85,75,80,95,75,100],desc:
+  '<p>An ambient scribe trained on 1.5M consented clinical conversations — it listens to the visit and produces SOAP-structured notes. The lever-⑦ textbook: embedded in the EHR as <b>the first Epic "Pal,"</b> running on the screen physicians already live in.</p>'+
+  '<p>Lever ⑤ (feedback) is also the tightest here — physician note edits feed back into <b>weekly model updates</b>, and every note sentence traces back to a source-audio timestamp (Linked Evidence). Claims "97% hallucinated-content detection vs GPT-4o at 82%" on its own hallucination-evaluation framework (self-run research).</p>'+
+  '<div class="vd-num">A specimen of platform risk: Epic walked into the front yard by launching its own "Art for Clinicians" (Microsoft Dragon + 300M-patient Cosmos data). The fate of a vertical that rents its interface.</div>'},
+ {id:'bloomberg',name:'Bloomberg',meta:'Finance · from cautionary tale to grounding strategy · Terminal AI over 200M+ documents',lv:[100,75,60,70,60,40,100],desc:
+  '<p>The most expensive lesson in vertical AI. BloombergGPT (2023) trained a 50B model on a proprietary 363B-token financial corpus (est. $10M+), and general-purpose GPT-4 beat it on most financial tasks — "there was a moment people thought training a specialist AI on their own data would work, but the biggest frontier models were simply better" (as Ethan Mollick summarized it).</p>'+
+  '<p>Everything actually shipped since is <b>retrieval-based</b>: earnings-call summaries (2024), Document Insights (2025) — conversational Q&A over 200M+ documents, with <b>transparency links</b> jumping to the source excerpt and even audio playback of the quoted remark. Bloomberg Intelligence analysts participate in training and evaluation.</p>'+
+  '<div class="vd-num">One caveat: BloombergGPT was not a pure failure — the eval sets and in-house expertise built along the way became the foundation of the retrieval products. What lost was "train a domain GPT" as a strategy.</div>'},
+ {id:'sierra',name:'Sierra',meta:'Customer service · $200M ARR (2026-05) · $15.8B · works with 40% of the Fortune 50',lv:[60,80,95,90,85,55,75],desc:
+  '<p>The vertical that turned "company policy" into a product. Companies dress an agent in their identity, policies, and processes (Journeys — goals and guardrails defined in natural language), and the Agent Data Platform ties conversation data to systems of record. The pricing is radical: <b>billed per resolved case</b> (outcome-based) — failed interactions cost nothing.</p>'+
+  '<p>It turned lever ④ into an academic standard: τ-bench (2024) has agents solve problems through multi-turn dialogue with simulated customers plus API calls while complying with policy documents — GPT-4o-class function-calling agents succeed under 50%, and 8-retry consistency (pass^8) collapses below 25% in the retail domain. "Bare frontier models cannot reliably follow company policy" is the company thesis.</p>'+
+  '<div class="vd-num">Reported results: 70% containment at a large customer, CSAT 4.5/5+ (vendor and secondhand figures). Sierra agents also surface through the ChatGPT channel — interpenetration here too.</div>'},
+ {id:'evenup',name:'EvenUp',meta:'Personal-injury law · $1B+ in claims processed · 20% of the top 100 PI firms',lv:[95,75,90,70,100,70,65],desc:
+  '<p>An assembly line generating demand letters for personal-injury (PI) firms. Its in-house system Piai, trained on hundreds of thousands of injury cases, ships with <b>review by 100+ in-house legal and medical experts inside the product SKU</b> — part of the product, not overhead. The pattern Bain Capital Ventures called one every AI company should learn: start as a human-in-the-loop service, productize the correction data.</p>'+
+  '<p>Claims, on its own unverified benchmark, 95% medical-cost line-item identification vs 80% for GPT-4, and 90% vs 68% on visit-date-to-provider mapping. The real moat is levers ① and ⑤ combined — <b>an accumulating database of settlement and verdict outcomes</b> no competitor can license.</p>'+
+  '<div class="vd-num">A structural neighbor: Norm Ai compiles regulations into a decision-tree language that agents execute — the extreme where the ontology (lever ②) is the product.</div>'},
+ {id:'cerebras-v',name:'Cerebras KB',meta:'In-house vertical · semiconductor engineering · 15,000+ questions/day',lv:[90,85,80,40,70,50,85],desc:
+  '<p>A re-reading of the in-house cases in this report as vertical domains. The "industry" of Cerebras KB is semiconductor and HW-SW engineering — and the corpus is unlicensable: Slack engineering threads, wikis, 40GB+ code repositories, <b>netlists, PRM documents, per-team custom DBs.</b></p>'+
+  '<p>All seven levers are present. Structure = the thread-distillation schema {question/summary/resolution/system/code-refs} + project scopes (Compiler, ML infra, DC ops). Workflow = planner fan-out and expert-shaped tools like who_knows (find the person). Interface = Slack bot + Web UI + <b>MCP into Claude Code.</b> The lesson is vertical too: "search that looked everywhere quickly became useless" — project-level scoping was the precondition for expert-grade relevance.</p>'+
+  '<div class="vd-num">LinkedIn Support KG (resolution time −28.6%) and the DoorDash Dasher bot (guardrails −90%) read the same way — an in-house vertical is a vertical startup in miniature, and vice versa.</div>'}
+];
+const vtabsEl=document.getElementById('vtabs'), vmetaEl=document.getElementById('vmeta'), vdescEl=document.getElementById('vdesc'), vleversEl=document.getElementById('vlevers');
+function showV(id){
+  document.querySelectorAll('#vtabs .ptab').forEach(b=>{const on=b.dataset.id===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
+  const v=VERTS.find(x=>x.id===id);
+  vmetaEl.textContent=v.meta;
+  vdescEl.innerHTML=v.desc;
+  vleversEl.innerHTML='<div class="pstack-title" style="margin-bottom:6px">Lever profile <span style="text-transform:none;letter-spacing:0">(qualitative)</span></div>';
+  v.lv.forEach((val,i)=>{
+    const row=document.createElement('div'); row.className='lever l'+(i+1);
+    row.innerHTML='<div class="ln">'+LEVERS[i]+'</div><div class="lb"><div class="lf" style="width:0"></div></div>';
+    vleversEl.appendChild(row);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{row.querySelector('.lf').style.width=val+'%';}));
+  });
+}
+VERTS.forEach(v=>{
+  const b=document.createElement('button'); b.className='ptab'; b.dataset.id=v.id; b.textContent=v.name;
+  b.setAttribute('role','tab'); b.addEventListener('click',()=>showV(v.id)); vtabsEl.appendChild(b);
+});
+showV('harvey');
+</script>
+
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+</body>
+</html>
