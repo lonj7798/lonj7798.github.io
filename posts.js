@@ -5,6 +5,18 @@
 // Fields: slug*, title*, date* (YYYY-MM-DD), description, tags[], lang
 window.POSTS = [
   {
+    "slug": "alphago-self-play",
+    "title": "Search Is the Teacher — Lessons From a $10K AlphaGo Rebuild",
+    "date": "2026-08-31",
+    "description": "Eric Jang rebuilds AlphaGo for a few $K and uses it to explain why MCTS sidesteps the credit-assignment problem that plagues LLM RL. 1X Technologies AI 부사장 출신이자 구글 딥마인드 로보틱스 연구원이었던 Eric Jang이 안식년 동안 최신 도구로 알파고를 처음부터 다시 만든 경험을 Dwarkesh Patel과 함께 칠판 강의 형식으로 풀어낸다.",
+    "tags": [
+      "deep-dive",
+      "rl"
+    ],
+    "lang": "en · ko",
+    "art": "ridge"
+  },
+  {
     "slug": "ai-1000x-cheaper",
     "title": "The token factory — what a 1000x cost cut actually rests on",
     "date": "2026-08-30",

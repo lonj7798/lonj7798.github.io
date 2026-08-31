@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>탐색이 곧 교사다 — 1만 달러 AlphaGo 재구축이 남긴 교훈</title>
+<meta name="description" content="2026년 1월까지 1X Technologies의 AI 부사장이었고 그 전에는 Google DeepMind Robotics의 연구원이었던 Eric Jang이, 안식년의 일부를 들여 기부받은 약 1만 달러의 컴퓨트로 AlphaGo를 현대적 도구로 재구축한 뒤 Dwarkesh Patel과 두 시간 반짜리 칠판 강의로 그 전체 스택을 훑었다. 그의 핵심 주장은 Monte Carlo Tree Search가 정책 개선 연산자(policy improvement operator)로서 매 수마다 더 나은 학습 타깃을 만들어내며, 그 덕분에 Alp">
+<link rel="alternate" hreflang="en" href="index.html">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#17181c;--body:#33353c;--mut:#676b76;--hair:rgba(23,24,28,.08);
+--blue:#2f6bd8;--purple:#7a4fd3;--orange:#e08a1e;--pink:#d34f6e;--teal:#0f9d8c;
+--serif:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--shadow:0 1px 2px rgba(23,24,28,.03),0 10px 30px rgba(23,24,28,.05)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:760px;margin:0 auto;padding:0 22px}
+#pbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--ink);opacity:.75;z-index:50}
+header.top{padding:58px 0 18px}
+.eyebrow{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow .yt{display:inline-flex;align-items:center;gap:7px}
+.eyebrow .yt i{width:7px;height:7px;border-radius:50%;background:var(--pink);display:inline-block}
+.lang-sw{display:inline-flex;background:rgba(255,255,255,.85);border-radius:999px;padding:3px;box-shadow:inset 0 0 0 1px var(--hair);text-transform:none;letter-spacing:0}
+.lang-sw a{padding:4px 12px;border-radius:999px;color:var(--mut);text-decoration:none;font-size:12px;letter-spacing:.03em}
+.lang-sw a.on{background:var(--ink);color:#fff}
+h1{font-family:var(--serif);font-weight:650;font-size:clamp(30px,5.4vw,44px);line-height:1.22;letter-spacing:-.012em;color:var(--ink);margin:18px 0 12px}
+.lede{font-size:19px;line-height:1.6;color:var(--body);max-width:640px;margin:0 0 16px}
+.meta{font-size:13.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.meta .sep{opacity:.5}
+.tag{font-weight:650;text-decoration:none}
+.tag.c0{color:var(--blue)}.tag.c1{color:var(--purple)}.tag.c2{color:var(--orange)}.tag.c3{color:var(--pink)}.tag.c4{color:var(--teal)}
+figure.hero{margin:22px 0 6px}
+figure.hero img{width:100%;height:auto;display:block;border-radius:22px}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:24px 26px;margin:22px 0}
+.card .ct{font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:650}
+.summary p{margin:0 0 10px;font-size:16.5px;color:var(--ink)}
+.summary ul{margin:10px 0 0;padding-left:20px}
+.summary li{margin:5px 0;font-size:15.5px}
+.listen{display:flex;flex-direction:column;gap:12px}
+.listen audio{width:100%;height:40px}
+.listen .who{font-size:13.5px;color:var(--mut);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--bg);color:var(--mut);border:1px solid var(--hair);cursor:pointer;transition:background .15s,color .15s}
+.chip:hover{color:var(--ink);border-color:rgba(23,24,28,.2)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.now{font-size:12.5px;color:var(--mut);min-height:18px}
+.source{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+.source img{width:100%;border-radius:12px;display:block;aspect-ratio:16/9;object-fit:cover}
+.source .t{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0 0 4px;line-height:1.35}
+.source .s{font-size:13.5px;color:var(--mut)}
+.source a.watch{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink);text-decoration:none;font-weight:650;border-bottom:1px solid rgba(23,24,28,.25)}
+.chapters{margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;columns:2;column-gap:18px}
+.chapters li{break-inside:avoid;margin:2px 0}
+.chapters a{color:var(--mut);text-decoration:none;font-variant-numeric:tabular-nums}
+.chapters a:hover{color:var(--ink)}
+.chapters .ct{margin:0 0 6px}
+@media(max-width:560px){.source{grid-template-columns:1fr}.chapters{columns:1}.card{padding:20px 18px;border-radius:18px}}
+article.body{padding:8px 0 30px}
+.body h2{font-family:var(--serif);font-size:clamp(24px,3.6vw,30px);line-height:1.3;color:var(--ink);margin:48px 0 12px;font-weight:650;letter-spacing:-.01em}
+.body h3{font-size:19px;color:var(--ink);margin:30px 0 8px;font-weight:650}
+.body h4{font-size:16px;color:var(--ink);margin:22px 0 6px;font-weight:650}
+.body p{margin:0 0 18px}
+.body a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(23,24,28,.25)}
+.body a:hover{border-color:var(--ink)}
+.body a.ts{font-family:var(--mono);font-size:.8em;color:var(--blue);border:0;background:rgba(47,107,216,.08);padding:1px 7px;border-radius:999px;white-space:nowrap;vertical-align:.08em}
+.body ul,.body ol{padding-left:24px;margin:0 0 18px}
+.body li{margin:6px 0}
+.body li>p{margin:0 0 6px}
+.body strong{color:var(--ink);font-weight:650}
+.body blockquote{margin:26px 0;padding:0 0 0 20px;border-left:3px solid var(--ink);color:var(--ink);font-family:var(--serif);font-size:19.5px;line-height:1.5}
+.body blockquote p{margin:0 0 6px}
+.body blockquote cite,.body blockquote em.by{display:block;font-family:var(--sans);font-style:normal;font-size:13.5px;color:var(--mut);margin-top:4px}
+.body blockquote.pull{border:0;padding:22px 26px;background:var(--card);border-radius:20px;box-shadow:var(--shadow)}
+.body code{font-family:var(--mono);font-size:.88em;background:rgba(23,24,28,.05);padding:.1em .4em;border-radius:6px}
+.body pre{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;overflow:auto;font-size:13.5px;line-height:1.55;margin:0 0 20px}
+.body pre code{background:none;padding:0}
+figure.fig{margin:30px -6px}
+figure.fig img{width:100%;height:auto;display:block;border-radius:16px;background:#fff}
+figure.fig figcaption{font-size:13.5px;color:var(--mut);margin:10px 8px 0;line-height:1.5}
+figure.fig figcaption b{color:var(--ink);font-weight:650}
+figure.fig-inline .inl{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;overflow-x:auto}
+figure.fig-inline .inl svg{max-width:100%;height:auto;display:block}
+.tbl{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--hair)}
+th{color:var(--ink);font-weight:650}
+hr{border:0;height:1px;background:var(--hair);margin:36px 0}
+.body #references+ol,.body #references+p+ol,.refs ol{font-size:14.5px}
+.body sup{font-size:.7em}
+footer.credits{padding:26px 0 96px;color:var(--mut);font-size:13.5px;line-height:1.65;border-top:1px solid var(--hair);margin-top:24px}
+footer.credits p{margin:0 0 8px}
+@media print{#pbar,.lang-sw,.listen,#jw-home{display:none}}
+
+</style>
+</head>
+<body>
+<div id="pbar" aria-hidden="true"></div>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">
+    <span class="yt"><i></i>YouTube · Dwarkesh Patel · 2026-05-15</span>
+    <nav class="lang-sw" aria-label="language">
+      <a href="index.html" class="">EN</a>
+      <a href="ko.html" class="on">한국어</a>
+    </nav>
+  </div>
+  <h1>탐색이 곧 교사다 — 1만 달러 AlphaGo 재구축이 남긴 교훈</h1>
+  <p class="lede">Eric Jang이 칠판 앞에서 다시 쌓아 올린 AlphaGo는 LLM 강화학습이 왜 정보에 굶주려 있는지, 그리고 수마다 붙는 교사가 있다면 무엇이 달라지는지를 보여준다.</p>
+  <div class="meta">
+    <span>2026-08-31</span>
+    <span class="sep">·</span><span>읽기 15분</span>
+    <span class="sep">·</span><span>듣기 21분</span>
+    <span class="sep">·</span><a class="tag c0" href="../../?tag=deep-dive">#deep-dive</a><a class="tag c1" href="../../?tag=rl">#rl</a>
+  </div>
+</header>
+
+<figure class="hero"><img src="figures/hero.png" alt="바둑판이 성긴 탐색 트리로 펼쳐졌다가 작은 신경망으로 접히고, 그 신경망이 다시 다음 탐색으로 이어지는 그림."></figure>
+
+<section class="card summary" aria-label="요약">
+  <p class="ct">요약</p>
+  <p>2026년 1월까지 1X Technologies의 AI 부사장이었고 그 전에는 Google DeepMind Robotics의 연구원이었던 Eric Jang이, 안식년의 일부를 들여 기부받은 약 1만 달러의 컴퓨트로 AlphaGo를 현대적 도구로 재구축한 뒤 Dwarkesh Patel과 두 시간 반짜리 칠판 강의로 그 전체 스택을 훑었다. 그의 핵심 주장은 Monte Carlo Tree Search가 정책 개선 연산자(policy improvement operator)로서 매 수마다 더 나은 학습 타깃을 만들어내며, 그 덕분에 AlphaGo Zero의 학습이 탐색이 계속 개선해 주는 레이블에 대한 안정적인 지도학습으로 수렴한다는 것이다. 반면 LLM 강화학습은 궤적 전체를 대략 1비트의 결과 신호로 채점하기 때문에 그토록 샘플에 굶주린다. 이 대담에는 보기 드문 투명성의 순간도 있는데, 방영 나흘 뒤 Jang이 방송 중 자신의 분산 계산을 바로잡는 정오표를 직접 공개했고 이 글은 그 수정본을 따른다.</p>
+  <ul><li>MCTS는 수마다 개선된 타깃을 하나씩 건네지만, 결과 기반 RL은 궤적당 대략 1비트를 준다.</li><li>AlphaGo Zero의 루프는 탐색이 계속 개선하는 레이블에 대한 지도학습이다 — 명시적 TD 장치가 없다.</li><li>재구축 비용은 약 1만 달러였지만 KataGo에서 부트스트랩했고, 밑바닥부터의 실행은 아직 검증 전이었다.</li><li>Jang 자신의 정오표가 방송 중 분산 수식을 바로잡았고, 신용 할당의 난도는 시퀀스 길이를 따라 커진다.</li><li>Claude 에이전트가 하이퍼파라미터 튜닝과 실험 실행을 자동화했지만, 다음 실험의 선택은 인간의 몫으로 남았다.</li><li>탐색을 LLM에 이식하려면 접지된 가치 함수와 재방문 가능한 행동이 필요한데, 둘 다 아직 없다.</li></ul>
+</section>
+
+
+<section class="card listen" aria-label="이 글 듣기">
+  <p class="ct">이 글 듣기</p>
+  <audio id="narr" controls preload="none" src="audio/ko.mp3"></audio>
+  <div class="who"><span>유진(Yujin) 목소리 · Higgs TTS</span><span>20:33</span></div>
+  <div class="chips" id="chips" role="list" aria-label="섹션으로 이동">
+    <button class="chip" data-t="1.2" role="listitem">2026년의 질문에 답하려고 다시 세운 2017년의 루프</button><button class="chip" data-t="102.8" role="listitem">두 개의 네트워크 헤드가 불가능한 트리를 탐색 가능하게 만든다</button><button class="chip" data-t="238.95" role="listitem">학습은 탐색의 증류이고, 매 게임이 끝날 때마다 돌아간다</button><button class="chip" data-t="450.9" role="listitem">수마다 붙는 레이블 하나가 빨대로 빨아들인 1비트를 이긴다</button><button class="chip" data-t="653.29" role="listitem">LLM으로의 이식은 이름이 붙은 두 부품에서 막힌다</button><button class="chip" data-t="778.94" role="listitem">숫자는 대체로 맞는다 — 한 눈금씩 어긋났고, 스스로 바로잡았다</button><button class="chip" data-t="926.04" role="listitem">에이전트는 지표를 갈아 넣고, 실험 트리는 인간이 쥔다</button><button class="chip" data-t="1102.42" role="listitem">열린 질문에는 저마다 판정 조건이 붙어 있다</button>
+  </div><div class="now" id="now"></div>
+</section>
+
+
+<section class="card source" aria-label="원본 영상">
+  <a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw" target="_blank" rel="noopener"><img src="figures/thumb.jpg" alt=""></a>
+  <div>
+    <p class="ct">원본 영상</p>
+    <p class="t">What rebuilding AlphaGo teaches us about self-play, RL, and future of LLMs - Eric Jang</p>
+    <div class="s">Dwarkesh Patel · 2026-05-15 · 2:37:17</div>
+    <a class="watch" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw" target="_blank" rel="noopener">YouTube에서 보기 ↗</a>
+    <ul class="chapters"><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=0s" target="_blank" rel="noopener">0:00</a> Basics of Go</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=486s" target="_blank" rel="noopener">8:06</a> Monte Carlo Tree Search</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1913s" target="_blank" rel="noopener">31:53</a> What the neural network does</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3622s" target="_blank" rel="noopener">1:00:22</a> Self-play</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5127s" target="_blank" rel="noopener">1:25:27</a> Alternative RL approaches</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6336s" target="_blank" rel="noopener">1:45:36</a> Why doesn’t MCTS work for LLMs</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7258s" target="_blank" rel="noopener">2:00:58</a> Off-policy training</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7911s" target="_blank" rel="noopener">2:11:51</a> RL is even more information inefficient than you thought</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8525s" target="_blank" rel="noopener">2:22:05</a> Automated AI researchers</li></ul>
+  </div>
+</section>
+
+<article class="body">
+<h2 id="2026년의-질문에-답하려고-다시-세운-2017년의-루프">2026년의 질문에 답하려고 다시 세운 2017년의 루프</h2>
+<p>Eric Jang은 AI 부사장으로 일하던 1X Technologies를 2026년 1월에 떠나 안식년에 들어갔다 [2]. 그 전에는 Google Brain과 지금의 Google DeepMind Robotics에서 6년을 보내며, 로봇 파지(grasping)를 위한 구글의 대규모 off-policy 시스템인 QT-Opt를 공동 저술했다 [3]. 안식년의 첫 공개 프로젝트가 바로 현대적 도구로 다시 만든 AlphaGo인데, 2026-04-28에 공개한 인터랙티브 튜토리얼, AutoGo라는 이름의 MIT 라이선스 저장소, 기부받은 컴퓨트로 학습시킨 바둑 봇으로 구성된다 [4][5]. 그리고 2026-05-15, 그는 바둑의 규칙부터 자동화된 연구까지 스택 전체를 칠판 앞에서 Dwarkesh Patel에게 강의했다 [1].</p>
+<p>전제는 때로 뒤로 물러서야 미래가 더 잘 보인다는 것이다. AlphaGo는 탐색, 학습, self-play가 하나의 루프로 맞물려 도는 가장 깔끔한 실전 사례로 남아 있고, 2017년의 이 설계는 오늘날의 LLM 강화학습이 여전히 우회하고 있는 문제, 곧 신용 할당(credit assignment)을 정면으로 풀었다. 시점도 의도적이다. 결과 보상으로 학습한 추론 모델이 업계를 지배하고 자동화된 AI 연구자 논쟁이 한창인 가운데, Jang 자신도 2026년 2월 에세이에서 사고 자체가 계산의 기본 단위가 되어 간다고 주장한 터였다 [6]. 그는 프로젝트 전체를 관통하는 훅으로 강의를 연다. LLM 코딩 어시스턴트 덕분에, 한때 DeepMind 과학자 팀과 수백만 달러가 들던 일을 이제는 몇천 달러로 시도할 수 있다는 것이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=120s" target="_blank" rel="noopener">2:00</a>. 이 주장의 정직한 버전이 사실 더 흥미로운 쪽인데, 그 이야기는 뒤에서 다룬다.</p>
+<h2 id="두-개의-네트워크-헤드가-불가능한-트리를-탐색-가능하게-만든다">두 개의 네트워크 헤드가 불가능한 트리를 탐색 가능하게 만든다</h2>
+<p>바둑의 어려움은 수치로 표현된다. 모든 바둑 AI가 학습과 채점의 기준으로 삼는 무모호한 규칙 체계인 Tromp-Taylor 규칙 아래에서 [7]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=159s" target="_blank" rel="noopener">2:39</a>, 한 판은 대략 250~300수에 걸쳐 진행되고 수마다 최대 361가지 선택지가 있다. Jang은 순진한 게임 트리를 361의 300제곱쯤 되는, 우주의 원자 수보다 많은 경로로 스케치한 뒤, 대칭성과 자리바꿈(transposition)이 그 수를 줄여 준다고 곧바로 단서를 단다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=596s" target="_blank" rel="noopener">9:56</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=658s" target="_blank" rel="noopener">10:58</a>. 합법적인 바둑판 배치(legal position)의 정확한 개수는 John Tromp가 2016년 1월에 계산했는데 약 2.08 × 10^170이다 [8]. 전수 탐색은 애초에 불가능하니, 문제는 유한한 수읽기 예산을 어디에 쓸 것인가가 된다.</p>
+<p>AlphaGo의 답은 탐색 루프로 감싼 작은 네트워크 하나다. 바둑판은 흑돌, 백돌, 빈 점의 세 평면 이미지로 들어와, Jang이 약 10개 레이어에 300만 파라미터 미만으로 잡는 residual network를 통과한다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2270s" target="_blank" rel="noopener">37:50</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2508s" target="_blank" rel="noopener">41:48</a>. 그 몸통을 두 헤드가 공유하는데, 정책 헤드는 361개 점 위의 분포를 출력하고 가치 헤드는 승리 확률을 이진 분류로 예측한다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1914s" target="_blank" rel="noopener">31:54</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1959s" target="_blank" rel="noopener">32:39</a>. 그의 재구현에서는 데이터가 적은 이 영역에서 여전히 ResNet이 transformer를 이겼는데, 국소 합성곱이 바둑의 공간 구조와 맞아떨어지기 때문이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1959s" target="_blank" rel="noopener">32:39</a>. 이 아키텍처의 알려진 약점 — 바둑판 반대편의 싸움들을 잇는 일 — 은 KataGo의 global feature pooling이 보완하도록 고안된 부분으로, Jang이 그 논문에서 짚어 소개하는 발견이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2002s" target="_blank" rel="noopener">33:22</a>[10].</p>
+<p>수를 둘 때마다 200~2,048회 시뮬레이션의 Monte Carlo Tree Search(MCTS)가 새로 돌아가며, 각 시뮬레이션은 같은 4단계 루프다. PUCT 기준 — 평균 행동 가치에, 방문할수록 줄어드는 사전확률 가중 탐험 보너스를 더한 것 — 으로 자식 노드를 고르고, 새 리프를 확장하고, 끝까지 두는 대신 가치 헤드로 그 리프를 평가한 뒤, 결과를 누적 평균으로 트리 위로 되돌려 올린다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2585s" target="_blank" rel="noopener">43:05</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2714s" target="_blank" rel="noopener">45:14</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3213s" target="_blank" rel="noopener">53:33</a>. 분업은 정확하다. 정책의 사전확률이 트리의 너비를 쳐내고, 가치망이 깊이를 잘라내며, 최종 착수는 가치 추정치가 아니라 탐색이 각 자식을 얼마나 자주 방문했는지로 정해진다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1635s" target="_blank" rel="noopener">27:15</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3262s" target="_blank" rel="noopener">54:22</a>.</p>
+<figure class="fig fig-inline" id="fig-1"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One MCTS simulation loop: selection, expansion, evaluation, backup" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f6f5f1;display:block">
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#17181c"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6bd8"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7a4fd3"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- ===== Left: sparse tree ===== -->
+  <g stroke-linecap="round">
+    <!-- edges: root to level 1 -->
+    <line x1="210" y1="126" x2="112" y2="248" stroke="#676b76" stroke-width="2"/>
+    <line x1="210" y1="126" x2="210" y2="246" stroke="#676b76" stroke-width="2"/>
+    <line x1="212" y1="125" x2="306" y2="247" stroke="#2f6bd8" stroke-width="3.5"/>
+    <!-- edges: blue child to level 2 -->
+    <line x1="306" y1="277" x2="244" y2="398" stroke="#676b76" stroke-width="2"/>
+    <line x1="310" y1="278" x2="342" y2="398" stroke="#2f6bd8" stroke-width="3.5"/>
+    <!-- unvisited stub edges (faint, dashed) -->
+    <line x1="112" y1="278" x2="80" y2="350" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="112" y1="278" x2="135" y2="352" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="210" y1="276" x2="200" y2="352" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="244" y1="428" x2="228" y2="490" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="344" y1="428" x2="330" y2="490" stroke="#2f6bd8" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.55"/>
+    <line x1="344" y1="428" x2="382" y2="488" stroke="#2f6bd8" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.55"/>
+  </g>
+  <!-- nodes -->
+  <circle cx="210" cy="110" r="17" fill="#fff" stroke="#2f6bd8" stroke-width="3.5"/>
+  <circle cx="112" cy="263" r="14" fill="#fff" stroke="#676b76" stroke-width="2"/>
+  <circle cx="210" cy="261" r="14" fill="#fff" stroke="#676b76" stroke-width="2"/>
+  <circle cx="308" cy="262" r="15" fill="#fff" stroke="#2f6bd8" stroke-width="3.5"/>
+  <circle cx="242" cy="413" r="13" fill="#fff" stroke="#676b76" stroke-width="2"/>
+  <!-- the new leaf on the blue path -->
+  <circle cx="345" cy="413" r="14" fill="#2f6bd8" stroke="#2f6bd8" stroke-width="3"/>
+
+  <!-- ===== Right: four-step cycle ===== -->
+  <!-- Box 1 · Selection (top-left) -->
+  <g>
+    <rect x="470" y="100" width="300" height="118" rx="10" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="494" y="140" font-size="24" font-weight="700" fill="#17181c">1 &#183; Selection</text>
+    <text x="494" y="170" font-size="17" fill="#676b76">PUCT picks a child</text>
+    <text x="494" y="200" font-size="15" fill="#33353c" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">Q(s,a) + c&#183;P(a)&#183;&#8730;N/(1+N(a))</text>
+  </g>
+  <!-- Box 2 · Expansion (top-right) -->
+  <g>
+    <rect x="860" y="100" width="300" height="118" rx="10" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="884" y="147" font-size="24" font-weight="700" fill="#17181c">2 &#183; Expansion</text>
+    <text x="884" y="180" font-size="17" fill="#676b76">add a new leaf</text>
+  </g>
+  <!-- Box 3 · Evaluation (bottom-right) -->
+  <g>
+    <rect x="860" y="330" width="300" height="118" rx="10" fill="#fff" stroke="#7a4fd3" stroke-width="2.5"/>
+    <text x="884" y="377" font-size="24" font-weight="700" fill="#17181c">3 &#183; Evaluation</text>
+    <text x="884" y="410" font-size="17" fill="#676b76">value head scores it</text>
+  </g>
+  <!-- Box 4 · Backup (bottom-left) -->
+  <g>
+    <rect x="470" y="330" width="300" height="118" rx="10" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="494" y="377" font-size="24" font-weight="700" fill="#17181c">4 &#183; Backup</text>
+    <text x="494" y="410" font-size="17" fill="#676b76">running mean up to root</text>
+  </g>
+
+  <!-- cycle arrows: 1 -> 2 -> 3 -> 4 -> 1 -->
+  <line x1="778" y1="159" x2="850" y2="159" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+  <line x1="1010" y1="226" x2="1010" y2="320" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+  <line x1="852" y1="389" x2="780" y2="389" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+  <line x1="620" y1="322" x2="620" y2="228" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+
+  <!-- Annotation: policy prior prunes breadth -> box 1 -->
+  <text x="470" y="62" font-size="17" font-weight="600" fill="#2f6bd8">policy prior prunes breadth</text>
+  <line x1="530" y1="70" x2="530" y2="92" stroke="#2f6bd8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+  <!-- Annotation: value net truncates depth -> box 3 -->
+  <text x="880" y="500" font-size="17" font-weight="600" fill="#7a4fd3">value net truncates depth</text>
+  <line x1="940" y1="480" x2="940" y2="458" stroke="#7a4fd3" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+  <!-- ===== Footer strip ===== -->
+  <rect x="40" y="560" width="1120" height="70" rx="10" fill="#fff" stroke="#676b76" stroke-width="1" opacity="0.95"/>
+  <text x="72" y="603" font-size="19" font-weight="600" fill="#17181c">repeat 200&#8211;2,048 times per move</text>
+  <text x="1128" y="603" font-size="19" font-weight="600" fill="#17181c" text-anchor="end">visit counts become the vote</text>
+</svg>
+</div><figcaption><b>그림 1.</b> MCTS 시뮬레이션 한 번: PUCT가 자식을 고르고, 새 리프를 확장하고, 플레이아웃 대신 가치 헤드가 점수를 매기고, 결과가 누적 평균으로 루트까지 되돌아 올라간다. 200~2,048회 시뮬레이션 뒤 방문 횟수가 착수를 정한다.</figcaption></figure>
+
+<h2 id="학습은-탐색의-증류이고-매-게임이-끝날-때마다-돌아간다">학습은 탐색의 증류이고, 매 게임이 끝날 때마다 돌아간다</h2>
+<p>Jang이 청중에게 가장 보여주고 싶어 하는 대목은 게임이 끝난 뒤에 일어난다. 날것의 정책이 흐릿한 추측을 내놓으면 MCTS가 그것을 더 뾰족한 방문 분포로 다듬고, 학습 스텝은 그저 정책 헤드가 그 다듬어진 분포를 예측하도록, 가치 헤드가 실제로 누가 이겼는지를 예측하도록 가르칠 뿐이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3624s" target="_blank" rel="noopener">1:00:24</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3766s" target="_blank" rel="noopener">1:02:46</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4250s" target="_blank" rel="noopener">1:10:50</a>. DeepMind 스스로는 AlphaGo Zero가 "자기 자신의 교사"가 된다고 표현했는데 [11], Jang의 버전은 더 기계적이다. 증류가 약 1,000회 시뮬레이션 분량의 탐색을 다음 forward pass 안에 상각(amortize)해 넣기 때문에, 다음 탐색은 더 강한 사전확률에서 출발해 같은 예산으로 더 높이 올라간다는 것이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3814s" target="_blank" rel="noopener">1:03:34</a>. 그는 구현 어디에도 명시적인 temporal-difference 학습이나 동적 계획법이 없다는 점을 강조한다. 탐색이 계속 개선해 주는 레이블에 대한 지도학습일 뿐이고, 그래서 학습도 그만큼 안정적이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8419s" target="_blank" rel="noopener">2:20:19</a>.</p>
+<p>Jang의 로보틱스 이력의 어휘로 말하면 MCTS는 DAgger 방식의 전문가다 [13]. 정책이 도달한 모든 상태를 다시 찾아가 더 나은 행동으로 레이블을 다시 붙여 주기 때문에, 진 300수짜리 게임도 종국의 판정 하나가 아니라 300개의 조밀한 학습 타깃을 남긴다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3949s" target="_blank" rel="noopener">1:05:49</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3986s" target="_blank" rel="noopener">1:06:26</a> "MCTS가 하는 일은 이렇게 말하는 것이다. 너는 결국 지고 만 게임을 뒀지만, 매 수마다 네가 대신 뒀어야 할 엄밀히 더 나은(strictly better) 수를 내가 하나씩 알려주겠다."</p><cite>Eric Jang</cite></blockquote>
+<p>이 프레임의 수사적 엔진은 "엄밀히"라는 말인데, 대담은 2분도 지나지 않아 그것을 바로잡는다. Patel이 파고들자 Jang은 "실제로는 휴리스틱이다"라고 인정하고 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4079s" target="_blank" rel="noopener">1:07:59</a>, AlphaGo Zero 논문도 탐색이 날것의 정책보다 "대개(usually)" 더 강한 수를 고른다고만 주장한다 [12]. 그가 그리는 실패 모드는 구체적이다. self-play 게임이 늘 불계(투료)로 끝나면 리플레이 버퍼에 끝까지 계가된 종국이 고갈되고, 탐색이 바닥을 딛는 바로 그 지점에서 가치 헤드가 망가지며, 오염된 가치가 PUCT를 타고 올라와 사전확률보다 못한 분포를 만든다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4124s" target="_blank" rel="noopener">1:08:44</a>. 그의 처방은 이론이 아니라 엔지니어링이다. 게임의 약 10%는 Tromp-Taylor 방식의 완전한 계가까지 강제로 두게 하고, 거의 판가름 난 종반부터 가치를 배우게 해서 탐색이 그것을 모호한 중반전으로 되올릴 수 있게 하라는 것이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4170s" target="_blank" rel="noopener">1:09:30</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4327s" target="_blank" rel="noopener">1:12:07</a>. 이 의존성은 절대적이어서, "궁극적으로, 가치를 접지해 주는(grounding) 함수가 없으면 MCTS는 무너진다"고 그는 말한다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4481s" target="_blank" rel="noopener">1:14:41</a>.</p>
+<p>한 가지 버전 구분이 중요한데, 대담이 "AlphaGo"라는 말을 느슨하게 쓰기 때문이다. 우아한 루프 — 두 헤드를 가진 단일 네트워크, 롤아웃 없음, 탐색 분포로 학습되는 정책 — 는 2017년의 AlphaGo Zero다. 이세돌을 이긴 2016년 시스템은 인간 전문가의 기보로 초기화되었고 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2334s" target="_blank" rel="noopener">38:54</a>, 두 개의 네트워크를 따로 유지했으며 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4481s" target="_blank" rel="noopener">1:14:41</a>, REINFORCE로 정책을 다듬었고, 리프 평가에서는 가치망과 별도의 빠른 롤아웃 정책의 플레이아웃을 같은 가중치로 평균했다. 이후 논문들이 버린 디테일들이다 [9][12]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3016s" target="_blank" rel="noopener">50:16</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3124s" target="_blank" rel="noopener">52:04</a>. 우리의 해석은 이렇다. 그 우아함은 두 번째 반복에서야 도달한 것이고, 더 지저분한 인간 부트스트랩 시스템이 먼저 작동한 다음에야 가능했다 — 이 루프가 설계의 교훈으로 제시될 때 기억해 둘 만한 사실이다.</p>
+<figure class="fig fig-inline" id="fig-2"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="AlphaGo Zero self-play loop: search sharpens the policy prior, and training on search results makes the next prior stronger" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: block;">
+  <defs>
+    <marker id="fig02-arrow-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#17181c"/>
+    </marker>
+    <marker id="fig02-arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0f9d8c"/>
+    </marker>
+  </defs>
+
+  <!-- ===== top band: prior vs search distribution ===== -->
+  <!-- left histogram: raw policy prior (flat) -->
+  <g>
+    <rect x="180" y="147.4" width="26" height="19.6" fill="#676b76"/>
+    <rect x="212" y="153.0" width="26" height="14.0" fill="#676b76"/>
+    <rect x="244" y="141.8" width="26" height="25.2" fill="#676b76"/>
+    <rect x="276" y="150.2" width="26" height="16.8" fill="#676b76"/>
+    <rect x="308" y="144.6" width="26" height="22.4" fill="#676b76"/>
+    <rect x="340" y="153.0" width="26" height="14.0" fill="#676b76"/>
+    <rect x="372" y="150.2" width="26" height="16.8" fill="#676b76"/>
+    <rect x="404" y="155.8" width="26" height="11.2" fill="#676b76"/>
+    <line x1="172" y1="167" x2="438" y2="167" stroke="#676b76" stroke-width="1.5"/>
+    <text x="305" y="196" text-anchor="middle" font-size="17" fill="#676b76">raw policy prior</text>
+  </g>
+
+  <!-- arrow between histograms -->
+  <line x1="475" y1="130" x2="720" y2="130" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+  <text x="600" y="112" text-anchor="middle" font-size="18" fill="#17181c" font-weight="600">search sharpens</text>
+
+  <!-- right histogram: MCTS visit distribution (peaky) -->
+  <g>
+    <rect x="770" y="161.4" width="26" height="5.6" fill="#676b76"/>
+    <rect x="802" y="162.8" width="26" height="4.2" fill="#676b76"/>
+    <rect x="834" y="66.2" width="26" height="100.8" fill="#2f6bd8"/>
+    <rect x="866" y="158.6" width="26" height="8.4" fill="#676b76"/>
+    <rect x="898" y="160.0" width="26" height="7.0" fill="#676b76"/>
+    <rect x="930" y="162.8" width="26" height="4.2" fill="#676b76"/>
+    <rect x="962" y="161.4" width="26" height="5.6" fill="#676b76"/>
+    <rect x="994" y="162.8" width="26" height="4.2" fill="#676b76"/>
+    <line x1="762" y1="167" x2="1028" y2="167" stroke="#676b76" stroke-width="1.5"/>
+    <text x="895" y="196" text-anchor="middle" font-size="17" fill="#676b76">MCTS visit distribution</text>
+  </g>
+
+  <!-- divider between bands -->
+  <line x1="110" y1="240" x2="1090" y2="240" stroke="#676b76" stroke-width="1" stroke-dasharray="3 6" opacity="0.6"/>
+
+  <!-- ===== bottom band: the outer loop (clockwise) ===== -->
+  <!-- box 1: play a game -->
+  <g>
+    <rect x="110" y="300" width="320" height="96" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="270" y="342" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">play a game</text>
+    <text x="270" y="372" text-anchor="middle" font-size="17" fill="#676b76">MCTS on every move</text>
+  </g>
+
+  <!-- box 2: store each move -->
+  <g>
+    <rect x="770" y="300" width="320" height="96" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="930" y="342" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">store each move</text>
+    <text x="930" y="372" text-anchor="middle" font-size="17" fill="#676b76">state, visit distribution, winner</text>
+  </g>
+
+  <!-- box 3: supervised training -->
+  <g>
+    <rect x="770" y="516" width="320" height="122" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="930" y="554" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">supervised training</text>
+    <text x="930" y="584" text-anchor="middle" font-size="17" fill="#676b76">policy imitates search distribution</text>
+    <text x="930" y="610" text-anchor="middle" font-size="17" fill="#676b76">value predicts game winner</text>
+  </g>
+
+  <!-- box 4: stronger prior -->
+  <g>
+    <rect x="110" y="529" width="320" height="96" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="270" y="571" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">stronger prior</text>
+    <text x="270" y="601" text-anchor="middle" font-size="17" fill="#676b76">next search starts higher</text>
+  </g>
+
+  <!-- loop arrows, clockwise -->
+  <line x1="442" y1="348" x2="758" y2="348" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+  <line x1="930" y1="408" x2="930" y2="504" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+  <line x1="758" y1="577" x2="442" y2="577" stroke="#0f9d8c" stroke-width="2.5" marker-end="url(#fig02-arrow-teal)"/>
+  <line x1="270" y1="517" x2="270" y2="408" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+
+  <!-- annotation on the training -> stronger prior arrow -->
+  <text x="600" y="558" text-anchor="middle" font-size="18" font-weight="600" fill="#0f9d8c">&#8776;1,000 simulations amortized per pass</text>
+</svg>
+</div><figcaption><b>그림 2.</b> AlphaGo Zero의 바깥 루프: 매 게임의 수별 방문 분포와 최종 승자가 두 헤드를 다시 학습시키고, 약 1,000회 시뮬레이션 분량의 탐색을 다음 forward pass에 상각해 넣어 다음 탐색이 더 강한 사전확률에서 출발하게 한다.</figcaption></figure>
+
+<h2 id="수마다-붙는-레이블-하나가-빨대로-빨아들인-1비트를-이긴다">수마다 붙는 레이블 하나가 빨대로 빨아들인 1비트를 이긴다</h2>
+<p>이 증류가 무엇을 사 주는지 보여주기 위해 Jang은 순진한 대안을 돌려 본다. 그저 승자를 모방하는 self-play, 곧 현대 LLM RL에 가장 가까운 보드게임 유사물이다. 실력이 엇비슷한 두 정책이 300수짜리 게임을 100판 두어 한쪽이 51판을 이겼고 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5194s" target="_blank" rel="noopener">1:26:34</a>, 그의 의도적으로 양식화된 모델에서는 그중 딱 한 수만 운이 아닌 진짜 더 나은 플레이였다고 하자 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5254s" target="_blank" rel="noopener">1:27:34</a>. 그러면 승자 모방은 한 수 분량의 진짜 신호를 퍼뜨리기 위해 수만 수를 학습하게 된다. Patel은 이것을 Andrej Karpathy가 policy-gradient RL을 두고 한 말, "빨대로 감독 신호를 빨아들이는(sucking supervision through a straw) 일"에 연결하는데 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5300s" target="_blank" rel="noopener">1:28:20</a>, 같은 팟캐스트의 2025년 10월 Karpathy 출연분에서 나온 표현이다 [14]. 중립적인 수들을 상쇄하기 위해 베이스라인과 advantage 추정이 존재하고 Jang도 Schulman의 Generalized Advantage Estimation을 표준적인 처방으로 꼽지만 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5791s" target="_blank" rel="noopener">1:36:31</a>[16], 이것들은 문제를 없애는 게 아니라 문제 주위에서 추정할 뿐이다.</p>
+<p>이 논증의 정보이론 버전이 대담에서 가장 날카로운 대목이다. 학습자는 FLOP당 비트를 최대화해야 하고, 이는 FLOP당 샘플 수 곱하기 샘플당 비트로 분해된다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7979s" target="_blank" rel="noopener">2:12:59</a>. 장기 에이전트 과제는 첫 번째 인자를 짓누르는데, 이틀짜리 궤적이 판정 하나를 사 오기 때문이고 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7954s" target="_blank" rel="noopener">2:12:34</a>, 결과 보상은 두 번째 인자에 상한을 씌운다. 샘플링된 pass/fail은 기껏해야 동전 던지기의 엔트로피만큼 가치가 있고, RL이 학습 대부분을 보내는 낮은 통과율 구간에서는 그보다 훨씬 적다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8084s" target="_blank" rel="noopener">2:14:44</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8206s" target="_blank" rel="noopener">2:16:46</a>. 지도학습 레이블은 cross-entropy 업데이트 한 번에 −log p 비트를 전달하므로, 어휘 10만 토큰의 학습 안 된 모델이 레이블 하나가 곧바로 가르치는 것을 RL로 뽑아내려면 10만 번 규모의 무작위 시도가 필요하다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8036s" target="_blank" rel="noopener">2:13:56</a>. Jang이 AlphaGo의 목적함수를 아름답다고 부르는 이유가 여기 있다. 정책이 MCTS 방문 분포 전체 — 어떤 단일 행동보다 풍부한 soft target — 를 모방하기 때문에 "성공률 0퍼센트에서 초기화할 일이 아예 없다" <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8363s" target="_blank" rel="noopener">2:19:23</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8419s" target="_blank" rel="noopener">2:20:19</a>. 현재의 LLM 관행은 그 거울상이다. 시퀀스 전체가 하나의 행동으로 취급되고 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5495s" target="_blank" rel="noopener">1:31:35</a>, GRPO류의 결과 감독은 정규화된 답변 종료 시점의 보상 하나를 모든 토큰의 advantage로 그대로 복사해 넣는다 [15].</p>
+<figure class="fig fig-inline" id="fig-3"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Chart: bits per sample versus pass rate for a supervised soft target (minus log base 2 of p) and an outcome reward (binary entropy of p)" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#f6f5f1; display:block;">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- shaded band: p from 0 to 0.1 -->
+  <rect x="100" y="80" width="105" height="520" fill="#e08a1e" fill-opacity="0.08"/>
+
+  <!-- horizontal gridlines at y ticks 1,2,4,6,8,10 -->
+  <g stroke="#676b76" stroke-opacity="0.18" stroke-width="1.5">
+    <line x1="100" y1="548" x2="1150" y2="548"/>
+    <line x1="100" y1="496" x2="1150" y2="496"/>
+    <line x1="100" y1="392" x2="1150" y2="392"/>
+    <line x1="100" y1="288" x2="1150" y2="288"/>
+    <line x1="100" y1="184" x2="1150" y2="184"/>
+    <line x1="100" y1="80" x2="1150" y2="80"/>
+  </g>
+
+  <!-- 1-bit coin-flip gridline (emphasized, dashed) -->
+  <line x1="100" y1="548" x2="1150" y2="548" stroke="#676b76" stroke-width="2" stroke-dasharray="8 7"/>
+
+  <!-- axes -->
+  <g stroke="#17181c" stroke-width="2.5">
+    <line x1="100" y1="600" x2="1150" y2="600"/>
+    <line x1="100" y1="600" x2="100" y2="80"/>
+  </g>
+
+  <!-- x ticks -->
+  <g stroke="#17181c" stroke-width="2">
+    <line x1="100" y1="600" x2="100" y2="609"/>
+    <line x1="362.5" y1="600" x2="362.5" y2="609"/>
+    <line x1="625" y1="600" x2="625" y2="609"/>
+    <line x1="887.5" y1="600" x2="887.5" y2="609"/>
+    <line x1="1150" y1="600" x2="1150" y2="609"/>
+  </g>
+  <g fill="#33353c" font-size="26" text-anchor="middle">
+    <text x="100" y="638">0</text>
+    <text x="362.5" y="638">0.25</text>
+    <text x="625" y="638">0.5</text>
+    <text x="887.5" y="638">0.75</text>
+    <text x="1150" y="638">1</text>
+  </g>
+
+  <!-- y ticks: 0,1,2,4,6,8,10 -->
+  <g stroke="#17181c" stroke-width="2">
+    <line x1="91" y1="600" x2="100" y2="600"/>
+    <line x1="91" y1="548" x2="100" y2="548"/>
+    <line x1="91" y1="496" x2="100" y2="496"/>
+    <line x1="91" y1="392" x2="100" y2="392"/>
+    <line x1="91" y1="288" x2="100" y2="288"/>
+    <line x1="91" y1="184" x2="100" y2="184"/>
+    <line x1="91" y1="80" x2="100" y2="80"/>
+  </g>
+  <g fill="#33353c" font-size="26" text-anchor="end">
+    <text x="84" y="609">0</text>
+    <text x="84" y="557">1</text>
+    <text x="84" y="505">2</text>
+    <text x="84" y="401">4</text>
+    <text x="84" y="297">6</text>
+    <text x="84" y="193">8</text>
+    <text x="84" y="89">10</text>
+  </g>
+
+  <!-- axis titles -->
+  <text x="625" y="670" fill="#17181c" font-size="30" text-anchor="middle">pass rate p</text>
+  <text x="34" y="340" fill="#17181c" font-size="30" text-anchor="middle" transform="rotate(-90 34 340)">bits per sample</text>
+
+  <!-- supervised soft target: −log₂ p, blue -->
+  <path d="M 101.05 81.6 L 105.25 202.7 L 110.5 254.7 L 121 306.7 L 131.5 336.9 L 142 358.7 L 152.5 375.4 L 173.5 400.4 L 205 427.4 L 257.5 457.5 L 310 479.4 L 362.5 496 L 415 509.5 L 520 531.4 L 625 548 L 730 561.5 L 835 573.5 L 940 583.4 L 1045 592.2 L 1150 600"
+        fill="none" stroke="#2f6bd8" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- outcome reward: H(p), orange -->
+  <path d="M 101.05 599.5 L 105.25 597.4 L 110.5 595.8 L 121 592.7 L 152.5 584.9 L 205 575.6 L 257.5 568.3 L 310 562.6 L 415 554.2 L 520 549.6 L 625 548 L 730 549.6 L 835 554.2 L 940 562.6 L 1045 575.6 L 1150 600"
+        fill="none" stroke="#e08a1e" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- marker at (0.5, 1 bit) -->
+  <circle cx="625" cy="548" r="7" fill="#f6f5f1" stroke="#676b76" stroke-width="3"/>
+  <text x="1145" y="536" fill="#676b76" font-size="26" text-anchor="end">1 bit — a coin flip</text>
+
+  <!-- clipped-at-top note -->
+  <text x="122" y="100" fill="#676b76" font-size="26" font-style="italic">→ ∞ as p → 0</text>
+
+  <!-- band label with leader line -->
+  <text x="238" y="152" fill="#676b76" font-size="26">where RL training mostly happens</text>
+  <path d="M 230 160 L 175 205" fill="none" stroke="#676b76" stroke-width="1.5"/>
+  <path d="M 175 205 l 12 -3 M 175 205 l 3 -12" fill="none" stroke="#676b76" stroke-width="1.5"/>
+
+  <!-- curve labels -->
+  <text x="335" y="455" fill="#2f6bd8" font-size="30" font-weight="600">supervised soft target −log₂ p</text>
+  <text x="648" y="518" fill="#e08a1e" font-size="30" font-weight="600">outcome reward H(p)</text>
+</svg>
+</div><figcaption><b>그림 3.</b> 통과율에 따른 샘플당 학습 신호 비트 수(대담의 양식화된 모델 기준): 지도학습 soft target은 업데이트당 −log₂ p 비트를 전달하고 샘플링된 pass/fail은 기껏해야 동전 던지기의 엔트로피에 그친다 — 결과 기반 RL은 학습 대부분을 곡선이 거의 사라지는 낮은 통과율 구간에서 보낸다.</figcaption></figure>
+
+<p>정직한 각주를 하나 붙여야 하는데, 이 논증 바로 옆에 있던 방송 중 수식은 틀렸다. Jang은 방송에서 다단계 RL의 분산이 horizon에 대해 제곱으로 커진다고 유도했지만, 공개 나흘 뒤 서명한 정오표를 올려 이를 철회했다 [17]. 종료 시점 보상 하나만 있을 때 단일 스텝과 다단계 REINFORCE 추정량은 동일하고, 토큰별 보상이 있을 때는 오히려 다단계 정식화의 분산이 더 낮으며, 제곱 항은 정식화가 아니라 시퀀스 길이에 붙는다. 연구소들이 시퀀스 전체를 채점하는 이유는 다단계 RL이 더 시끄러워서가 아니라 LLM 과제에서 토큰별 보상 자체가 잘못 정의되기 때문 — pass/fail은 완성된 답변의 속성이다 — 이라는 것이다 [17]. 우리의 해석으로는 이 정정이 잘못된 메커니즘을 지우면서 오히려 논지를 강화한다. 정오표의 결론 역시 생성이 길어질수록 신용 할당은 제곱으로 어려워진다는 것이고, 일주일 안의 공개 철회는 칠판에서 팟캐스트로 이어지는 루프가 의도대로 작동한 사례이기도 하다.</p>
+<h2 id="llm으로의-이식은-이름이-붙은-두-부품에서-막힌다">LLM으로의 이식은 이름이 붙은 두 부품에서 막힌다</h2>
+<p>이 기계 장치가 왜 언어 모델로 옮겨지지 않는지에 대한 Jang의 진단은 기계적이다. PUCT의 탐험 보너스는 자식별 방문 횟수로 계산되는데, 어휘가 대략 10만 토큰이면 추론 트리에서 같은 자식이 두 번 샘플링되는 일이 거의 없어서, 선택 규칙이 딛고 서는 통계량 자체가 실전에서 정의되지 않는다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6516s" target="_blank" rel="noopener">1:48:36</a>. 깊이 자르기도 실패한다. 탐색을 중간에 끊으려면 값싸고 접지된 평가자가 필요한데, 열린 언어 과제에는 바닥을 대 줄 Tromp-Taylor식 채점이 없다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6431s" target="_blank" rel="noopener">1:47:11</a>. 그는 2023~2024년 구글의 트리 구조 추론 연구 — 아마도 Tree of Thoughts 계열 [18] — 를 미해결로 간주하면서도 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6378s" target="_blank" rel="noopener">1:46:18</a>, 그 두 부품이 갖춰지면 전방 탐색이 돌아오리라 여전히 기대한다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6431s" target="_blank" rel="noopener">1:47:11</a>.</p>
+<p>같은 접지 요건이 off-policy 학습도 규율한다. GPU를 놀리지 않으려고 Jang은 데이터셋에서 옛 바둑판 상태를 샘플링해 오프라인으로 MCTS 재레이블링을 다시 돌렸는데, 그 자신이 구글에서 만들었던 QT-Opt 리플레이 버퍼 시스템에 그대로 대응시키는 아키텍처다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7510s" target="_blank" rel="noopener">2:05:10</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7602s" target="_blank" rel="noopener">2:06:42</a>[3]. 다만 이것은 현재 정책이 그럴듯하게 도달할 수 있는 상태에서만 통한다. 도달 불가능한 상태를 재레이블링하는 것은 네트워크 용량 낭비이고, 그것이 바로 이 분야가 off-policy 데이터를 기껏해야 advantage 추정에 쓰는 대체로 on-policy인 설정으로 수렴한 이유라는 게 그의 설명이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7304s" target="_blank" rel="noopener">2:01:44</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7846s" target="_blank" rel="noopener">2:10:46</a>.</p>
+<p>우리의 해석을 보태면, 샘플당 비트가 너무 적다는 이 비판에는 이름을 붙여 둘 만한 순환성이 있다. 지도학습이라는 대안은 soft target을 만들어 주는 교사를 전제하는데, AlphaGo Zero에서 그 교사를 제조하는 것이 다름 아닌 탐색 — 정확히 LLM에 없는 그 연산자 — 이다. 결과 기반 RL이 왜 정보 빈곤한지에 대한 설명으로는 이 논증이 성립하지만, LLM 학습의 처방으로 읽으면 열린 문제를 되풀이할 뿐이다. 더 나은 레이블은 어디서 오는가?</p>
+<h2 id="숫자는-대체로-맞는다-한-눈금씩-어긋났고-스스로-바로잡았다">숫자는 대체로 맞는다 — 한 눈금씩 어긋났고, 스스로 바로잡았다</h2>
+<p>이 에피소드의 주장들은 유난히 검증 가능하고, 검증해 보면 일관된 평결이 돌아온다. 메커니즘은 건전하고 수치는 느슨하다. 방송에서 2020년으로, 40배 컴퓨트 절감으로 소개된 KataGo는 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=79s" target="_blank" rel="noopener">1:19</a> 실제로는 2019년 논문이고, 논문 자체의 대표 주장은 비교 가능한 AlphaZero류 파이프라인 대비 50배 절감으로, 30개 미만의 GPU로 19일 만에 ELF OpenGo 최종 모델을 넘어섰다는 것이다 [10]. Patel이 인용한 컴퓨트 추세 차트에서 AlphaGo Zero가 3 × 10^23 FLOP의 아웃라이어로 찍히는 것은 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6901s" target="_blank" rel="noopener">1:55:01</a> 당시 널리 통용되던 표준 추정치와는 맞지만, Epoch AI의 현재 데이터베이스는 그 뒤 AlphaGo 계열 수치를 자릿수 단위로 하향 수정했다. 아웃라이어라는 프레임은 살아남고 숫자는 그렇지 않다 [20][21]. 무심코 2018년으로 언급된 scaling laws 논문들은 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9134s" target="_blank" rel="noopener">2:32:14</a> 각각 2020년 1월(Kaplan 등)과 2022년 3월(Chinchilla)의 것이다 [22][23]. 반대로 정확히 맞힌 대목도 있는데, Andy Jones의 2021년 보드게임 연구는 학습 시점 컴퓨트와 추론 시점 컴퓨트의 트레이드오프를 정말로 입증했고, 추론 모델들이 그것을 업계의 조직 원리로 만들기 3년 반 전의 일이다 [24]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6654s" target="_blank" rel="noopener">1:50:54</a>.</p>
+<p>돈 비교는 그 정확한 형태 그대로 볼 가치가 있다. AlphaGo Zero의 40일 학습을 재현하는 비용은 널리 인용된 2018년 클라우드 TPU 임대 추정으로 약 3,500만 달러였고 [19], Jang의 프로젝트는 Prime Intellect가 기부한 약 1만 달러 — 탐색적 연구에 약 4,000달러, 최종 실행에 약 3,000달러 — 로 돌아갔다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6947s" target="_blank" rel="noopener">1:55:47</a>. 그러나 강한 봇은 KataGo를 상대로 한 best-response 학습으로 부트스트랩된 것이고, 밑바닥부터의 실행은 녹화 시점에 아직 검증 중이었다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6993s" target="_blank" rel="noopener">1:56:33</a>. 이 비대칭은 Jang 스스로 짚는다.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6947s" target="_blank" rel="noopener">1:55:47</a> "무언가를 처음으로 해내는 데 드는 컴퓨트는 따라잡는 데 드는 컴퓨트보다 언제나 훨씬 크다. LLM에서 똑같은 이야기가 지금 되풀이되고 있다."</p><cite>Eric Jang</cite></blockquote>
+<p>우리의 해석은 이렇다. 정직한 비교는 프런티어 탐사 대 교사의 도움을 받은 추격 — DeepSeek의 순간이 언어 모델에서 극적으로 보여준 바로 그 비대칭 — 이고, 같은 정보이론이 그것을 설명한다. 배포된 모든 강한 모델은 두 번째 주자에게 soft target 교사가 된다.</p>
+<figure class="fig fig-inline" id="fig-4"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Log-scale bar chart comparing a 35 million dollar 2018 estimate to replicate AlphaGo Zero with the 10 thousand dollar 2026 AutoGo rebuild, which was bootstrapped from KataGo rather than trained tabula rasa." xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f6f5f1;display:block">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- decade gridlines: $1K..$100M, log scale, x = 60 + (log10(v)-3)*220 -->
+  <g stroke="#676b76" stroke-opacity="0.18" stroke-width="1">
+    <line x1="60"   y1="88" x2="60"   y2="583"/>
+    <line x1="280"  y1="88" x2="280"  y2="583"/>
+    <line x1="500"  y1="88" x2="500"  y2="583"/>
+    <line x1="720"  y1="88" x2="720"  y2="583"/>
+    <line x1="940"  y1="88" x2="940"  y2="583"/>
+    <line x1="1160" y1="88" x2="1160" y2="583"/>
+  </g>
+
+  <!-- Bar 1: $35M, 2018 -->
+  <text x="60" y="112" font-size="21" font-weight="600" fill="#17181c">replicate AlphaGo Zero, 2018</text>
+  <text x="60" y="138" font-size="16" fill="#676b76">cloud-TPU rental estimate, tabula rasa</text>
+  <rect x="60" y="152" width="1000" height="64" rx="3" fill="#2f6bd8"/>
+  <text x="1048" y="192" font-size="19" font-weight="600" fill="#fff" text-anchor="end">$35M</text>
+
+  <!-- connector + center annotation -->
+  <line x1="1060" y1="216" x2="280" y2="424" stroke="#676b76" stroke-width="1.5" stroke-dasharray="6 6" stroke-opacity="0.7"/>
+  <text x="690" y="308" font-size="18" fill="#676b76" text-anchor="middle">&#8776;3.5 orders of magnitude apart</text>
+
+  <!-- Bar 2: $10K, 2026 -->
+  <text x="60" y="386" font-size="21" font-weight="600" fill="#17181c">AutoGo rebuild, 2026</text>
+  <text x="60" y="412" font-size="16" fill="#676b76">$10K total</text>
+  <rect x="60" y="424" width="220" height="64" rx="3" fill="#2f6bd8"/>
+  <!-- internal split marks at cumulative $4K and $7K -->
+  <line x1="192.5" y1="424" x2="192.5" y2="488" stroke="#f6f5f1" stroke-width="3"/>
+  <line x1="245.9" y1="424" x2="245.9" y2="488" stroke="#f6f5f1" stroke-width="3"/>
+  <text x="292" y="463" font-size="19" font-weight="600" fill="#17181c">$10K</text>
+
+  <!-- caveat tag (orange) -->
+  <g>
+    <rect x="368" y="434" width="368" height="44" rx="22" fill="none" stroke="#e08a1e" stroke-width="1.5"/>
+    <text x="552" y="462" font-size="17" fill="#e08a1e" text-anchor="middle">bootstrapped from KataGo &#8212; not tabula rasa</text>
+  </g>
+
+  <!-- segment sublabels with leader ticks -->
+  <line x1="126" y1="488" x2="126" y2="512" stroke="#676b76" stroke-width="1.2"/>
+  <text x="126" y="532" font-size="15" fill="#676b76" text-anchor="middle">$4K exploration</text>
+  <line x1="219" y1="488" x2="219" y2="545" stroke="#676b76" stroke-width="1.2"/>
+  <text x="219" y="565" font-size="15" fill="#676b76" text-anchor="middle">$3K final run</text>
+
+  <!-- x axis -->
+  <line x1="60" y1="583" x2="1160" y2="583" stroke="#17181c" stroke-width="1.5"/>
+  <g stroke="#17181c" stroke-width="1.5">
+    <line x1="60"   y1="583" x2="60"   y2="591"/>
+    <line x1="280"  y1="583" x2="280"  y2="591"/>
+    <line x1="500"  y1="583" x2="500"  y2="591"/>
+    <line x1="720"  y1="583" x2="720"  y2="591"/>
+    <line x1="940"  y1="583" x2="940"  y2="591"/>
+    <line x1="1160" y1="583" x2="1160" y2="591"/>
+  </g>
+  <g font-size="16" fill="#33353c" text-anchor="middle">
+    <text x="60"   y="614">$1K</text>
+    <text x="280"  y="614">$10K</text>
+    <text x="500"  y="614">$100K</text>
+    <text x="720"  y="614">$1M</text>
+    <text x="940"  y="614">$10M</text>
+    <text x="1160" y="614">$100M</text>
+  </g>
+  <text x="610" y="650" font-size="16" fill="#676b76" text-anchor="middle">cost, USD (log scale)</text>
+</svg>
+</div><figcaption><b>그림 4.</b> 헤드라인의 비용 붕괴가 실제로 비교하는 것: AlphaGo Zero를 밑바닥부터 재현하는 2018년 클라우드 임대 추정치 대, KataGo를 상대로 한 best-response 학습으로 강해진 Jang의 2026년 재구축 — 밑바닥부터의 실행은 녹화 시점에 아직 검증 중이었다.</figcaption></figure>
+
+<h2 id="에이전트는-지표를-갈아-넣고-실험-트리는-인간이-쥔다">에이전트는 지표를 갈아 넣고, 실험 트리는 인간이 쥔다</h2>
+<p>이 프로젝트는 자동화된 연구의 현장 실험을 겸하는데, Jang이 상당 부분을 Claude 에이전트 — 주로 Anthropic이 2026년 2월과 4월에 낸 프런티어 모델인 Opus 4.6과 4.7 — 로 돌렸기 때문이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8571s" target="_blank" rel="noopener">2:22:51</a>[25][26]. 잘된 것은 열린 형태의 하이퍼파라미터 최적화였다. 특정 레이어의 작은 그래디언트를 알아채고, 데이터 로더를 다시 쓰고, 증강 기법을 발명하는, 성능 지표를 갈아 넣는 거의 대학원생 같은 능력 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8612s" target="_blank" rel="noopener">2:23:32</a>, 그리고 질문을 축(axes) 수준으로 기술하면 플롯과 리포트를 돌려주는 Experiment라는 커스텀 Claude 스킬을 통한 실험 실행 전체가 여기 속한다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8652s" target="_blank" rel="noopener">2:24:12</a>. 실패한 것은 한 층 위에 있다. 에이전트들은 한 연구 트랙 안에서 다음 실험을 잘 고르는 일이 드물었고 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8688s" target="_blank" rel="noopener">2:24:48</a>, 트랙 자체를 접어 버리는 측면 이동을 놓쳤으며, 인프라 버그는 Jang이 날카로운 질문을 직접 던졌을 때에야 드러났다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a> "'잠깐, 이 트랙은 말이 안 되는데. 다시 제1원리로 돌아가서 […]' 하고 한 걸음 물러나 측면으로 사고하는 일은 그들이 하지 못하는 것 같다."</p><cite>Eric Jang</cite></blockquote>
+<p>이 스냅숏을 정직하게 유지하려면 세 가지 단서가 필요하다. Jang은 방송에서 Mythos급 모델이 이 격차를 해소할지 모른다고 스스로 헤지하고 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a>, Anthropic은 녹화 이후인 2026-06-30에 Claude Sonnet 5를, 2026-07-24에 Opus 5를 내놓았으니 이 경계선은 2026년 5월의 스냅숏이지 법칙이 아니다 [27]. 그리고 이 관찰은 연구자 한 명의 통제되지 않은 자기 보고이며, autoresearch를 중심으로 공개 작업물을 쌓아 가는 화자의 것이고, 컴퓨트 기부자는 GPU 용량과 RL 환경을 파는 회사다 [28]. 기부는 방송에서 공개되었고, 올바른 대응은 기각이 아니라 가중치 조정이다.</p>
+<p>현업 연구자에게 이 대담은 플레이북으로 압축된다. 성공 근처에서 초기화하라 — "딥러닝에서 초기화가 전부다" <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2334s" target="_blank" rel="noopener">38:54</a> — 즉 밑바닥부터 시도하기 전에 구할 수 있는 가장 강한 교사부터 찾아라. 스택을 층별로 검증하라. 규칙 엔진, 지도학습 베이스라인, 탐색의 순서인데, 쓰레기 같은 가치 예측 위의 탐색은 컴퓨트 낭비이기 때문이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2556s" target="_blank" rel="noopener">42:36</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4286s" target="_blank" rel="noopener">1:11:26</a>. 고장 난 결과물 위에서 과학을 하지 마라. Jang은 MCTS 레이블링에 버그가 있는 채로 그럴듯해 보이는 scaling-law 곡선을 피팅했고, 그 일을 나쁜 데이터로 scaling laws를 연구한 셈이라고 부른다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6865s" target="_blank" rel="noopener">1:54:25</a>. 그리고 효율 트릭을 의심하라. 최신 GPU에서 그는 강한 초기화가 있으면 KataGo의 보조 목적함수들이 불필요하다는 것을 확인했고, 분산 리플레이 버퍼 인프라를 평범한 동기식 루프로 대체했으며, 컴퓨트 배율 트릭들은 하드웨어가 좋아질수록 서로 상관되어 있고 한시적이라고 의심한다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7149s" target="_blank" rel="noopener">1:59:09</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7185s" target="_blank" rel="noopener">1:59:45</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9098s" target="_blank" rel="noopener">2:31:38</a> — 다만 이는 동료 평가를 거친 주장이 아니라 예비적인 감이라고 스스로 표시해 둔다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7104s" target="_blank" rel="noopener">1:58:24</a>.</p>
+<figure class="fig fig-inline" id="fig-5"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Comparison grid: four research-loop tasks automated well by Claude Opus 4.6/4.7 versus four tasks still done by the human as of May 2026" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display:block;">
+
+  <!-- column headers -->
+  <rect x="36" y="36" width="540" height="66" rx="12" fill="#0f9d8c"/>
+  <text x="306" y="69" text-anchor="middle" dominant-baseline="middle" font-size="28" font-weight="700" fill="#ffffff">automated well &#8212; Opus 4.6/4.7</text>
+
+  <rect x="624" y="36" width="540" height="66" rx="12" fill="#e08a1e"/>
+  <text x="894" y="69" text-anchor="middle" dominant-baseline="middle" font-size="28" font-weight="700" fill="#ffffff">still human &#8212; May 2026</text>
+
+  <!-- vertical divider -->
+  <line x1="600" y1="122" x2="600" y2="578" stroke="#676b76" stroke-width="1.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+
+  <!-- left column cells (teal) -->
+  <g>
+    <rect x="36" y="122" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="122" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="172" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">open-ended hyperparameter search</text>
+
+    <rect x="36" y="236" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="236" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="286" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">rewriting code, new augmentations</text>
+
+    <rect x="36" y="350" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="350" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="400" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">running experiments end to end</text>
+
+    <rect x="36" y="464" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="464" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="514" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">plots, reports, causal guesses</text>
+  </g>
+
+  <!-- right column cells (orange) -->
+  <g>
+    <rect x="624" y="122" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="122" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="172" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">choosing the next experiment</text>
+
+    <rect x="624" y="236" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="236" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="286" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">abandoning dead-end tracks</text>
+
+    <rect x="624" y="350" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="350" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="400" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">catching infra bugs unprompted</text>
+
+    <rect x="624" y="464" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="464" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="514" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">asking the first-principles question</text>
+  </g>
+
+  <!-- footer strip -->
+  <line x1="36" y1="600" x2="1164" y2="600" stroke="#676b76" stroke-width="1" opacity="0.5"/>
+  <text x="600" y="639" text-anchor="middle" dominant-baseline="middle" font-size="24" fill="#676b76">snapshot precedes Sonnet 5 / Opus 5</text>
+</svg>
+</div><figcaption><b>그림 5.</b> Claude Opus 4.6/4.7 위에서 돌아간 Jang의 autoresearch 루프의 위임 경계: 실행은 자동화되었지만 방향 설정은 아니다 — 그리고 다음 세대 모델이 이 경계선을 옮길 수 있다.</figcaption></figure>
+
+<h2 id="열린-질문에는-저마다-판정-조건이-붙어-있다">열린 질문에는 저마다 판정 조건이 붙어 있다</h2>
+<p>이 에피소드의 전망들에는 검증 조건이 내장되어 있어서 추적이 가능하다. 전방 탐색이 언어 모델로 돌아올지는 빠져 있는 두 부품 — 접지되고 감당 가능한 가치 함수, 그리고 자식 재방문을 요구하지 않는 탐험 규칙 — 에 달려 있으니, LLM 심판이 아니라 학습된 접지 평가자로 추론 위 트리 탐색을 되살리는 연구소 결과가 나오는지 지켜보면 된다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6431s" target="_blank" rel="noopener">1:47:11</a>. 일반적 방법이 컴퓨트를 타고 수작업 지식을 이긴다는 Sutton의 Bitter Lesson이 [29] KataGo의 트릭들을 완전히 흡수했는지는 공개 스코어보드에서 판가름 난다. tabula rasa 실행이 몇천 달러로 KataGo 부트스트랩 봇을 따라잡으면 한시적 배율 논지가 실질 증거를 얻고, 못 따라잡으면 비용 이야기는 증류가 싸다는 이야기로 쪼그라든다. 그 답이 도착할 곳이 AutoGo 저장소다 [5]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6993s" target="_blank" rel="noopener">1:56:33</a>. 연구 취향(research taste)이 스케일에 굴복하는지는 더 새로운 프런티어 에이전트에게 공개된 환경을 쥐여 주고 도움 없는 실험 선택이 나오는지 보면 이미 시험할 수 있다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a>.</p>
+<p>가장 깊은 열린 질문은 에피소드가 끝맺는 바로 그 질문이다. 바둑이 자동화 연구의 체육관으로 작동하는 이유는 바깥 루프가 자명하게 검증 가능하고 보상 해킹이 어렵기 때문인데 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8768s" target="_blank" rel="noopener">2:26:08</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8848s" target="_blank" rel="noopener">2:27:28</a>, 경제적으로 의미 있는 연구에 대해서는 Patel의 반론이 그대로 선다. 우리는 측정할 수 있는 것을 개선하는데, 경제적으로 유용한 발견은 아직 측정되지 않는다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9180s" target="_blank" rel="noopener">2:33:00</a>. Jang은 의도적으로 엄밀하지 않은 다리를 하나 놓는다. DeepMind의 게임 경험이 LLM 시대로 긍정적으로 전이되었으니 게임으로 훈련된 자동 연구자도 마찬가지로 전이되리라는 것이다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9223s" target="_blank" rel="noopener">2:33:43</a>. Patel은 같은 유산이 오랫동안 구글의 느린 LLM 출발의 원인으로 지목되었고 진짜 수확은 TPU 기술 트리였을지 모른다고 맞받는다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9271s" target="_blank" rel="noopener">2:34:31</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9320s" target="_blank" rel="noopener">2:35:20</a>. 대화는 연구 전략을 직접 살아낸 인간들조차 그것을 사후에 평가하기 어렵다는 것을 인정하며 닫힌다 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9320s" target="_blank" rel="noopener">2:35:20</a>. 우리의 해석으로는 어떤 분산 공식보다도 그 인정이 지능 폭발에 관한 이 에피소드의 진짜 메시지다. 실행은 빠르게 자동화되고 있지만, 방향을 검증하는 일 — 연구 그 자체의 바깥 루프 — 은 여전히 풀리지 않았다.</p>
+<h2 id="참고-자료">참고 자료</h2>
+<ol>
+<li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw" target="_blank" rel="noopener">What rebuilding AlphaGo teaches us about self-play, RL, and future of LLMs — Eric Jang</a> — Dwarkesh Patel (YouTube), 2026-05-15</li>
+<li><a href="https://evjang.com/2026/01/21/leaving-1x.html" target="_blank" rel="noopener">Leaving 1X</a> — evjang.com, 2026-01-21</li>
+<li><a href="https://arxiv.org/abs/1806.10293" target="_blank" rel="noopener">QT-Opt: Scalable Deep Reinforcement Learning for Vision-Based Robotic Manipulation</a> — arXiv (Kalashnikov et al.), 2018-06-27</li>
+<li><a href="https://evjang.com/2026/04/28/autogo.html" target="_blank" rel="noopener">AutoGo: a Tutorial</a> — evjang.com, 2026-04-28</li>
+<li><a href="https://github.com/ericjang/autogo" target="_blank" rel="noopener">ericjang/autogo</a> — GitHub, fetched 2026-08-31</li>
+<li><a href="https://evjang.com/2026/02/04/rocks.html" target="_blank" rel="noopener">As Rocks May Think</a> — evjang.com, 2026-02-04</li>
+<li><a href="https://tromp.github.io/go.html" target="_blank" rel="noopener">The Logic of Go (Tromp-Taylor rules)</a> — John Tromp, fetched 2026-08-31</li>
+<li><a href="https://tromp.github.io/go/legal.html" target="_blank" rel="noopener">Number of legal Go positions</a> — John Tromp, 2016-01-20</li>
+<li><a href="https://storage.googleapis.com/deepmind-media/alphago/AlphaGoNaturePaper.pdf" target="_blank" rel="noopener">Mastering the game of Go with deep neural networks and tree search</a> — Nature / DeepMind, 2016-01-28</li>
+<li><a href="https://arxiv.org/abs/1902.10565" target="_blank" rel="noopener">Accelerating Self-Play Learning in Go (KataGo)</a> — arXiv (David J. Wu), 2019-02-27</li>
+<li><a href="https://deepmind.google/discover/blog/alphago-zero-starting-from-scratch/" target="_blank" rel="noopener">AlphaGo Zero: Starting from scratch</a> — Google DeepMind, 2017-10-18</li>
+<li><a href="https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf" target="_blank" rel="noopener">Mastering the Game of Go without Human Knowledge (AlphaGo Zero)</a> — Nature / UCL open copy, 2017-10-18</li>
+<li><a href="https://arxiv.org/abs/1011.0686" target="_blank" rel="noopener">A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning (DAgger)</a> — arXiv (Ross, Gordon, Bagnell), 2010-11-02</li>
+<li><a href="https://www.dwarkesh.com/p/andrej-karpathy" target="_blank" rel="noopener">Andrej Karpathy on the Dwarkesh Podcast</a> — Dwarkesh Podcast, 2025-10-17</li>
+<li><a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener">DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models</a> — arXiv (DeepSeek), 2024-02-05</li>
+<li><a href="https://arxiv.org/abs/1506.02438" target="_blank" rel="noopener">High-Dimensional Continuous Control Using Generalized Advantage Estimation</a> — arXiv (Schulman et al.), 2015-06-08</li>
+<li><a href="https://evjang.com/alphago-tutorial/llm_rl_variance.pdf" target="_blank" rel="noopener">AlphaGo Podcast Errata — LLM RL variance</a> — evjang.com, 2026-05-19</li>
+<li><a href="https://arxiv.org/abs/2305.10601" target="_blank" rel="noopener">Tree of Thoughts: Deliberate Problem Solving with Large Language Models</a> — arXiv (Yao et al.), 2023-05-17</li>
+<li><a href="https://www.yuzeh.com/data/agz-cost.html" target="_blank" rel="noopener">How much did AlphaGo Zero cost?</a> — yuzeh.com (Dan H), 2018-03</li>
+<li><a href="https://epoch.ai/blog/compute-trends" target="_blank" rel="noopener">Compute Trends Across Three Eras of Machine Learning</a> — Epoch AI (Sevilla et al.), 2022-02-11</li>
+<li><a href="https://ourworldindata.org/grapher/artificial-intelligence-training-computation" target="_blank" rel="noopener">Training computation of notable AI systems</a> — Our World in Data / Epoch AI, fetched 2026-08-31</li>
+<li><a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">Scaling Laws for Neural Language Models</a> — arXiv (Kaplan et al.), 2020-01-23</li>
+<li><a href="https://arxiv.org/abs/2203.15556" target="_blank" rel="noopener">Training Compute-Optimal Large Language Models</a> — arXiv (Hoffmann et al.), 2022-03-29</li>
+<li><a href="https://arxiv.org/abs/2104.03113" target="_blank" rel="noopener">Scaling Scaling Laws with Board Games</a> — arXiv (Andy L. Jones), 2021-04-07</li>
+<li><a href="https://www.anthropic.com/news/claude-opus-4-6" target="_blank" rel="noopener">Claude Opus 4.6</a> — Anthropic, 2026-02-05</li>
+<li><a href="https://www.anthropic.com/news/claude-opus-4-7" target="_blank" rel="noopener">Claude Opus 4.7</a> — Anthropic, 2026-04-16</li>
+<li><a href="https://www.anthropic.com/news" target="_blank" rel="noopener">Anthropic newsroom</a> — Anthropic, fetched 2026-08-31</li>
+<li><a href="https://www.primeintellect.ai/" target="_blank" rel="noopener">Prime Intellect</a> — Prime Intellect, fetched 2026-08-31</li>
+<li><a href="http://www.incompleteideas.net/IncIdeas/BitterLesson.html" target="_blank" rel="noopener">The Bitter Lesson</a> — Rich Sutton, 2019-03-13</li>
+</ol>
+</article>
+
+<footer class="credits">
+  <p>이 글은 영상의 스크립트를 바탕으로 다중 에이전트 파이프라인(배경 조사 → 여섯 가지 분석 관점 → 종합 → 편집 검토)이 작성하고, 블로그 고유의 스타일로 시각화한 뒤 Higgs TTS로 낭독한 것입니다. 타임스탬프를 누르면 원본 영상의 해당 장면으로 이동합니다.</p>
+  <p>원본 영상의 권리는 제작자에게 있으며, 이 글은 요약과 해설일 뿐 영상을 대신하지 않습니다.</p>
+</footer>
+</div>
+
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+
+<script>
+(function(){
+  var bar=document.getElementById('pbar');
+  function prog(){var h=document.documentElement,s=h.scrollTop||document.body.scrollTop,m=h.scrollHeight-h.clientHeight;bar.style.width=(m>0?Math.min(100,s/m*100):0)+'%';}
+  addEventListener('scroll',prog,{passive:true});prog();
+  var a=document.getElementById('narr'),chips=document.querySelectorAll('.chip'),now=document.getElementById('now');
+  if(a&&chips.length){
+    var secs=[].map.call(chips,function(c){return {t:+c.dataset.t,el:c};});
+    chips.forEach(function(c){c.addEventListener('click',function(){a.currentTime=+c.dataset.t;a.play();});});
+    a.addEventListener('timeupdate',function(){var cur=null;for(var i=0;i<secs.length;i++){if(a.currentTime>=secs[i].t-0.2)cur=secs[i];}
+      secs.forEach(function(s){s.el.classList.toggle('on',s===cur);});
+      if(now)now.textContent=cur?('지금 읽는 부분: '+cur.el.textContent):'';});
+  }
+})();
+</script>
+</body>
+</html>

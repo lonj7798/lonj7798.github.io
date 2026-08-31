@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Is the Teacher — Lessons From a $10K AlphaGo Rebuild</title>
+<meta name="description" content="Eric Jang — VP of AI at 1X Technologies until January 2026, and before that a research scientist at Google DeepMind Robotics — spent part of a sabbatical rebuilding AlphaGo with modern tools on roughly $10,000 of donated compute, then walked Dwarkesh Patel through the whole stack in a two-and-a-half">
+<link rel="alternate" hreflang="ko" href="ko.html">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#17181c;--body:#33353c;--mut:#676b76;--hair:rgba(23,24,28,.08);
+--blue:#2f6bd8;--purple:#7a4fd3;--orange:#e08a1e;--pink:#d34f6e;--teal:#0f9d8c;
+--serif:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--shadow:0 1px 2px rgba(23,24,28,.03),0 10px 30px rgba(23,24,28,.05)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:760px;margin:0 auto;padding:0 22px}
+#pbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--ink);opacity:.75;z-index:50}
+header.top{padding:58px 0 18px}
+.eyebrow{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow .yt{display:inline-flex;align-items:center;gap:7px}
+.eyebrow .yt i{width:7px;height:7px;border-radius:50%;background:var(--pink);display:inline-block}
+.lang-sw{display:inline-flex;background:rgba(255,255,255,.85);border-radius:999px;padding:3px;box-shadow:inset 0 0 0 1px var(--hair);text-transform:none;letter-spacing:0}
+.lang-sw a{padding:4px 12px;border-radius:999px;color:var(--mut);text-decoration:none;font-size:12px;letter-spacing:.03em}
+.lang-sw a.on{background:var(--ink);color:#fff}
+h1{font-family:var(--serif);font-weight:650;font-size:clamp(30px,5.4vw,44px);line-height:1.22;letter-spacing:-.012em;color:var(--ink);margin:18px 0 12px}
+.lede{font-size:19px;line-height:1.6;color:var(--body);max-width:640px;margin:0 0 16px}
+.meta{font-size:13.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.meta .sep{opacity:.5}
+.tag{font-weight:650;text-decoration:none}
+.tag.c0{color:var(--blue)}.tag.c1{color:var(--purple)}.tag.c2{color:var(--orange)}.tag.c3{color:var(--pink)}.tag.c4{color:var(--teal)}
+figure.hero{margin:22px 0 6px}
+figure.hero img{width:100%;height:auto;display:block;border-radius:22px}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:24px 26px;margin:22px 0}
+.card .ct{font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:650}
+.summary p{margin:0 0 10px;font-size:16.5px;color:var(--ink)}
+.summary ul{margin:10px 0 0;padding-left:20px}
+.summary li{margin:5px 0;font-size:15.5px}
+.listen{display:flex;flex-direction:column;gap:12px}
+.listen audio{width:100%;height:40px}
+.listen .who{font-size:13.5px;color:var(--mut);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--bg);color:var(--mut);border:1px solid var(--hair);cursor:pointer;transition:background .15s,color .15s}
+.chip:hover{color:var(--ink);border-color:rgba(23,24,28,.2)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.now{font-size:12.5px;color:var(--mut);min-height:18px}
+.source{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+.source img{width:100%;border-radius:12px;display:block;aspect-ratio:16/9;object-fit:cover}
+.source .t{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0 0 4px;line-height:1.35}
+.source .s{font-size:13.5px;color:var(--mut)}
+.source a.watch{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink);text-decoration:none;font-weight:650;border-bottom:1px solid rgba(23,24,28,.25)}
+.chapters{margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;columns:2;column-gap:18px}
+.chapters li{break-inside:avoid;margin:2px 0}
+.chapters a{color:var(--mut);text-decoration:none;font-variant-numeric:tabular-nums}
+.chapters a:hover{color:var(--ink)}
+.chapters .ct{margin:0 0 6px}
+@media(max-width:560px){.source{grid-template-columns:1fr}.chapters{columns:1}.card{padding:20px 18px;border-radius:18px}}
+article.body{padding:8px 0 30px}
+.body h2{font-family:var(--serif);font-size:clamp(24px,3.6vw,30px);line-height:1.3;color:var(--ink);margin:48px 0 12px;font-weight:650;letter-spacing:-.01em}
+.body h3{font-size:19px;color:var(--ink);margin:30px 0 8px;font-weight:650}
+.body h4{font-size:16px;color:var(--ink);margin:22px 0 6px;font-weight:650}
+.body p{margin:0 0 18px}
+.body a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(23,24,28,.25)}
+.body a:hover{border-color:var(--ink)}
+.body a.ts{font-family:var(--mono);font-size:.8em;color:var(--blue);border:0;background:rgba(47,107,216,.08);padding:1px 7px;border-radius:999px;white-space:nowrap;vertical-align:.08em}
+.body ul,.body ol{padding-left:24px;margin:0 0 18px}
+.body li{margin:6px 0}
+.body li>p{margin:0 0 6px}
+.body strong{color:var(--ink);font-weight:650}
+.body blockquote{margin:26px 0;padding:0 0 0 20px;border-left:3px solid var(--ink);color:var(--ink);font-family:var(--serif);font-size:19.5px;line-height:1.5}
+.body blockquote p{margin:0 0 6px}
+.body blockquote cite,.body blockquote em.by{display:block;font-family:var(--sans);font-style:normal;font-size:13.5px;color:var(--mut);margin-top:4px}
+.body blockquote.pull{border:0;padding:22px 26px;background:var(--card);border-radius:20px;box-shadow:var(--shadow)}
+.body code{font-family:var(--mono);font-size:.88em;background:rgba(23,24,28,.05);padding:.1em .4em;border-radius:6px}
+.body pre{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;overflow:auto;font-size:13.5px;line-height:1.55;margin:0 0 20px}
+.body pre code{background:none;padding:0}
+figure.fig{margin:30px -6px}
+figure.fig img{width:100%;height:auto;display:block;border-radius:16px;background:#fff}
+figure.fig figcaption{font-size:13.5px;color:var(--mut);margin:10px 8px 0;line-height:1.5}
+figure.fig figcaption b{color:var(--ink);font-weight:650}
+figure.fig-inline .inl{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;overflow-x:auto}
+figure.fig-inline .inl svg{max-width:100%;height:auto;display:block}
+.tbl{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--hair)}
+th{color:var(--ink);font-weight:650}
+hr{border:0;height:1px;background:var(--hair);margin:36px 0}
+.body #references+ol,.body #references+p+ol,.refs ol{font-size:14.5px}
+.body sup{font-size:.7em}
+footer.credits{padding:26px 0 96px;color:var(--mut);font-size:13.5px;line-height:1.65;border-top:1px solid var(--hair);margin-top:24px}
+footer.credits p{margin:0 0 8px}
+@media print{#pbar,.lang-sw,.listen,#jw-home{display:none}}
+
+</style>
+</head>
+<body>
+<div id="pbar" aria-hidden="true"></div>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">
+    <span class="yt"><i></i>YouTube · Dwarkesh Patel · 2026-05-15</span>
+    <nav class="lang-sw" aria-label="language">
+      <a href="index.html" class="on">EN</a>
+      <a href="ko.html" class="">한국어</a>
+    </nav>
+  </div>
+  <h1>Search Is the Teacher — Lessons From a $10K AlphaGo Rebuild</h1>
+  <p class="lede">Eric Jang's blackboard rebuild of AlphaGo explains why LLM reinforcement learning is information-starved — and what a per-move teacher would change.</p>
+  <div class="meta">
+    <span>2026-08-31</span>
+    <span class="sep">·</span><span>17 min read</span>
+    <span class="sep">·</span><span>18 min listen</span>
+    <span class="sep">·</span><a class="tag c0" href="../../?tag=deep-dive">#deep-dive</a><a class="tag c1" href="../../?tag=rl">#rl</a>
+  </div>
+</header>
+
+<figure class="hero"><img src="figures/hero.png" alt="A Go board opening into a sparse search tree that collapses into a small neural network, which loops back into the next search."></figure>
+
+<section class="card summary" aria-label="In brief">
+  <p class="ct">In brief</p>
+  <p>Eric Jang — VP of AI at 1X Technologies until January 2026, and before that a research scientist at Google DeepMind Robotics — spent part of a sabbatical rebuilding AlphaGo with modern tools on roughly $10,000 of donated compute, then walked Dwarkesh Patel through the whole stack in a two-and-a-half-hour blackboard lecture. His central argument is that Monte Carlo Tree Search is a policy improvement operator, manufacturing a better training target for every single move, so AlphaGo Zero's training collapses into stable supervised learning on labels that search keeps improving. LLM reinforcement learning, by contrast, scores an entire trajectory with roughly one bit of outcome signal, which is why it is so sample-hungry. The talk also carries an unusual transparency beat: four days after airing, Jang published an errata correcting his own on-air variance math, and this article follows the corrected version.</p>
+  <ul><li>MCTS hands the learner one improved target per move; outcome RL delivers roughly one bit per trajectory.</li><li>AlphaGo Zero's loop is supervised learning on labels search keeps improving — no explicit TD machinery.</li><li>The rebuild cost about $10K but bootstrapped from KataGo; the from-scratch run was still unvalidated.</li><li>Jang's own errata corrected the on-air variance math; credit assignment scales with sequence length.</li><li>Claude agents automated hyperparameter grinding and experiment execution; choosing the next experiment stayed human.</li><li>Porting search to LLMs needs a grounded value function and revisitable actions — both currently missing.</li></ul>
+</section>
+
+
+<section class="card listen" aria-label="Listen to this article">
+  <p class="ct">Listen to this article</p>
+  <audio id="narr" controls preload="none" src="audio/en.mp3"></audio>
+  <div class="who"><span>Read by Eleanor · Higgs TTS</span><span>17:50</span></div>
+  <div class="chips" id="chips" role="list" aria-label="Jump to a section">
+    <button class="chip" data-t="1.2" role="listitem">A 2017 loop, rebuilt to answer 2026 questions</button><button class="chip" data-t="97.66" role="listitem">Two network heads make an impossible tree searchable</button><button class="chip" data-t="220.47" role="listitem">Training is distillation of search, run after every game</button><button class="chip" data-t="392.94" role="listitem">One label per move beats one bit through a straw</button><button class="chip" data-t="569.91" role="listitem">The transfer to LLMs fails at two named components</button><button class="chip" data-t="672.74" role="listitem">The numbers hold up — a notch off, and self-corrected</button><button class="chip" data-t="794.98" role="listitem">The agent grinds the metric; the human owns the experiment tree</button><button class="chip" data-t="951.86" role="listitem">Open questions, each with a resolution condition</button>
+  </div><div class="now" id="now"></div>
+</section>
+
+
+<section class="card source" aria-label="Source video">
+  <a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw" target="_blank" rel="noopener"><img src="figures/thumb.jpg" alt=""></a>
+  <div>
+    <p class="ct">Source video</p>
+    <p class="t">What rebuilding AlphaGo teaches us about self-play, RL, and future of LLMs - Eric Jang</p>
+    <div class="s">Dwarkesh Patel · 2026-05-15 · 2:37:17</div>
+    <a class="watch" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw" target="_blank" rel="noopener">Watch on YouTube ↗</a>
+    <ul class="chapters"><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=0s" target="_blank" rel="noopener">0:00</a> Basics of Go</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=486s" target="_blank" rel="noopener">8:06</a> Monte Carlo Tree Search</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1913s" target="_blank" rel="noopener">31:53</a> What the neural network does</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3622s" target="_blank" rel="noopener">1:00:22</a> Self-play</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5127s" target="_blank" rel="noopener">1:25:27</a> Alternative RL approaches</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6336s" target="_blank" rel="noopener">1:45:36</a> Why doesn’t MCTS work for LLMs</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7258s" target="_blank" rel="noopener">2:00:58</a> Off-policy training</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7911s" target="_blank" rel="noopener">2:11:51</a> RL is even more information inefficient than you thought</li><li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8525s" target="_blank" rel="noopener">2:22:05</a> Automated AI researchers</li></ul>
+  </div>
+</section>
+
+<article class="body">
+<h2 id="a-2017-loop-rebuilt-to-answer-2026-questions">A 2017 loop, rebuilt to answer 2026 questions</h2>
+<p>Eric Jang left 1X Technologies, where he was VP of AI, in January 2026 for a sabbatical [2]; before that he spent six years at Google Brain and what is now Google DeepMind Robotics, where he coauthored QT-Opt, Google's large-scale off-policy system for robotic grasping [3]. The sabbatical's first public project is a rebuild of AlphaGo with modern tooling — an interactive tutorial published on 2026-04-28, an MIT-licensed repo called AutoGo, and a bot trained on donated compute [4][5] — and on 2026-05-15 he walked Dwarkesh Patel through the entire stack on a blackboard, from the rules of Go up to automated research [1].</p>
+<p>The premise is that you sometimes understand the future better by stepping backward: AlphaGo remains the cleanest worked example of search, learning, and self-play operating as one loop, and the 2017 design solved a problem — credit assignment — that today's LLM reinforcement learning still routes around. The timing is deliberate, with reasoning models trained on outcome rewards dominating the industry, the automated-AI-researcher debate live, and Jang's own February 2026 essay arguing that thinking itself is becoming a computational primitive [6]. He opens with the hook that carries the whole project: thanks to LLM coding assistants, what once took a team of DeepMind scientists and millions of dollars can now be attempted for a few thousand dollars <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=120s" target="_blank" rel="noopener">2:00</a>. The honest version of that claim is the more interesting one.</p>
+<h2 id="two-network-heads-make-an-impossible-tree-searchable">Two network heads make an impossible tree searchable</h2>
+<p>Go's difficulty is quantifiable. Under Tromp-Taylor rules — the unambiguous formulation all Go AIs train and score against [7]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=159s" target="_blank" rel="noopener">2:39</a> — a game runs roughly 250 to 300 moves with up to 361 choices each, and Jang sketches the naive game tree as something like 361 to the 300th power, far more paths than atoms in the universe, before immediately qualifying that symmetries and transpositions shrink it <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=596s" target="_blank" rel="noopener">9:56</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=658s" target="_blank" rel="noopener">10:58</a>. The exact count of legal positions, computed by John Tromp in January 2016, is about 2.08 × 10^170 [8]. Exhaustive search is out; the question is where to spend a finite budget of lookahead.</p>
+<p>AlphaGo's answer is one small network wrapped in a search loop. The board enters as a three-plane image — black stones, white stones, empty points — and flows through a residual network Jang sizes at about ten layers and under 3 million parameters <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2270s" target="_blank" rel="noopener">37:50</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2508s" target="_blank" rel="noopener">41:48</a>. Two heads share that trunk: a policy head that outputs a distribution over the 361 points, and a value head that predicts win probability as a binary classification <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1914s" target="_blank" rel="noopener">31:54</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1959s" target="_blank" rel="noopener">32:39</a>. In his re-implementation, ResNets still beat transformers in this small-data regime because local convolutions match Go's spatial structure <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1959s" target="_blank" rel="noopener">32:39</a>; the architecture's known weakness — connecting fights on opposite sides of the board — is what KataGo's global feature pooling was designed to patch, a finding Jang highlights from that paper <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2002s" target="_blank" rel="noopener">33:22</a>[10].</p>
+<p>Each move triggers a fresh Monte Carlo Tree Search (MCTS) of 200 to 2,048 simulations, each the same four-step loop: select a child by the PUCT criterion — mean action value plus a prior-weighted exploration bonus that decays with visits — expand a new leaf, evaluate it with the value head instead of playing to the end, and back the result up the tree as a running mean <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2585s" target="_blank" rel="noopener">43:05</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2714s" target="_blank" rel="noopener">45:14</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3213s" target="_blank" rel="noopener">53:33</a>. The division of labor is exact: the policy prior prunes the tree's breadth, the value net truncates its depth, and the final move is chosen not by value estimates but by how often search visited each child <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=1635s" target="_blank" rel="noopener">27:15</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3262s" target="_blank" rel="noopener">54:22</a>.</p>
+<figure class="fig fig-inline" id="fig-1"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One MCTS simulation loop: selection, expansion, evaluation, backup" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f6f5f1;display:block">
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#17181c"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6bd8"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7a4fd3"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- ===== Left: sparse tree ===== -->
+  <g stroke-linecap="round">
+    <!-- edges: root to level 1 -->
+    <line x1="210" y1="126" x2="112" y2="248" stroke="#676b76" stroke-width="2"/>
+    <line x1="210" y1="126" x2="210" y2="246" stroke="#676b76" stroke-width="2"/>
+    <line x1="212" y1="125" x2="306" y2="247" stroke="#2f6bd8" stroke-width="3.5"/>
+    <!-- edges: blue child to level 2 -->
+    <line x1="306" y1="277" x2="244" y2="398" stroke="#676b76" stroke-width="2"/>
+    <line x1="310" y1="278" x2="342" y2="398" stroke="#2f6bd8" stroke-width="3.5"/>
+    <!-- unvisited stub edges (faint, dashed) -->
+    <line x1="112" y1="278" x2="80" y2="350" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="112" y1="278" x2="135" y2="352" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="210" y1="276" x2="200" y2="352" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="244" y1="428" x2="228" y2="490" stroke="#676b76" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.45"/>
+    <line x1="344" y1="428" x2="330" y2="490" stroke="#2f6bd8" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.55"/>
+    <line x1="344" y1="428" x2="382" y2="488" stroke="#2f6bd8" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.55"/>
+  </g>
+  <!-- nodes -->
+  <circle cx="210" cy="110" r="17" fill="#fff" stroke="#2f6bd8" stroke-width="3.5"/>
+  <circle cx="112" cy="263" r="14" fill="#fff" stroke="#676b76" stroke-width="2"/>
+  <circle cx="210" cy="261" r="14" fill="#fff" stroke="#676b76" stroke-width="2"/>
+  <circle cx="308" cy="262" r="15" fill="#fff" stroke="#2f6bd8" stroke-width="3.5"/>
+  <circle cx="242" cy="413" r="13" fill="#fff" stroke="#676b76" stroke-width="2"/>
+  <!-- the new leaf on the blue path -->
+  <circle cx="345" cy="413" r="14" fill="#2f6bd8" stroke="#2f6bd8" stroke-width="3"/>
+
+  <!-- ===== Right: four-step cycle ===== -->
+  <!-- Box 1 · Selection (top-left) -->
+  <g>
+    <rect x="470" y="100" width="300" height="118" rx="10" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="494" y="140" font-size="24" font-weight="700" fill="#17181c">1 &#183; Selection</text>
+    <text x="494" y="170" font-size="17" fill="#676b76">PUCT picks a child</text>
+    <text x="494" y="200" font-size="15" fill="#33353c" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">Q(s,a) + c&#183;P(a)&#183;&#8730;N/(1+N(a))</text>
+  </g>
+  <!-- Box 2 · Expansion (top-right) -->
+  <g>
+    <rect x="860" y="100" width="300" height="118" rx="10" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="884" y="147" font-size="24" font-weight="700" fill="#17181c">2 &#183; Expansion</text>
+    <text x="884" y="180" font-size="17" fill="#676b76">add a new leaf</text>
+  </g>
+  <!-- Box 3 · Evaluation (bottom-right) -->
+  <g>
+    <rect x="860" y="330" width="300" height="118" rx="10" fill="#fff" stroke="#7a4fd3" stroke-width="2.5"/>
+    <text x="884" y="377" font-size="24" font-weight="700" fill="#17181c">3 &#183; Evaluation</text>
+    <text x="884" y="410" font-size="17" fill="#676b76">value head scores it</text>
+  </g>
+  <!-- Box 4 · Backup (bottom-left) -->
+  <g>
+    <rect x="470" y="330" width="300" height="118" rx="10" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="494" y="377" font-size="24" font-weight="700" fill="#17181c">4 &#183; Backup</text>
+    <text x="494" y="410" font-size="17" fill="#676b76">running mean up to root</text>
+  </g>
+
+  <!-- cycle arrows: 1 -> 2 -> 3 -> 4 -> 1 -->
+  <line x1="778" y1="159" x2="850" y2="159" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+  <line x1="1010" y1="226" x2="1010" y2="320" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+  <line x1="852" y1="389" x2="780" y2="389" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+  <line x1="620" y1="322" x2="620" y2="228" stroke="#17181c" stroke-width="2.5" marker-end="url(#arrow-ink)"/>
+
+  <!-- Annotation: policy prior prunes breadth -> box 1 -->
+  <text x="470" y="62" font-size="17" font-weight="600" fill="#2f6bd8">policy prior prunes breadth</text>
+  <line x1="530" y1="70" x2="530" y2="92" stroke="#2f6bd8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+  <!-- Annotation: value net truncates depth -> box 3 -->
+  <text x="880" y="500" font-size="17" font-weight="600" fill="#7a4fd3">value net truncates depth</text>
+  <line x1="940" y1="480" x2="940" y2="458" stroke="#7a4fd3" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+  <!-- ===== Footer strip ===== -->
+  <rect x="40" y="560" width="1120" height="70" rx="10" fill="#fff" stroke="#676b76" stroke-width="1" opacity="0.95"/>
+  <text x="72" y="603" font-size="19" font-weight="600" fill="#17181c">repeat 200&#8211;2,048 times per move</text>
+  <text x="1128" y="603" font-size="19" font-weight="600" fill="#17181c" text-anchor="end">visit counts become the vote</text>
+</svg>
+</div><figcaption><b>Figure 1.</b> One MCTS simulation: PUCT selects a child, a new leaf is expanded, the value head scores it in place of a playout, and the result backs up to the root as a running mean. After 200–2,048 simulations the visit counts choose the move.</figcaption></figure>
+
+<h2 id="training-is-distillation-of-search-run-after-every-game">Training is distillation of search, run after every game</h2>
+<p>The part Jang most wants the audience to see happens after the game. The raw policy makes a diffuse guess, MCTS refines it into a peakier visit distribution, and the training step simply teaches the policy head to predict that refined distribution while the value head learns to predict who actually won <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3624s" target="_blank" rel="noopener">1:00:24</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3766s" target="_blank" rel="noopener">1:02:46</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4250s" target="_blank" rel="noopener">1:10:50</a>. DeepMind's own description of AlphaGo Zero was that it becomes "its own teacher" [11]; Jang's version is more mechanical — distillation amortizes about 1,000 simulations of search into the next forward pass, so the next search starts from a stronger prior and climbs higher on the same budget <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3814s" target="_blank" rel="noopener">1:03:34</a>. He stresses that the implementation contains no explicit temporal-difference learning or dynamic programming: it is supervised learning on labels that search keeps improving, and the training is correspondingly stable <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8419s" target="_blank" rel="noopener">2:20:19</a>.</p>
+<p>In the vocabulary of Jang's robotics lineage, MCTS is a DAgger-style expert [13]: it revisits every state the policy reached and relabels it with a better action, so a lost 300-move game still yields 300 dense training targets rather than one terminal verdict <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3949s" target="_blank" rel="noopener">1:05:49</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3986s" target="_blank" rel="noopener">1:06:26</a> "What MCTS is doing is saying: you played this game where you eventually lost, but on every single action, I'm going to give you a strictly better action that you should have taken instead."</p><cite>Eric Jang</cite></blockquote>
+<p>"Strictly" is the rhetorical engine of that framing, and the talk corrects it within two minutes: pressed by Patel, Jang concedes that "in practice, it is a heuristic" <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4079s" target="_blank" rel="noopener">1:07:59</a>, and the AlphaGo Zero paper claims only that search "usually" selects stronger moves than the raw policy [12]. The failure mode he sketches is concrete: if self-play games always end in resignation, the replay buffer starves of resolved endgames, the value head degrades exactly where search grounds out, and the corrupted values back up through PUCT into a distribution worse than the prior <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4124s" target="_blank" rel="noopener">1:08:44</a>. His fixes are engineering, not theory — force about 10% of games to full Tromp-Taylor resolution, and learn values on near-decidable endgames first so search can back them up into the murky midgame <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4170s" target="_blank" rel="noopener">1:09:30</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4327s" target="_blank" rel="noopener">1:12:07</a>. The dependency is absolute: "Ultimately, MCTS will fall apart if you don't have a grounding function for the value" <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4481s" target="_blank" rel="noopener">1:14:41</a>.</p>
+<p>One version distinction matters, because the talk says "AlphaGo" loosely. The elegant loop — a single two-headed network, no rollouts, a policy trained on the search distribution — is AlphaGo Zero, from 2017. The 2016 system that beat Lee Sedol was initialized on human expert games <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2334s" target="_blank" rel="noopener">38:54</a>, kept two separate networks <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4481s" target="_blank" rel="noopener">1:14:41</a>, refined its policy with REINFORCE, and evaluated leaves by averaging the value net at equal weight with playouts by a separate fast rollout policy — details the later papers discarded [9][12]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3016s" target="_blank" rel="noopener">50:16</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=3124s" target="_blank" rel="noopener">52:04</a>. Our reading: the elegance was the second iteration, reached only after a messier human-bootstrapped system worked — worth remembering when the loop is offered as a design lesson.</p>
+<figure class="fig fig-inline" id="fig-2"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="AlphaGo Zero self-play loop: search sharpens the policy prior, and training on search results makes the next prior stronger" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: block;">
+  <defs>
+    <marker id="fig02-arrow-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#17181c"/>
+    </marker>
+    <marker id="fig02-arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0f9d8c"/>
+    </marker>
+  </defs>
+
+  <!-- ===== top band: prior vs search distribution ===== -->
+  <!-- left histogram: raw policy prior (flat) -->
+  <g>
+    <rect x="180" y="147.4" width="26" height="19.6" fill="#676b76"/>
+    <rect x="212" y="153.0" width="26" height="14.0" fill="#676b76"/>
+    <rect x="244" y="141.8" width="26" height="25.2" fill="#676b76"/>
+    <rect x="276" y="150.2" width="26" height="16.8" fill="#676b76"/>
+    <rect x="308" y="144.6" width="26" height="22.4" fill="#676b76"/>
+    <rect x="340" y="153.0" width="26" height="14.0" fill="#676b76"/>
+    <rect x="372" y="150.2" width="26" height="16.8" fill="#676b76"/>
+    <rect x="404" y="155.8" width="26" height="11.2" fill="#676b76"/>
+    <line x1="172" y1="167" x2="438" y2="167" stroke="#676b76" stroke-width="1.5"/>
+    <text x="305" y="196" text-anchor="middle" font-size="17" fill="#676b76">raw policy prior</text>
+  </g>
+
+  <!-- arrow between histograms -->
+  <line x1="475" y1="130" x2="720" y2="130" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+  <text x="600" y="112" text-anchor="middle" font-size="18" fill="#17181c" font-weight="600">search sharpens</text>
+
+  <!-- right histogram: MCTS visit distribution (peaky) -->
+  <g>
+    <rect x="770" y="161.4" width="26" height="5.6" fill="#676b76"/>
+    <rect x="802" y="162.8" width="26" height="4.2" fill="#676b76"/>
+    <rect x="834" y="66.2" width="26" height="100.8" fill="#2f6bd8"/>
+    <rect x="866" y="158.6" width="26" height="8.4" fill="#676b76"/>
+    <rect x="898" y="160.0" width="26" height="7.0" fill="#676b76"/>
+    <rect x="930" y="162.8" width="26" height="4.2" fill="#676b76"/>
+    <rect x="962" y="161.4" width="26" height="5.6" fill="#676b76"/>
+    <rect x="994" y="162.8" width="26" height="4.2" fill="#676b76"/>
+    <line x1="762" y1="167" x2="1028" y2="167" stroke="#676b76" stroke-width="1.5"/>
+    <text x="895" y="196" text-anchor="middle" font-size="17" fill="#676b76">MCTS visit distribution</text>
+  </g>
+
+  <!-- divider between bands -->
+  <line x1="110" y1="240" x2="1090" y2="240" stroke="#676b76" stroke-width="1" stroke-dasharray="3 6" opacity="0.6"/>
+
+  <!-- ===== bottom band: the outer loop (clockwise) ===== -->
+  <!-- box 1: play a game -->
+  <g>
+    <rect x="110" y="300" width="320" height="96" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="270" y="342" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">play a game</text>
+    <text x="270" y="372" text-anchor="middle" font-size="17" fill="#676b76">MCTS on every move</text>
+  </g>
+
+  <!-- box 2: store each move -->
+  <g>
+    <rect x="770" y="300" width="320" height="96" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="930" y="342" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">store each move</text>
+    <text x="930" y="372" text-anchor="middle" font-size="17" fill="#676b76">state, visit distribution, winner</text>
+  </g>
+
+  <!-- box 3: supervised training -->
+  <g>
+    <rect x="770" y="516" width="320" height="122" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="930" y="554" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">supervised training</text>
+    <text x="930" y="584" text-anchor="middle" font-size="17" fill="#676b76">policy imitates search distribution</text>
+    <text x="930" y="610" text-anchor="middle" font-size="17" fill="#676b76">value predicts game winner</text>
+  </g>
+
+  <!-- box 4: stronger prior -->
+  <g>
+    <rect x="110" y="529" width="320" height="96" rx="14" fill="#fff" stroke="#17181c" stroke-width="2"/>
+    <text x="270" y="571" text-anchor="middle" font-size="23" font-weight="700" fill="#17181c">stronger prior</text>
+    <text x="270" y="601" text-anchor="middle" font-size="17" fill="#676b76">next search starts higher</text>
+  </g>
+
+  <!-- loop arrows, clockwise -->
+  <line x1="442" y1="348" x2="758" y2="348" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+  <line x1="930" y1="408" x2="930" y2="504" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+  <line x1="758" y1="577" x2="442" y2="577" stroke="#0f9d8c" stroke-width="2.5" marker-end="url(#fig02-arrow-teal)"/>
+  <line x1="270" y1="517" x2="270" y2="408" stroke="#17181c" stroke-width="2.5" marker-end="url(#fig02-arrow-ink)"/>
+
+  <!-- annotation on the training -> stronger prior arrow -->
+  <text x="600" y="558" text-anchor="middle" font-size="18" font-weight="600" fill="#0f9d8c">&#8776;1,000 simulations amortized per pass</text>
+</svg>
+</div><figcaption><b>Figure 2.</b> AlphaGo Zero's outer loop: each game's per-move visit distributions and final winner retrain the two heads, amortizing about 1,000 simulations of search into the next forward pass so the next search starts from a stronger prior.</figcaption></figure>
+
+<h2 id="one-label-per-move-beats-one-bit-through-a-straw">One label per move beats one bit through a straw</h2>
+<p>To show what the distillation buys, Jang runs the naive alternative: self-play where you simply imitate the winner, the closest board-game analog of modern LLM RL. Between two evenly matched policies, imagine 100 games of 300 moves each in which one side wins 51 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5194s" target="_blank" rel="noopener">1:26:34</a> and, in his deliberately stylized model, exactly one move was genuinely better play rather than luck <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5254s" target="_blank" rel="noopener">1:27:34</a> — winner-imitation then trains on tens of thousands of moves to propagate one move of real signal. Patel connects this to Andrej Karpathy's description of policy-gradient RL as "sucking supervision through a straw" <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5300s" target="_blank" rel="noopener">1:28:20</a>, a line from Karpathy's October 2025 appearance on the same podcast [14]. Baselines and advantage estimation exist to cancel the neutral moves — Jang points to Schulman's Generalized Advantage Estimation as the canonical treatment <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5791s" target="_blank" rel="noopener">1:36:31</a>[16] — but they estimate around the problem rather than removing it.</p>
+<p>The information-theoretic version of the argument is the talk's sharpest: a learner should maximize bits per FLOP, which decomposes into samples per FLOP times bits per sample <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7979s" target="_blank" rel="noopener">2:12:59</a>. Long-horizon agentic tasks crush the first factor, since a two-day trajectory buys a single verdict <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7954s" target="_blank" rel="noopener">2:12:34</a>, while outcome rewards cap the second: a sampled pass/fail is worth at most a coin flip's entropy, and far less at the low pass rates where RL spends most of its training <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8084s" target="_blank" rel="noopener">2:14:44</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8206s" target="_blank" rel="noopener">2:16:46</a>. A supervised label delivers −log p bits in one cross-entropy update, so an untrained model with a 100,000-token vocabulary would need on the order of 100,000 random tries to extract by RL what one label teaches directly <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8036s" target="_blank" rel="noopener">2:13:56</a>. This is why Jang calls AlphaGo's objective beautiful: the policy imitates the full MCTS visit distribution — a soft target richer than any single action — and "you never have to initialize at a zero percent success rate" <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8363s" target="_blank" rel="noopener">2:19:23</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8419s" target="_blank" rel="noopener">2:20:19</a>. Current LLM practice is the mirror image: the sequence is treated as one action <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=5495s" target="_blank" rel="noopener">1:31:35</a>, and GRPO-style outcome supervision broadcasts one normalized end-of-answer reward to every token as its advantage [15].</p>
+<figure class="fig fig-inline" id="fig-3"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Chart: bits per sample versus pass rate for a supervised soft target (minus log base 2 of p) and an outcome reward (binary entropy of p)" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#f6f5f1; display:block;">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- shaded band: p from 0 to 0.1 -->
+  <rect x="100" y="80" width="105" height="520" fill="#e08a1e" fill-opacity="0.08"/>
+
+  <!-- horizontal gridlines at y ticks 1,2,4,6,8,10 -->
+  <g stroke="#676b76" stroke-opacity="0.18" stroke-width="1.5">
+    <line x1="100" y1="548" x2="1150" y2="548"/>
+    <line x1="100" y1="496" x2="1150" y2="496"/>
+    <line x1="100" y1="392" x2="1150" y2="392"/>
+    <line x1="100" y1="288" x2="1150" y2="288"/>
+    <line x1="100" y1="184" x2="1150" y2="184"/>
+    <line x1="100" y1="80" x2="1150" y2="80"/>
+  </g>
+
+  <!-- 1-bit coin-flip gridline (emphasized, dashed) -->
+  <line x1="100" y1="548" x2="1150" y2="548" stroke="#676b76" stroke-width="2" stroke-dasharray="8 7"/>
+
+  <!-- axes -->
+  <g stroke="#17181c" stroke-width="2.5">
+    <line x1="100" y1="600" x2="1150" y2="600"/>
+    <line x1="100" y1="600" x2="100" y2="80"/>
+  </g>
+
+  <!-- x ticks -->
+  <g stroke="#17181c" stroke-width="2">
+    <line x1="100" y1="600" x2="100" y2="609"/>
+    <line x1="362.5" y1="600" x2="362.5" y2="609"/>
+    <line x1="625" y1="600" x2="625" y2="609"/>
+    <line x1="887.5" y1="600" x2="887.5" y2="609"/>
+    <line x1="1150" y1="600" x2="1150" y2="609"/>
+  </g>
+  <g fill="#33353c" font-size="26" text-anchor="middle">
+    <text x="100" y="638">0</text>
+    <text x="362.5" y="638">0.25</text>
+    <text x="625" y="638">0.5</text>
+    <text x="887.5" y="638">0.75</text>
+    <text x="1150" y="638">1</text>
+  </g>
+
+  <!-- y ticks: 0,1,2,4,6,8,10 -->
+  <g stroke="#17181c" stroke-width="2">
+    <line x1="91" y1="600" x2="100" y2="600"/>
+    <line x1="91" y1="548" x2="100" y2="548"/>
+    <line x1="91" y1="496" x2="100" y2="496"/>
+    <line x1="91" y1="392" x2="100" y2="392"/>
+    <line x1="91" y1="288" x2="100" y2="288"/>
+    <line x1="91" y1="184" x2="100" y2="184"/>
+    <line x1="91" y1="80" x2="100" y2="80"/>
+  </g>
+  <g fill="#33353c" font-size="26" text-anchor="end">
+    <text x="84" y="609">0</text>
+    <text x="84" y="557">1</text>
+    <text x="84" y="505">2</text>
+    <text x="84" y="401">4</text>
+    <text x="84" y="297">6</text>
+    <text x="84" y="193">8</text>
+    <text x="84" y="89">10</text>
+  </g>
+
+  <!-- axis titles -->
+  <text x="625" y="670" fill="#17181c" font-size="30" text-anchor="middle">pass rate p</text>
+  <text x="34" y="340" fill="#17181c" font-size="30" text-anchor="middle" transform="rotate(-90 34 340)">bits per sample</text>
+
+  <!-- supervised soft target: −log₂ p, blue -->
+  <path d="M 101.05 81.6 L 105.25 202.7 L 110.5 254.7 L 121 306.7 L 131.5 336.9 L 142 358.7 L 152.5 375.4 L 173.5 400.4 L 205 427.4 L 257.5 457.5 L 310 479.4 L 362.5 496 L 415 509.5 L 520 531.4 L 625 548 L 730 561.5 L 835 573.5 L 940 583.4 L 1045 592.2 L 1150 600"
+        fill="none" stroke="#2f6bd8" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- outcome reward: H(p), orange -->
+  <path d="M 101.05 599.5 L 105.25 597.4 L 110.5 595.8 L 121 592.7 L 152.5 584.9 L 205 575.6 L 257.5 568.3 L 310 562.6 L 415 554.2 L 520 549.6 L 625 548 L 730 549.6 L 835 554.2 L 940 562.6 L 1045 575.6 L 1150 600"
+        fill="none" stroke="#e08a1e" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- marker at (0.5, 1 bit) -->
+  <circle cx="625" cy="548" r="7" fill="#f6f5f1" stroke="#676b76" stroke-width="3"/>
+  <text x="1145" y="536" fill="#676b76" font-size="26" text-anchor="end">1 bit — a coin flip</text>
+
+  <!-- clipped-at-top note -->
+  <text x="122" y="100" fill="#676b76" font-size="26" font-style="italic">→ ∞ as p → 0</text>
+
+  <!-- band label with leader line -->
+  <text x="238" y="152" fill="#676b76" font-size="26">where RL training mostly happens</text>
+  <path d="M 230 160 L 175 205" fill="none" stroke="#676b76" stroke-width="1.5"/>
+  <path d="M 175 205 l 12 -3 M 175 205 l 3 -12" fill="none" stroke="#676b76" stroke-width="1.5"/>
+
+  <!-- curve labels -->
+  <text x="335" y="455" fill="#2f6bd8" font-size="30" font-weight="600">supervised soft target −log₂ p</text>
+  <text x="648" y="518" fill="#e08a1e" font-size="30" font-weight="600">outcome reward H(p)</text>
+</svg>
+</div><figcaption><b>Figure 3.</b> Bits of learning signal per sample versus pass rate, in the talk's stylized model: a supervised soft target delivers −log₂ p bits per update, a sampled pass/fail at most a coin flip's entropy — and outcome RL spends most of training at low pass rates where its curve nearly vanishes.</figcaption></figure>
+
+<p>The honest footnote is that the adjacent on-air math failed. On air Jang derived that multi-step RL suffers variance growing quadratically with the horizon; four days after publication he posted a signed errata retracting it [17]. Under a single terminal reward, the single-step and multi-step REINFORCE estimators are identical; with per-token rewards, multi-step formulations actually have lower variance; the quadratic term attaches to sequence length, not to the formulation. Labs score whole sequences because per-token rewards for LLM tasks are misspecified — pass/fail is a property of the finished answer — not because multi-step RL is noisier [17]. Our reading: the correction deletes the wrong mechanism while strengthening the thesis, since the errata's bottom line is that credit assignment stays quadratically hard as generations grow long — and a public retraction within a week is the blackboard-to-podcast loop working as intended.</p>
+<h2 id="the-transfer-to-llms-fails-at-two-named-components">The transfer to LLMs fails at two named components</h2>
+<p>Jang's diagnosis of why this machinery does not port to language models is mechanical. PUCT's exploration bonus is computed from per-child visit counts, and with a vocabulary of roughly 100,000 tokens a reasoning tree almost never samples the same child twice, so the statistic the selection rule runs on is undefined in practice <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6516s" target="_blank" rel="noopener">1:48:36</a>. The depth cut fails too: truncating search needs a cheap, grounded evaluator, and open-ended language tasks have no Tromp-Taylor scoring to bottom out on <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6431s" target="_blank" rel="noopener">1:47:11</a>. He treats the Google tree-structured-reasoning work of 2023–2024 — most likely the Tree of Thoughts line [18] — as unresolved <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6378s" target="_blank" rel="noopener">1:46:18</a>, and still expects forward search to return once those two pieces exist <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6431s" target="_blank" rel="noopener">1:47:11</a>.</p>
+<p>The same grounding requirement disciplines off-policy training. To saturate his GPUs, Jang sampled old board states from the dataset and re-ran MCTS relabeling on them offline — an architecture he maps onto the QT-Opt replay-buffer systems he helped build at Google <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7510s" target="_blank" rel="noopener">2:05:10</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7602s" target="_blank" rel="noopener">2:06:42</a>[3]. It works only on states the current policy could plausibly reach; relabeling unreachable states wastes network capacity, which is his explanation for why the field converged on mostly on-policy setups that use off-policy data for advantage estimation at best <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7304s" target="_blank" rel="noopener">2:01:44</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7846s" target="_blank" rel="noopener">2:10:46</a>.</p>
+<p>Our reading: the bits-per-sample indictment has a circularity worth naming. The supervised alternative presupposes a teacher producing soft targets, and in AlphaGo Zero that teacher is manufactured by search itself — exactly the operator LLMs lack. As an account of why outcome RL is information-poor, the argument stands; as a prescription for LLM training, it restates the open problem: where does the better label come from?</p>
+<h2 id="the-numbers-hold-up-a-notch-off-and-self-corrected">The numbers hold up — a notch off, and self-corrected</h2>
+<p>This episode's claims are unusually checkable, and checking returns a consistent verdict: mechanisms sound, figures loose. KataGo, dated on air to 2020 with a 40x compute reduction <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=79s" target="_blank" rel="noopener">1:19</a>, is a 2019 paper whose own headline claim is a 50x reduction over comparable AlphaZero-style pipelines, surpassing ELF OpenGo's final model in 19 days on fewer than 30 GPUs [10]. The compute-trend chart Patel cites, with AlphaGo Zero as an outlier at 3 × 10^23 FLOP <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6901s" target="_blank" rel="noopener">1:55:01</a>, matches the era's canonical estimates, but Epoch AI's current database has since revised the AlphaGo-family figures down by orders of magnitude — the outlier framing survives while the number does not [20][21]. The scaling-laws papers casually dated to 2018 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9134s" target="_blank" rel="noopener">2:32:14</a> are from January 2020 (Kaplan et al.) and March 2022 (Chinchilla) [22][23]. On the other side of the ledger, Andy Jones's 2021 board-game study really did demonstrate the trade-off between train-time and test-time compute, three and a half years before reasoning models made it the industry's organizing idea [24]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6654s" target="_blank" rel="noopener">1:50:54</a>.</p>
+<p>The money comparison deserves its exact shape. Replicating AlphaGo Zero's 40-day run was priced at roughly $35 million in a widely cited 2018 cloud-TPU rental estimate [19]; Jang's project ran on about $10,000 donated by Prime Intellect — roughly $4,000 of exploration and $3,000 for the final run <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6947s" target="_blank" rel="noopener">1:55:47</a>. But the strong bot was bootstrapped by best-response training against KataGo, and the from-scratch run was still being validated at recording <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6993s" target="_blank" rel="noopener">1:56:33</a>. Jang flags the asymmetry himself:</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6947s" target="_blank" rel="noopener">1:55:47</a> "The compute required to be the first to do something is always much larger than the compute it takes to catch up. It's the same story playing out in LLMs."</p><cite>Eric Jang</cite></blockquote>
+<p>Our reading: the honest comparison is frontier exploration versus teacher-assisted catch-up — the asymmetry the DeepSeek moment dramatized for language models — and the same information theory explains it: every deployed strong model is a soft-target teacher for whoever comes second.</p>
+<figure class="fig fig-inline" id="fig-4"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Log-scale bar chart comparing a 35 million dollar 2018 estimate to replicate AlphaGo Zero with the 10 thousand dollar 2026 AutoGo rebuild, which was bootstrapped from KataGo rather than trained tabula rasa." xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f6f5f1;display:block">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- decade gridlines: $1K..$100M, log scale, x = 60 + (log10(v)-3)*220 -->
+  <g stroke="#676b76" stroke-opacity="0.18" stroke-width="1">
+    <line x1="60"   y1="88" x2="60"   y2="583"/>
+    <line x1="280"  y1="88" x2="280"  y2="583"/>
+    <line x1="500"  y1="88" x2="500"  y2="583"/>
+    <line x1="720"  y1="88" x2="720"  y2="583"/>
+    <line x1="940"  y1="88" x2="940"  y2="583"/>
+    <line x1="1160" y1="88" x2="1160" y2="583"/>
+  </g>
+
+  <!-- Bar 1: $35M, 2018 -->
+  <text x="60" y="112" font-size="21" font-weight="600" fill="#17181c">replicate AlphaGo Zero, 2018</text>
+  <text x="60" y="138" font-size="16" fill="#676b76">cloud-TPU rental estimate, tabula rasa</text>
+  <rect x="60" y="152" width="1000" height="64" rx="3" fill="#2f6bd8"/>
+  <text x="1048" y="192" font-size="19" font-weight="600" fill="#fff" text-anchor="end">$35M</text>
+
+  <!-- connector + center annotation -->
+  <line x1="1060" y1="216" x2="280" y2="424" stroke="#676b76" stroke-width="1.5" stroke-dasharray="6 6" stroke-opacity="0.7"/>
+  <text x="690" y="308" font-size="18" fill="#676b76" text-anchor="middle">&#8776;3.5 orders of magnitude apart</text>
+
+  <!-- Bar 2: $10K, 2026 -->
+  <text x="60" y="386" font-size="21" font-weight="600" fill="#17181c">AutoGo rebuild, 2026</text>
+  <text x="60" y="412" font-size="16" fill="#676b76">$10K total</text>
+  <rect x="60" y="424" width="220" height="64" rx="3" fill="#2f6bd8"/>
+  <!-- internal split marks at cumulative $4K and $7K -->
+  <line x1="192.5" y1="424" x2="192.5" y2="488" stroke="#f6f5f1" stroke-width="3"/>
+  <line x1="245.9" y1="424" x2="245.9" y2="488" stroke="#f6f5f1" stroke-width="3"/>
+  <text x="292" y="463" font-size="19" font-weight="600" fill="#17181c">$10K</text>
+
+  <!-- caveat tag (orange) -->
+  <g>
+    <rect x="368" y="434" width="368" height="44" rx="22" fill="none" stroke="#e08a1e" stroke-width="1.5"/>
+    <text x="552" y="462" font-size="17" fill="#e08a1e" text-anchor="middle">bootstrapped from KataGo &#8212; not tabula rasa</text>
+  </g>
+
+  <!-- segment sublabels with leader ticks -->
+  <line x1="126" y1="488" x2="126" y2="512" stroke="#676b76" stroke-width="1.2"/>
+  <text x="126" y="532" font-size="15" fill="#676b76" text-anchor="middle">$4K exploration</text>
+  <line x1="219" y1="488" x2="219" y2="545" stroke="#676b76" stroke-width="1.2"/>
+  <text x="219" y="565" font-size="15" fill="#676b76" text-anchor="middle">$3K final run</text>
+
+  <!-- x axis -->
+  <line x1="60" y1="583" x2="1160" y2="583" stroke="#17181c" stroke-width="1.5"/>
+  <g stroke="#17181c" stroke-width="1.5">
+    <line x1="60"   y1="583" x2="60"   y2="591"/>
+    <line x1="280"  y1="583" x2="280"  y2="591"/>
+    <line x1="500"  y1="583" x2="500"  y2="591"/>
+    <line x1="720"  y1="583" x2="720"  y2="591"/>
+    <line x1="940"  y1="583" x2="940"  y2="591"/>
+    <line x1="1160" y1="583" x2="1160" y2="591"/>
+  </g>
+  <g font-size="16" fill="#33353c" text-anchor="middle">
+    <text x="60"   y="614">$1K</text>
+    <text x="280"  y="614">$10K</text>
+    <text x="500"  y="614">$100K</text>
+    <text x="720"  y="614">$1M</text>
+    <text x="940"  y="614">$10M</text>
+    <text x="1160" y="614">$100M</text>
+  </g>
+  <text x="610" y="650" font-size="16" fill="#676b76" text-anchor="middle">cost, USD (log scale)</text>
+</svg>
+</div><figcaption><b>Figure 4.</b> What the headline cost collapse actually compares: a 2018 cloud-rental estimate for replicating AlphaGo Zero from scratch versus Jang's 2026 rebuild, which reached strength by best-response training against KataGo — the from-scratch run was still being validated at recording.</figcaption></figure>
+
+<h2 id="the-agent-grinds-the-metric-the-human-owns-the-experiment-tree">The agent grinds the metric; the human owns the experiment tree</h2>
+<p>The project doubles as a field test of automated research, because Jang ran much of it through Claude agents — mostly Opus 4.6 and 4.7, Anthropic's frontier models of February and April 2026 <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8571s" target="_blank" rel="noopener">2:22:51</a>[25][26]. What worked: open-ended hyperparameter optimization — noticing small gradients in a layer, rewriting the data loader, inventing augmentations — an almost grad-student-like ability to grind a performance metric <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8612s" target="_blank" rel="noopener">2:23:32</a>, plus full experiment execution through a custom Claude skill named Experiment that takes an axes-level description of a question and returns plots and a report <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8652s" target="_blank" rel="noopener">2:24:12</a>. What failed sits one level up: the agents rarely chose the next experiment well within a research track <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8688s" target="_blank" rel="noopener">2:24:48</a>, missed the lateral move of abandoning a track entirely, and surfaced infrastructure bugs only when Jang asked the pointed question himself <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a> "They don't seem to be able to step back and do the lateral thinking of, 'Wait a minute, this track doesn't really make sense. Let's go back to first principles […]'"</p><cite>Eric Jang</cite></blockquote>
+<p>Three qualifiers keep this snapshot honest. Jang hedges on air that Mythos-class models may dissolve these gaps <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a>; Anthropic shipped Claude Sonnet 5 on 2026-06-30 and Opus 5 on 2026-07-24, both after recording, so the boundary is a May 2026 snapshot, not a law [27]; and the observations are one researcher's uncontrolled self-report, from a speaker building a public body of work around autoresearch whose compute donor sells GPU capacity and RL environments [28] — the donation is disclosed on air, and the right response is weighting, not dismissal.</p>
+<p>For working researchers, the talk compresses into a playbook. Initialize near success — "In deep learning, initialization is everything" <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2334s" target="_blank" rel="noopener">38:54</a> — by finding the strongest available teacher before attempting anything from scratch. Verify the stack layer by layer, rules engine before supervised baseline before search, because search on garbage value predictions wastes compute <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=2556s" target="_blank" rel="noopener">42:36</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=4286s" target="_blank" rel="noopener">1:11:26</a>. Do not run science on a broken artifact: Jang fit plausible-looking scaling-law curves while his MCTS labeling was buggy, and calls the exercise studying scaling laws on bad data <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6865s" target="_blank" rel="noopener">1:54:25</a>. And distrust efficiency tricks: on modern GPUs he found KataGo's auxiliary objectives unnecessary given a strong initialization, replaced distributed replay-buffer infrastructure with a plain synchronous loop, and suspects compute multipliers are correlated and transitory as hardware improves <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7149s" target="_blank" rel="noopener">1:59:09</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7185s" target="_blank" rel="noopener">1:59:45</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9098s" target="_blank" rel="noopener">2:31:38</a> — flagged as a preliminary vibe guess, not a peer-reviewed claim <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=7104s" target="_blank" rel="noopener">1:58:24</a>.</p>
+<figure class="fig fig-inline" id="fig-5"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Comparison grid: four research-loop tasks automated well by Claude Opus 4.6/4.7 versus four tasks still done by the human as of May 2026" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display:block;">
+
+  <!-- column headers -->
+  <rect x="36" y="36" width="540" height="66" rx="12" fill="#0f9d8c"/>
+  <text x="306" y="69" text-anchor="middle" dominant-baseline="middle" font-size="28" font-weight="700" fill="#ffffff">automated well &#8212; Opus 4.6/4.7</text>
+
+  <rect x="624" y="36" width="540" height="66" rx="12" fill="#e08a1e"/>
+  <text x="894" y="69" text-anchor="middle" dominant-baseline="middle" font-size="28" font-weight="700" fill="#ffffff">still human &#8212; May 2026</text>
+
+  <!-- vertical divider -->
+  <line x1="600" y1="122" x2="600" y2="578" stroke="#676b76" stroke-width="1.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+
+  <!-- left column cells (teal) -->
+  <g>
+    <rect x="36" y="122" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="122" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="172" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">open-ended hyperparameter search</text>
+
+    <rect x="36" y="236" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="236" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="286" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">rewriting code, new augmentations</text>
+
+    <rect x="36" y="350" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="350" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="400" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">running experiments end to end</text>
+
+    <rect x="36" y="464" width="540" height="100" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.5"/>
+    <rect x="36" y="464" width="8" height="100" rx="4" fill="#0f9d8c"/>
+    <text x="66" y="514" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">plots, reports, causal guesses</text>
+  </g>
+
+  <!-- right column cells (orange) -->
+  <g>
+    <rect x="624" y="122" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="122" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="172" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">choosing the next experiment</text>
+
+    <rect x="624" y="236" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="236" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="286" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">abandoning dead-end tracks</text>
+
+    <rect x="624" y="350" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="350" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="400" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">catching infra bugs unprompted</text>
+
+    <rect x="624" y="464" width="540" height="100" rx="10" fill="#ffffff" stroke="#e08a1e" stroke-width="1.5"/>
+    <rect x="624" y="464" width="8" height="100" rx="4" fill="#e08a1e"/>
+    <text x="654" y="514" dominant-baseline="middle" font-size="26" font-weight="600" fill="#17181c">asking the first-principles question</text>
+  </g>
+
+  <!-- footer strip -->
+  <line x1="36" y1="600" x2="1164" y2="600" stroke="#676b76" stroke-width="1" opacity="0.5"/>
+  <text x="600" y="639" text-anchor="middle" dominant-baseline="middle" font-size="24" fill="#676b76">snapshot precedes Sonnet 5 / Opus 5</text>
+</svg>
+</div><figcaption><b>Figure 5.</b> The delegation boundary in Jang's autoresearch loop on Claude Opus 4.6/4.7: execution is automated, direction is not — and newer model generations may move the line.</figcaption></figure>
+
+<h2 id="open-questions-each-with-a-resolution-condition">Open questions, each with a resolution condition</h2>
+<p>The episode's forecasts come with built-in tests, which makes them trackable. Whether forward search returns to language models depends on the two missing components — a grounded, affordable value function and an exploration rule that does not require revisiting children; watch for a lab result that revives tree search over reasoning with a learned, grounded evaluator rather than an LLM judge <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6431s" target="_blank" rel="noopener">1:47:11</a>. Whether the Bitter Lesson [29] — Sutton's argument that general methods riding compute beat handcrafted knowledge — has fully absorbed KataGo's tricks resolves on a public scoreboard: if the tabula rasa run matches the KataGo-bootstrapped bot for a few thousand dollars, the transitory-multiplier thesis gains real evidence; if it does not, the cost story shrinks to distillation being cheap. The AutoGo repo is where that answer will land [5]<a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=6993s" target="_blank" rel="noopener">1:56:33</a>. Whether research taste falls to scale is already testable by handing a newer frontier agent the open environment and watching for unaided experiment selection <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8728s" target="_blank" rel="noopener">2:25:28</a>.</p>
+<p>The deepest open question is the one the episode ends on. Go works as a gym for automated research because its outer loop is trivially verifiable and hard to reward-hack <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8768s" target="_blank" rel="noopener">2:26:08</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=8848s" target="_blank" rel="noopener">2:27:28</a>; for research that matters economically, Patel's counterpoint stands: we improve what we can measure, and economically useful discovery is not yet measured <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9180s" target="_blank" rel="noopener">2:33:00</a>. Jang offers a deliberately non-rigorous bridge, that DeepMind's games experience positively transferred to its LLM era and game-trained automated researchers should transfer likewise <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9223s" target="_blank" rel="noopener">2:33:43</a>; Patel counters that the same heritage was long blamed for Google's slow LLM start, and that the real payoff may have been the TPU tech tree <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9271s" target="_blank" rel="noopener">2:34:31</a><a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9320s" target="_blank" rel="noopener">2:35:20</a>. The conversation closes conceding that even the humans who lived a research strategy struggle to evaluate it in hindsight <a class="ts" href="https://www.youtube.com/watch?v=X_ZVSPcZhtw&t=9320s" target="_blank" rel="noopener">2:35:20</a>. Our reading: that concession, more than any variance formula, is the episode's real message about intelligence explosions — execution is automating quickly, while verifying direction, the outer loop of research itself, remains unsolved.</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://www.youtube.com/watch?v=X_ZVSPcZhtw" target="_blank" rel="noopener">What rebuilding AlphaGo teaches us about self-play, RL, and future of LLMs — Eric Jang</a> — Dwarkesh Patel (YouTube), 2026-05-15</li>
+<li><a href="https://evjang.com/2026/01/21/leaving-1x.html" target="_blank" rel="noopener">Leaving 1X</a> — evjang.com, 2026-01-21</li>
+<li><a href="https://arxiv.org/abs/1806.10293" target="_blank" rel="noopener">QT-Opt: Scalable Deep Reinforcement Learning for Vision-Based Robotic Manipulation</a> — arXiv (Kalashnikov et al.), 2018-06-27</li>
+<li><a href="https://evjang.com/2026/04/28/autogo.html" target="_blank" rel="noopener">AutoGo: a Tutorial</a> — evjang.com, 2026-04-28</li>
+<li><a href="https://github.com/ericjang/autogo" target="_blank" rel="noopener">ericjang/autogo</a> — GitHub, fetched 2026-08-31</li>
+<li><a href="https://evjang.com/2026/02/04/rocks.html" target="_blank" rel="noopener">As Rocks May Think</a> — evjang.com, 2026-02-04</li>
+<li><a href="https://tromp.github.io/go.html" target="_blank" rel="noopener">The Logic of Go (Tromp-Taylor rules)</a> — John Tromp, fetched 2026-08-31</li>
+<li><a href="https://tromp.github.io/go/legal.html" target="_blank" rel="noopener">Number of legal Go positions</a> — John Tromp, 2016-01-20</li>
+<li><a href="https://storage.googleapis.com/deepmind-media/alphago/AlphaGoNaturePaper.pdf" target="_blank" rel="noopener">Mastering the game of Go with deep neural networks and tree search</a> — Nature / DeepMind, 2016-01-28</li>
+<li><a href="https://arxiv.org/abs/1902.10565" target="_blank" rel="noopener">Accelerating Self-Play Learning in Go (KataGo)</a> — arXiv (David J. Wu), 2019-02-27</li>
+<li><a href="https://deepmind.google/discover/blog/alphago-zero-starting-from-scratch/" target="_blank" rel="noopener">AlphaGo Zero: Starting from scratch</a> — Google DeepMind, 2017-10-18</li>
+<li><a href="https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf" target="_blank" rel="noopener">Mastering the Game of Go without Human Knowledge (AlphaGo Zero)</a> — Nature / UCL open copy, 2017-10-18</li>
+<li><a href="https://arxiv.org/abs/1011.0686" target="_blank" rel="noopener">A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning (DAgger)</a> — arXiv (Ross, Gordon, Bagnell), 2010-11-02</li>
+<li><a href="https://www.dwarkesh.com/p/andrej-karpathy" target="_blank" rel="noopener">Andrej Karpathy on the Dwarkesh Podcast</a> — Dwarkesh Podcast, 2025-10-17</li>
+<li><a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener">DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models</a> — arXiv (DeepSeek), 2024-02-05</li>
+<li><a href="https://arxiv.org/abs/1506.02438" target="_blank" rel="noopener">High-Dimensional Continuous Control Using Generalized Advantage Estimation</a> — arXiv (Schulman et al.), 2015-06-08</li>
+<li><a href="https://evjang.com/alphago-tutorial/llm_rl_variance.pdf" target="_blank" rel="noopener">AlphaGo Podcast Errata — LLM RL variance</a> — evjang.com, 2026-05-19</li>
+<li><a href="https://arxiv.org/abs/2305.10601" target="_blank" rel="noopener">Tree of Thoughts: Deliberate Problem Solving with Large Language Models</a> — arXiv (Yao et al.), 2023-05-17</li>
+<li><a href="https://www.yuzeh.com/data/agz-cost.html" target="_blank" rel="noopener">How much did AlphaGo Zero cost?</a> — yuzeh.com (Dan H), 2018-03</li>
+<li><a href="https://epoch.ai/blog/compute-trends" target="_blank" rel="noopener">Compute Trends Across Three Eras of Machine Learning</a> — Epoch AI (Sevilla et al.), 2022-02-11</li>
+<li><a href="https://ourworldindata.org/grapher/artificial-intelligence-training-computation" target="_blank" rel="noopener">Training computation of notable AI systems</a> — Our World in Data / Epoch AI, fetched 2026-08-31</li>
+<li><a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">Scaling Laws for Neural Language Models</a> — arXiv (Kaplan et al.), 2020-01-23</li>
+<li><a href="https://arxiv.org/abs/2203.15556" target="_blank" rel="noopener">Training Compute-Optimal Large Language Models</a> — arXiv (Hoffmann et al.), 2022-03-29</li>
+<li><a href="https://arxiv.org/abs/2104.03113" target="_blank" rel="noopener">Scaling Scaling Laws with Board Games</a> — arXiv (Andy L. Jones), 2021-04-07</li>
+<li><a href="https://www.anthropic.com/news/claude-opus-4-6" target="_blank" rel="noopener">Claude Opus 4.6</a> — Anthropic, 2026-02-05</li>
+<li><a href="https://www.anthropic.com/news/claude-opus-4-7" target="_blank" rel="noopener">Claude Opus 4.7</a> — Anthropic, 2026-04-16</li>
+<li><a href="https://www.anthropic.com/news" target="_blank" rel="noopener">Anthropic newsroom</a> — Anthropic, fetched 2026-08-31</li>
+<li><a href="https://www.primeintellect.ai/" target="_blank" rel="noopener">Prime Intellect</a> — Prime Intellect, fetched 2026-08-31</li>
+<li><a href="http://www.incompleteideas.net/IncIdeas/BitterLesson.html" target="_blank" rel="noopener">The Bitter Lesson</a> — Rich Sutton, 2019-03-13</li>
+</ol>
+</article>
+
+<footer class="credits">
+  <p>Written from the video’s transcript by a multi-agent pipeline — background research, six analytical lenses, synthesis, and an editorial pass — then illustrated in this blog’s house style and narrated with Higgs TTS. Timestamps link to the moment in the source video.</p>
+  <p>The original video belongs to its creator; this article is commentary and summary, not a substitute for watching it.</p>
+</footer>
+</div>
+
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+
+<script>
+(function(){
+  var bar=document.getElementById('pbar');
+  function prog(){var h=document.documentElement,s=h.scrollTop||document.body.scrollTop,m=h.scrollHeight-h.clientHeight;bar.style.width=(m>0?Math.min(100,s/m*100):0)+'%';}
+  addEventListener('scroll',prog,{passive:true});prog();
+  var a=document.getElementById('narr'),chips=document.querySelectorAll('.chip'),now=document.getElementById('now');
+  if(a&&chips.length){
+    var secs=[].map.call(chips,function(c){return {t:+c.dataset.t,el:c};});
+    chips.forEach(function(c){c.addEventListener('click',function(){a.currentTime=+c.dataset.t;a.play();});});
+    a.addEventListener('timeupdate',function(){var cur=null;for(var i=0;i<secs.length;i++){if(a.currentTime>=secs[i].t-0.2)cur=secs[i];}
+      secs.forEach(function(s){s.el.classList.toggle('on',s===cur);});
+      if(now)now.textContent=cur?('Now reading: '+cur.el.textContent):'';});
+  }
+})();
+</script>
+</body>
+</html>
