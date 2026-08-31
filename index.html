@@ -371,9 +371,9 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   }
 
   // per-post generative cover — a MOTIF (structure) + palette, both seeded by slug.
-  // posts.js can pin the motif via "art": "wave" | "ridge" | "cells" | "ribbon";
+  // posts.js can pin the motif via "art" (any name in MOTIFS below);
   // unset posts draw from the family by hash, so no two neighbors need to match.
-  const MOTIFS = ["wave", "ridge", "cells", "ribbon", "synapse", "factory"];
+  const MOTIFS = ["wave", "ridge", "cells", "ribbon", "synapse", "factory", "tree"];
   const mixc = (a, b, u, al) =>
     `rgba(${(a[0] + (b[0] - a[0]) * u) | 0},${(a[1] + (b[1] - a[1]) * u) | 0},${(a[2] + (b[2] - a[2]) * u) | 0},${al})`;
 
@@ -537,6 +537,135 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
           ctx.fill();
         }
       }
+    },
+
+    // tree — search is the teacher: a Go position (west) feeds a search tree
+    // fanning east; the most-visited line carries the ink, and on hover one
+    // calm MCTS heartbeat repeats — a selection pulse walks out to the ringed
+    // leaf, then its value backs up, ringing each node it updates.
+    tree(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const rand = mulberry32((a.seed >>> 0) ^ 0x7ee5);
+      const sc = Math.max(1, h / 170);
+      // the position — a quiet board fragment
+      const bx0 = w * 0.05, bx1 = Math.min(w * 0.235, bx0 + h * 0.85);
+      const by0 = h * 0.19, by1 = h * 0.81, nL = 6;
+      ctx.strokeStyle = "rgba(23,24,28,.10)"; ctx.lineWidth = 1;
+      for (let i = 0; i < nL; i++) {
+        const u = i / (nL - 1);
+        ctx.beginPath(); ctx.moveTo(bx0 + (bx1 - bx0) * u, by0);
+        ctx.lineTo(bx0 + (bx1 - bx0) * u, by1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(bx0, by0 + (by1 - by0) * u);
+        ctx.lineTo(bx1, by0 + (by1 - by0) * u); ctx.stroke();
+      }
+      const gx = i => bx0 + (bx1 - bx0) * i / (nL - 1);
+      const gy = j => by0 + (by1 - by0) * j / (nL - 1);
+      const cells = [];
+      for (let i = 0; i < nL; i++) for (let j = 0; j < nL; j++) cells.push([i, j]);
+      for (let i = cells.length - 1; i > 0; i--) {
+        const j = (rand() * (i + 1)) | 0;
+        const tmp = cells[i]; cells[i] = cells[j]; cells[j] = tmp;
+      }
+      const sr = Math.max(2.4, h * 0.026);
+      for (let k = 0; k < 7; k++) {                    // stones already played
+        const [i, j] = cells[k];
+        ctx.beginPath(); ctx.arc(gx(i), gy(j), sr, 0, 7);
+        if (k & 1) {
+          ctx.fillStyle = BG; ctx.fill();
+          ctx.strokeStyle = "rgba(23,24,28,.40)"; ctx.lineWidth = 1.2; ctx.stroke();
+        } else { ctx.fillStyle = "rgba(23,24,28,.50)"; ctx.fill(); }
+      }
+      const star = { x: gx(cells[7][0]), y: gy(cells[7][1]) };   // the move under search
+      ctx.beginPath(); ctx.arc(star.x, star.y, sr * 1.1, 0, 7);
+      ctx.fillStyle = mixc(a.c1, a.c2, 0, 0.85); ctx.fill();
+      // the tree — root pinned just east of the position
+      const x0 = w * 0.315, x1 = w * 0.945, D = 4;
+      const nodes = [];
+      const mk = (x, y, d, v) => (nodes.push({ x, y, d, v, kids: [], ph: rand() * 20 }) - 1);
+      const root = mk(x0, h * (0.44 + rand() * 0.12), 0, 1);
+      let frontier = [root];
+      for (let d = 1; d <= D; d++) {
+        const next = [], band = h * 0.72 * Math.pow(0.50, d - 1);
+        for (const pi of frontier) {
+          const p = nodes[pi];
+          const nc = d === 1 ? 3 : rand() < (d === 2 ? 0.5 : 0.3) ? 2 : 1;
+          const shares = Array.from({ length: nc }, () => 0.25 + rand());
+          const sum = shares.reduce((s2, q) => s2 + q, 0);
+          for (let i = 0; i < nc; i++) {
+            const off = nc === 1 ? (rand() - 0.5) * band * 0.4
+              : ((i / (nc - 1)) - 0.5) * band * (0.8 + rand() * 0.4);
+            const y = Math.min(h * 0.92, Math.max(h * 0.08,
+              p.y + off + noise(p.x * 0.02, a.o1 + d * 3.1 + i) * band * 0.18));
+            const x = x0 + (x1 - x0) * (d / D) + (rand() - 0.5) * w * 0.022;
+            const ci = mk(x, y, d, p.v * shares[i] / sum);
+            p.kids.push(ci); next.push(ci);
+          }
+        }
+        frontier = next;
+      }
+      // principal variation — follow the most-visited child to a leaf
+      const pv = [root];
+      for (let i = root; nodes[i].kids.length;) {
+        i = nodes[i].kids.reduce((b, k) => nodes[k].v > nodes[b].v ? k : b, nodes[i].kids[0]);
+        pv.push(i);
+      }
+      const inPV = new Set(pv);
+      const bend = (p, q) =>
+        [(p.x + q.x) / 2 + noise(q.x * 0.012, a.o2) * h * 0.05,
+         (p.y + q.y) / 2 + noise(p.x * 0.012, a.o2 + 5) * h * 0.07];
+      const qcurve = (p, q) => {
+        const c = bend(p, q);
+        ctx.beginPath(); ctx.moveTo(p.x, p.y);
+        ctx.quadraticCurveTo(c[0], c[1], q.x, q.y); ctx.stroke();
+      };
+      // the position feeds the root
+      ctx.strokeStyle = mixc(a.c1, a.c2, 0, 0.22); ctx.lineWidth = 1.2;
+      qcurve(star, nodes[root]);
+      // explored branches — barely-there ink
+      ctx.lineWidth = 1;
+      for (let i = 0; i < nodes.length; i++) for (const k of nodes[i].kids) {
+        if (inPV.has(i) && inPV.has(k)) continue;
+        ctx.strokeStyle = "rgba(23,24,28,.075)";
+        qcurve(nodes[i], nodes[k]);
+      }
+      // the taught line — gradient ink, slightly bolder
+      ctx.lineCap = "round"; ctx.lineWidth = Math.max(1.5, h * 0.011);
+      for (let s2 = 0; s2 < pv.length - 1; s2++) {
+        const p = nodes[pv[s2]], q = nodes[pv[s2 + 1]];
+        ctx.strokeStyle = mixc(a.c1, a.c2, (p.x + q.x) / 2 / w, 0.42);
+        qcurve(p, q);
+      }
+      // one heartbeat: selection walks out (t=0 rests mid-path), value backs up
+      const L = pv.length - 1, cyc = (0.42 + t * 0.11) % 2;
+      const out = cyc < 1, uu = out ? cyc : 2 - cyc;
+      const s3 = Math.min(L - 1, (uu * L) | 0), f = uu * L - s3;
+      const p = nodes[pv[s3]], q = nodes[pv[s3 + 1]], c = bend(p, q);
+      const px = (1 - f) * (1 - f) * p.x + 2 * (1 - f) * f * c[0] + f * f * q.x;
+      const py = (1 - f) * (1 - f) * p.y + 2 * (1 - f) * f * c[1] + f * f * q.y;
+      // nodes — visit count sets the radius; leaves breathe faintly
+      for (let i = 0; i < nodes.length; i++) {
+        const n2 = nodes[i];
+        const breathe = n2.kids.length ? 1 : 1 + 0.12 * noise(n2.ph, t * 0.25);
+        const r = (1.5 + 3.6 * Math.sqrt(n2.v)) * sc * breathe;
+        ctx.beginPath(); ctx.arc(n2.x, n2.y, r, 0, 7);
+        if (inPV.has(i)) { ctx.fillStyle = mixc(a.c1, a.c2, n2.x / w, 0.85); ctx.fill(); }
+        else { ctx.fillStyle = "rgba(23,24,28,.28)"; ctx.fill(); }
+      }
+      // the evaluated leaf — ringed, like a pin
+      const lf = nodes[pv[pv.length - 1]];
+      ctx.strokeStyle = mixc(a.c1, a.c2, 1, 0.9); ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(lf.x, lf.y, Math.max(4.5, h * 0.034), 0, 7); ctx.stroke();
+      // backup rings — the nodes the returning value has already updated
+      if (!out) for (const i of pv) {
+        const n2 = nodes[i];
+        if (n2.x > px) {
+          ctx.strokeStyle = mixc(a.c1, a.c2, n2.x / w, 0.45); ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(n2.x, n2.y, (1.5 + 3.6 * Math.sqrt(n2.v)) * sc + 2.8, 0, 7); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = mixc(a.c1, a.c2, px / w, 0.9);
+      ctx.beginPath(); ctx.arc(px, py, Math.max(2, h * 0.015) * (out ? 1 : 0.82), 0, 7); ctx.fill();
     },
 
     // soundwave — amplitude bars around a centerline (the original)

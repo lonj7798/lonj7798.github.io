@@ -14,7 +14,7 @@ window.POSTS = [
       "rl"
     ],
     "lang": "en · ko",
-    "art": "ridge"
+    "art": "tree"
   },
   {
     "slug": "ai-1000x-cheaper",
