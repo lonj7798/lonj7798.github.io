@@ -8,7 +8,7 @@ window.POSTS = [
     "slug": "ai-1000x-cheaper",
     "title": "The token factory — what a 1000x cost cut actually rests on",
     "date": "2026-08-30",
-    "description": "Ex-NVIDIA engineer Neil Movva on why background agents, throughput-first GPUs, scavenged chips and cheap intermittent power make tokens 1000x cheaper.",
+    "description": "Ex-NVIDIA engineer Neil Movva on why background agents, throughput-first GPUs, scavenged chips and cheap intermittent power make tokens 1000x cheaper. Sail Research 공동창업자이자 전 NVIDIA 커널 엔지니어인 Neil Movva가 Patrick O'Shaughnessy와의 대담에서 AI 추론 비용이 왜 급격히 낮아질 것이라고 보는지 설명한다.",
     "tags": [
       "deep-dive",
       "ai-infra"
