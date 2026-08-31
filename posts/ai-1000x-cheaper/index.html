@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The token factory — what a 1000x cost cut actually rests on</title>
+<meta name="description" content="In an Invest Like The Best interview published 2026-08-25, Neil Movva, co-founder of Sail Research and a former NVIDIA kernel engineer, argues that AI inference is about to get drastically cheaper because its dominant workload will change, from chatbots a person waits on to background agents that ru">
+<link rel="alternate" hreflang="ko" href="ko.html">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#17181c;--body:#33353c;--mut:#676b76;--hair:rgba(23,24,28,.08);
+--blue:#2f6bd8;--purple:#7a4fd3;--orange:#e08a1e;--pink:#d34f6e;--teal:#0f9d8c;
+--serif:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--shadow:0 1px 2px rgba(23,24,28,.03),0 10px 30px rgba(23,24,28,.05)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:760px;margin:0 auto;padding:0 22px}
+#pbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--ink);opacity:.75;z-index:50}
+header.top{padding:58px 0 18px}
+.eyebrow{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow .yt{display:inline-flex;align-items:center;gap:7px}
+.eyebrow .yt i{width:7px;height:7px;border-radius:50%;background:var(--pink);display:inline-block}
+.lang-sw{display:inline-flex;background:rgba(255,255,255,.85);border-radius:999px;padding:3px;box-shadow:inset 0 0 0 1px var(--hair);text-transform:none;letter-spacing:0}
+.lang-sw a{padding:4px 12px;border-radius:999px;color:var(--mut);text-decoration:none;font-size:12px;letter-spacing:.03em}
+.lang-sw a.on{background:var(--ink);color:#fff}
+h1{font-family:var(--serif);font-weight:650;font-size:clamp(30px,5.4vw,44px);line-height:1.22;letter-spacing:-.012em;color:var(--ink);margin:18px 0 12px}
+.lede{font-size:19px;line-height:1.6;color:var(--body);max-width:640px;margin:0 0 16px}
+.meta{font-size:13.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.meta .sep{opacity:.5}
+.tag{font-weight:650;text-decoration:none}
+.tag.c0{color:var(--blue)}.tag.c1{color:var(--purple)}.tag.c2{color:var(--orange)}.tag.c3{color:var(--pink)}.tag.c4{color:var(--teal)}
+figure.hero{margin:22px 0 6px}
+figure.hero img{width:100%;height:auto;display:block;border-radius:22px}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:24px 26px;margin:22px 0}
+.card .ct{font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:650}
+.summary p{margin:0 0 10px;font-size:16.5px;color:var(--ink)}
+.summary ul{margin:10px 0 0;padding-left:20px}
+.summary li{margin:5px 0;font-size:15.5px}
+.listen{display:flex;flex-direction:column;gap:12px}
+.listen audio{width:100%;height:40px}
+.listen .who{font-size:13.5px;color:var(--mut);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--bg);color:var(--mut);border:1px solid var(--hair);cursor:pointer;transition:background .15s,color .15s}
+.chip:hover{color:var(--ink);border-color:rgba(23,24,28,.2)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.now{font-size:12.5px;color:var(--mut);min-height:18px}
+.source{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+.source img{width:100%;border-radius:12px;display:block;aspect-ratio:16/9;object-fit:cover}
+.source .t{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0 0 4px;line-height:1.35}
+.source .s{font-size:13.5px;color:var(--mut)}
+.source a.watch{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink);text-decoration:none;font-weight:650;border-bottom:1px solid rgba(23,24,28,.25)}
+.chapters{margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;columns:2;column-gap:18px}
+.chapters li{break-inside:avoid;margin:2px 0}
+.chapters a{color:var(--mut);text-decoration:none;font-variant-numeric:tabular-nums}
+.chapters a:hover{color:var(--ink)}
+.chapters .ct{margin:0 0 6px}
+@media(max-width:560px){.source{grid-template-columns:1fr}.chapters{columns:1}.card{padding:20px 18px;border-radius:18px}}
+article.body{padding:8px 0 30px}
+.body h2{font-family:var(--serif);font-size:clamp(24px,3.6vw,30px);line-height:1.3;color:var(--ink);margin:48px 0 12px;font-weight:650;letter-spacing:-.01em}
+.body h3{font-size:19px;color:var(--ink);margin:30px 0 8px;font-weight:650}
+.body h4{font-size:16px;color:var(--ink);margin:22px 0 6px;font-weight:650}
+.body p{margin:0 0 18px}
+.body a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(23,24,28,.25)}
+.body a:hover{border-color:var(--ink)}
+.body a.ts{font-family:var(--mono);font-size:.8em;color:var(--blue);border:0;background:rgba(47,107,216,.08);padding:1px 7px;border-radius:999px;white-space:nowrap;vertical-align:.08em}
+.body ul,.body ol{padding-left:24px;margin:0 0 18px}
+.body li{margin:6px 0}
+.body li>p{margin:0 0 6px}
+.body strong{color:var(--ink);font-weight:650}
+.body blockquote{margin:26px 0;padding:0 0 0 20px;border-left:3px solid var(--ink);color:var(--ink);font-family:var(--serif);font-size:19.5px;line-height:1.5}
+.body blockquote p{margin:0 0 6px}
+.body blockquote cite,.body blockquote em.by{display:block;font-family:var(--sans);font-style:normal;font-size:13.5px;color:var(--mut);margin-top:4px}
+.body blockquote.pull{border:0;padding:22px 26px;background:var(--card);border-radius:20px;box-shadow:var(--shadow)}
+.body code{font-family:var(--mono);font-size:.88em;background:rgba(23,24,28,.05);padding:.1em .4em;border-radius:6px}
+.body pre{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;overflow:auto;font-size:13.5px;line-height:1.55;margin:0 0 20px}
+.body pre code{background:none;padding:0}
+figure.fig{margin:30px -6px}
+figure.fig img{width:100%;height:auto;display:block;border-radius:16px;background:#fff}
+figure.fig figcaption{font-size:13.5px;color:var(--mut);margin:10px 8px 0;line-height:1.5}
+figure.fig figcaption b{color:var(--ink);font-weight:650}
+figure.fig-inline .inl{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;overflow-x:auto}
+figure.fig-inline .inl svg{max-width:100%;height:auto;display:block}
+.tbl{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--hair)}
+th{color:var(--ink);font-weight:650}
+hr{border:0;height:1px;background:var(--hair);margin:36px 0}
+.body #references+ol,.body #references+p+ol,.refs ol{font-size:14.5px}
+.body sup{font-size:.7em}
+footer.credits{padding:26px 0 96px;color:var(--mut);font-size:13.5px;line-height:1.65;border-top:1px solid var(--hair);margin-top:24px}
+footer.credits p{margin:0 0 8px}
+@media print{#pbar,.lang-sw,.listen,#jw-home{display:none}}
+
+</style>
+</head>
+<body>
+<div id="pbar" aria-hidden="true"></div>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">
+    <span class="yt"><i></i>YouTube · Invest Like The Best · 2026-08-25</span>
+    <nav class="lang-sw" aria-label="language">
+      <a href="index.html" class="on">EN</a>
+      <a href="ko.html" class="">한국어</a>
+    </nav>
+  </div>
+  <h1>The token factory — what a 1000x cost cut actually rests on</h1>
+  <p class="lede">How giving up per-token latency unlocks cheaper chips, sites and power in Neil Movva's argument, which of his numbers survive a source check, and what would settle his forecast.</p>
+  <div class="meta">
+    <span>2026-08-30</span>
+    <span class="sep">·</span><span>18 min read</span>
+    <span class="sep">·</span><span>19 min listen</span>
+    <span class="sep">·</span><a class="tag c0" href="../../?tag=deep-dive">#deep-dive</a><a class="tag c1" href="../../?tag=ai-infra">#ai-infra</a>
+  </div>
+</header>
+
+<figure class="hero"><img src="figures/hero.png" alt="A field of small identical boxes under a sun disc and turbine marks, each feeding one ribbon of small squares, beside a single large monolithic plant."></figure>
+
+<section class="card summary" aria-label="In brief">
+  <p class="ct">In brief</p>
+  <p>In an Invest Like The Best interview published 2026-08-25, Neil Movva, co-founder of Sail Research and a former NVIDIA kernel engineer, argues that AI inference is about to get drastically cheaper because its dominant workload will change, from chatbots a person waits on to background agents that run for hours. Once nobody is waiting, a provider can batch for throughput instead of latency, use chips without NVIDIA's NVLink interconnect, tolerate data centers with 95 percent uptime, and site them on solar and wind. This article follows that chain layer by layer, checks the talk's numbers against primary sources, and separates what is delivered (about one order of magnitude on public price lists) from what is a roadmap (the three to six orders of magnitude the speaker asks for). It matters now because the first checkpoint, a 50/50 split between background and real-time workloads, is dated to the end of 2026.</p>
+  <ul><li>The whole thesis follows one decision: stop optimizing for the person at the keyboard.</li><li>The hardware physics checks out: SRAM density, HBM bandwidth, tensor-parallel scaling and rack power all match sources.</li><li>The KV cache, not FLOPs, is the binding constraint; it also caps the batch sizes the thesis needs.</li><li>Public prices show about one order of magnitude, not three to six; the rest is roadmap.</li><li>Every claim about Sail's fleet, uptime and power is self-reported by a founder two months after an $80 million raise.</li><li>Watch batch-tier token share, METR's 80 percent horizons, HBM prices and open-model precision.</li></ul>
+</section>
+
+
+<section class="card listen" aria-label="Listen to this article">
+  <p class="ct">Listen to this article</p>
+  <audio id="narr" controls preload="none" src="audio/en.mp3"></audio>
+  <div class="who"><span>Read by Eleanor · Higgs TTS</span><span>19:08</span></div>
+  <div class="chips" id="chips" role="list" aria-label="Jump to a section">
+    <button class="chip" data-t="1.2" role="listitem">A founder's supply-side thesis, two months after an $80 million raise</button><button class="chip" data-t="77.24" role="listitem">The bet starts with demand: agents that nobody is waiting for</button><button class="chip" data-t="198.58" role="listitem">Giving up latency releases a chain of constraints, one layer at a time</button><button class="chip" data-t="321.62" role="listitem">SRAM versus HBM is a contest between static and dynamic state</button><button class="chip" data-t="486.05" role="listitem">The scavenger strategy buys what frontier labs find illegible</button><button class="chip" data-t="638.02" role="listitem">The hardware numbers check out; the narrative claims lean one way</button><button class="chip" data-t="793.77" role="listitem">The verifiable saving is one order of magnitude; the rest is a roadmap</button><button class="chip" data-t="1023.99" role="listitem">Five signals will settle the forecast, the first by 2026-12-31</button>
+  </div><div class="now" id="now"></div>
+</section>
+
+
+<section class="card source" aria-label="Source video">
+  <a href="https://www.youtube.com/watch?v=uyzqxIoiobU" target="_blank" rel="noopener"><img src="figures/thumb.jpg" alt=""></a>
+  <div>
+    <p class="ct">Source video</p>
+    <p class="t">Ex-NVIDIA Engineer: Why AI Is About to Get 1000x Cheaper</p>
+    <div class="s">Invest Like The Best · 2026-08-25 · 1:23:36</div>
+    <a class="watch" href="https://www.youtube.com/watch?v=uyzqxIoiobU" target="_blank" rel="noopener">Watch on YouTube ↗</a>
+    <ul class="chapters"><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=0s" target="_blank" rel="noopener">0:00</a> Intro</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=38s" target="_blank" rel="noopener">0:38</a> Building a “Token Factory”</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=261s" target="_blank" rel="noopener">4:21</a> The Future of Background Agents</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=789s" target="_blank" rel="noopener">13:09</a> Nvidia and the GPU Stack</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1407s" target="_blank" rel="noopener">23:27</a> Chips, Memory, and Transformers</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=2174s" target="_blank" rel="noopener">36:14</a> The Future of AI Training Data</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=2672s" target="_blank" rel="noopener">44:32</a> Chip Scarcity and Compute Arbitrage</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3164s" target="_blank" rel="noopener">52:44</a> Reinventing the AI Data Center</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3541s" target="_blank" rel="noopener">59:01</a> Power and the “Scavenger Strategy”</li><li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4210s" target="_blank" rel="noopener">1:10:10</a> Open vs. Closed AI</li></ul>
+  </div>
+</section>
+
+<article class="body">
+<h2 id="a-founders-supply-side-thesis-two-months-after-an-80-million-raise">A founder's supply-side thesis, two months after an $80 million raise</h2>
+<p>Neil Movva is co-founder and CEO of Sail Research, a San Francisco inference company that emerged from stealth on 2026-06-25 with $80 million of funding at a reported $450 million valuation [2]. He joined NVIDIA while still in college and worked on GPU kernels there around 2015 to 2017 <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=789s" target="_blank" rel="noopener">13:09</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1018s" target="_blank" rel="noopener">16:58</a>, [2], then worked on on-device computer vision at Apple and was the first kernels hire at Together AI [3]. Sail sells an API for open-weight models such as GLM, DeepSeek and Kimi, plus persistent sandboxes for agents that run for hours or days [4]; Movva calls it "a token factory" <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=38s" target="_blank" rel="noopener">0:38</a>.</p>
+<p>Two framings need separating. The 1000x is the channel's title. Movva's own figures are that a tenfold price cut creates a new product category <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=73s" target="_blank" rel="noopener">1:13</a> and that a trillion tokens per person per day needs "three to six orders of magnitude" of cost reduction <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4511s" target="_blank" rel="noopener">1:15:11</a>, a requirement, not a result. He is the founder of the company the episode describes, on a venture-run show whose disclaimer notes that clients may hold positions in companies discussed [1]. Every number about Sail's fleet, uptime and costs below is self-reported; only the funding, the March 2026 launch and the public rate card are confirmed [2], [4].</p>
+<h2 id="the-bet-starts-with-demand-agents-that-nobody-is-waiting-for">The bet starts with demand: agents that nobody is waiting for</h2>
+<p>The argument opens with usage, not hardware. Baseten, Fireworks and Together built for low latency because one customer, Cursor, pulled them there, Movva says; that was right a year ago, but for six months persistence and long tasks have mattered more <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=210s" target="_blank" rel="noopener">3:30</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=262s" target="_blank" rel="noopener">4:22</a> "One way to say it is like the best latency is no latency at all. When you wake up in the morning, the work's already been done overnight."</p><cite>Neil Movva</cite></blockquote>
+<p>He gives three reasons. Test-time compute, more thinking time for a better answer <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=292s" target="_blank" rel="noopener">4:52</a>, went public with OpenAI's o1 in September 2024 [5] and, in his view, became something to bet on with Claude Opus 4.5, released 2025-11-24 [6]; today an hour-long run is reliable and days are not <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=322s" target="_blank" rel="noopener">5:22</a>. Background demand has no human bottleneck: he cannot use ten times more tokens in Codex or Claude Code himself, but a background job can <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=357s" target="_blank" rel="noopener">5:57</a>. And the workloads exist: deep research over ten thousand sources, a customer indexing the whole web <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=388s" target="_blank" rel="noopener">6:28</a>, security teams running frontier models against all their code <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=455s" target="_blank" rel="noopener">7:35</a>. Then the load-bearing number: half and half between background and real-time by the end of 2026, then 90 to 10 in favor of background <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=357s" target="_blank" rel="noopener">5:57</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=388s" target="_blank" rel="noopener">6:28</a>.</p>
+<p>The outside record fits the timing and is more cautious. METR, a non-profit that measures how long a task an agent can finish, puts Opus 4.5 at a 50 percent-success task horizon of about five hours but an 80 percent-success horizon near half an hour; Opus 4.6 reaches about 14.5 hours at 50 percent on a nearly saturated suite [7], [8]. Anthropic's 2026-02-18 autonomy study reports a median agent turn near 45 seconds, with the 99.9th percentile nearly doubling from under 25 minutes to over 45 in three months [9]. No provider publishes a background-versus-real-time split. Our reading: the labs describe a fat tail growing fast; Movva describes the tail becoming the body, and only his version justifies the fleet below.</p>
+<h2 id="giving-up-latency-releases-a-chain-of-constraints-one-layer-at-a-time">Giving up latency releases a chain of constraints, one layer at a time</h2>
+<p>The GPU, Movva says, is fundamentally a throughput machine, happiest with a deep queue of work <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1084s" target="_blank" rel="noopener">18:04</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1117s" target="_blank" rel="noopener">18:37</a> "There's a fundamental trade-off on the GPU between being […] throughput oriented or latency optimized and everyone has chosen latency optimization because the shape of usage was chatbot oriented."</p><cite>Neil Movva</cite></blockquote>
+<p>The mechanism is batching: a GPU reaches peak utilization only when many requests share one pass through the weights, and each request in a large batch waits for the others, a bus against a private car <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1187s" target="_blank" rel="noopener">19:47</a>. The latency-first escape is tensor parallelism, splitting one matrix multiply across up to eight GPUs over NVLink, NVIDIA's interconnect. Each finishes sooner but not eight times sooner: four to five times, Movva says, because of communication overhead and smaller per-GPU tiles <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1292s" target="_blank" rel="noopener">21:32</a>; published measurements say 4.5 to 6 [10]. If nobody is waiting, that lost efficiency is pure waste, so he prefers expert or pipeline parallelism, which place whole experts or layers on different chips and overlap communication with compute <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1292s" target="_blank" rel="noopener">21:32</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1323s" target="_blank" rel="noopener">22:03</a>. That admits other silicon: a chip without NVLink-class interconnect can still beat NVIDIA on floating-point operations (FLOPs) per dollar <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1357s" target="_blank" rel="noopener">22:37</a>.</p>
+<figure class="fig fig-inline" id="fig-1"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six-step constraint chain from tolerating latency to accepting 95% uptime, with the cost each step reintroduces" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#f6f5f1;">
+  <defs>
+    <marker id="ah" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M2 1 L10 6 L2 11" fill="none" stroke="#17181c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <g id="minus">
+      <circle r="10" fill="none" stroke="#e08a1e" stroke-width="2"/>
+      <line x1="-5" y1="0" x2="5" y2="0" stroke="#e08a1e" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <rect width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- Top row: boxes 1-3, left to right -->
+  <g stroke="#2f6bd8" stroke-width="2" fill="#fff">
+    <rect x="40" y="70" width="300" height="150" rx="12"/>
+    <rect x="450" y="70" width="300" height="150" rx="12"/>
+    <rect x="860" y="70" width="300" height="150" rx="12"/>
+    <rect x="860" y="390" width="300" height="150" rx="12"/>
+    <rect x="450" y="390" width="300" height="150" rx="12"/>
+    <rect x="40" y="390" width="300" height="150" rx="12"/>
+  </g>
+
+  <!-- Numbers -->
+  <g fill="none" stroke="#2f6bd8" stroke-width="1.6">
+    <circle cx="66" cy="96" r="16"/>
+    <circle cx="476" cy="96" r="16"/>
+    <circle cx="886" cy="96" r="16"/>
+    <circle cx="886" cy="416" r="16"/>
+    <circle cx="476" cy="416" r="16"/>
+    <circle cx="66" cy="416" r="16"/>
+  </g>
+  <g fill="#2f6bd8" font-size="22" font-weight="600" text-anchor="middle">
+    <text x="66" y="104">1</text>
+    <text x="476" y="104">2</text>
+    <text x="886" y="104">3</text>
+    <text x="886" y="424">4</text>
+    <text x="476" y="424">5</text>
+    <text x="66" y="424">6</text>
+  </g>
+
+  <!-- Box labels -->
+  <g fill="#17181c" font-size="27" font-weight="600" text-anchor="middle">
+    <text x="190" y="158">Tolerate latency</text>
+    <text x="600" y="158">Batch many requests</text>
+    <text x="1010" y="142">Keep the MLP</text>
+    <text x="1010" y="176">compute-bound</text>
+    <text x="1010" y="462">Drop NVLink;</text>
+    <text x="1010" y="496">use EP or PP</text>
+    <text x="600" y="462">Buy any chip;</text>
+    <text x="600" y="496">idle is fine</text>
+    <text x="190" y="462">Accept 95% uptime,</text>
+    <text x="190" y="496">intermittent power</text>
+  </g>
+
+  <!-- Arrows -->
+  <g fill="none" stroke="#17181c" stroke-width="1.6" marker-end="url(#ah)">
+    <line x1="342" y1="145" x2="446" y2="145"/>
+    <line x1="752" y1="145" x2="856" y2="145"/>
+    <line x1="1010" y1="222" x2="1010" y2="386"/>
+    <line x1="858" y1="465" x2="754" y2="465"/>
+    <line x1="448" y1="465" x2="344" y2="465"/>
+  </g>
+
+  <!-- Cost annotations (orange) -->
+  <g fill="#e08a1e" font-size="23">
+    <use href="#minus" x="242" y="256"/>
+    <text x="260" y="264">KV cache bounds batch size</text>
+
+    <use href="#minus" x="700" y="256"/>
+    <text x="718" y="264">Only at large batch</text>
+
+    <use href="#minus" x="622" y="312"/>
+    <text x="640" y="320">EP/PP must hide communication</text>
+
+    <use href="#minus" x="650" y="578"/>
+    <text x="668" y="586">Needs cheap FLOPs per dollar</text>
+
+    <use href="#minus" x="242" y="578"/>
+    <text x="260" y="586">Failures mean re-prefill</text>
+  </g>
+
+  <!-- Legend -->
+  <g font-size="22" fill="#676b76">
+    <rect x="42" y="633" width="26" height="18" rx="4" fill="#fff" stroke="#2f6bd8" stroke-width="1.6"/>
+    <text x="80" y="650">Boxes: the talk's chain</text>
+    <text x="340" y="650">·</text>
+    <use href="#minus" x="374" y="642"/>
+    <text x="392" y="650">Orange: the cost each step reintroduces (our reading)</text>
+  </g>
+</svg>
+</div><figcaption><b>Figure 1.</b> The talk as one chain: giving up per-token latency releases a constraint at each layer, and each release reintroduces a cost at the next. The costs in orange are our reading, not the speaker's.</figcaption></figure>
+
+<p>Seen whole, the talk is one causal chain: tolerate latency, batch deeply, keep the expert layers compute-bound, drop NVLink, buy any chip, accept unreliable sites and intermittent power. Our reading: each link reintroduces a cost at the next. Chips cheap enough to leave idle need low capital cost per FLOP, which rules out the 72-GPU GB300 NVL72 racks Movva himself calls the best throughput option today <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=2666s" target="_blank" rel="noopener">44:26</a>. The largest unstated coupling is memory. Each request in a batch carries its own key-value (KV) cache, the stored representation of every token in its context, so batch size is bounded by high-bandwidth memory (HBM) capacity divided by per-request cache. The long-context agents the thesis serves have the largest caches, and the talk never reconciles the two.</p>
+<h2 id="sram-versus-hbm-is-a-contest-between-static-and-dynamic-state">SRAM versus HBM is a contest between static and dynamic state</h2>
+<p>Cerebras and Groq, Movva says, bet on a different memory hierarchy: fill the chip with static random-access memory (SRAM), the six-transistor cell built on the logic die, instead of the dynamic RAM stacked beside it as HBM <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1444s" target="_blank" rel="noopener">24:04</a>. SRAM is fast because it sits next to the arithmetic units and scarce because each cell is large. An entire 800 mm² Blackwell-class die of SRAM would hold single-digit gigabytes, against 288 GB of HBM around a Blackwell package and perhaps 500 MB of SRAM on it <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1444s" target="_blank" rel="noopener">24:04</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1550s" target="_blank" rel="noopener">25:50</a>. Cerebras uses the whole wafer, about 50 GB at roughly 21 petabytes per second, against about 10 terabytes per second for HBM <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1591s" target="_blank" rel="noopener">26:31</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1628s" target="_blank" rel="noopener">27:08</a>.</p>
+<p>Those figures hold: Cerebras states 44 GB on its WSE-3 [11] and about 21 PB/s [12]; Blackwell Ultra carries 288 GB of HBM3e at 8 TB/s per GPU [13]; B200's on-die L2 cache is 126 MB [14], and adding L1, tensor memory and register files brings all its on-die SRAM to roughly 240 MB (our arithmetic from [14]), so 500 MB is high by about two times.</p>
+<figure class="fig fig-inline" id="fig-2"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Log-log scatter of memory capacity against bandwidth for on-die SRAM and stacked HBM" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;display:block;">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+  <!-- plot card -->
+  <rect x="130" y="90" width="1010" height="480" fill="#fff" stroke="#676b76" stroke-width="1"/>
+  <!-- grid: x decades -->
+  <g stroke="#e3e2dc" stroke-width="1">
+    <line x1="382.5" y1="90" x2="382.5" y2="570"/>
+    <line x1="635" y1="90" x2="635" y2="570"/>
+    <line x1="887.5" y1="90" x2="887.5" y2="570"/>
+    <line x1="130" y1="474" x2="1140" y2="474"/>
+    <line x1="130" y1="378" x2="1140" y2="378"/>
+    <line x1="130" y1="282" x2="1140" y2="282"/>
+    <line x1="130" y1="186" x2="1140" y2="186"/>
+  </g>
+  <!-- axes -->
+  <g stroke="#17181c" stroke-width="2">
+    <line x1="130" y1="570" x2="1140" y2="570"/>
+    <line x1="130" y1="90" x2="130" y2="570"/>
+  </g>
+  <!-- x ticks -->
+  <g stroke="#17181c" stroke-width="2">
+    <line x1="130" y1="570" x2="130" y2="580"/>
+    <line x1="382.5" y1="570" x2="382.5" y2="580"/>
+    <line x1="635" y1="570" x2="635" y2="580"/>
+    <line x1="887.5" y1="570" x2="887.5" y2="580"/>
+    <line x1="1140" y1="570" x2="1140" y2="580"/>
+  </g>
+  <g fill="#17181c" font-size="20" text-anchor="middle">
+    <text x="130" y="604">0.1</text>
+    <text x="382.5" y="604">1</text>
+    <text x="635" y="604">10</text>
+    <text x="887.5" y="604">100</text>
+    <text x="1140" y="604">1,000</text>
+  </g>
+  <!-- y ticks -->
+  <g stroke="#17181c" stroke-width="2">
+    <line x1="120" y1="570" x2="130" y2="570"/>
+    <line x1="120" y1="474" x2="130" y2="474"/>
+    <line x1="120" y1="378" x2="130" y2="378"/>
+    <line x1="120" y1="282" x2="130" y2="282"/>
+    <line x1="120" y1="186" x2="130" y2="186"/>
+    <line x1="120" y1="90" x2="130" y2="90"/>
+  </g>
+  <g fill="#17181c" font-size="20" text-anchor="end">
+    <text x="112" y="577">1</text>
+    <text x="112" y="481">10</text>
+    <text x="112" y="385">100</text>
+    <text x="112" y="289">1,000</text>
+    <text x="112" y="193">10,000</text>
+    <text x="112" y="97">100,000</text>
+  </g>
+  <!-- axis titles -->
+  <text x="635" y="648" fill="#676b76" font-size="21" text-anchor="middle">Capacity per device (GB, log scale)</text>
+  <text x="34" y="330" fill="#676b76" font-size="21" text-anchor="middle" transform="rotate(-90 34 330)">Bandwidth (TB/s, log scale)</text>
+  <!-- legend -->
+  <g font-size="20" fill="#33353c">
+    <circle cx="840" cy="52" r="8" fill="#7a4fd3"/>
+    <text x="856" y="59">On-die SRAM</text>
+    <circle cx="1010" cy="52" r="8" fill="#2f6bd8"/>
+    <text x="1026" y="59">Stacked HBM</text>
+  </g>
+  <!-- region annotations -->
+  <g fill="#676b76" font-size="22" font-style="italic">
+    <text x="250" y="262">Fixed weights fit here</text>
+    <text x="985" y="552" text-anchor="end">The KV cache needs this</text>
+  </g>
+  <!-- SRAM points -->
+  <circle cx="221.4" cy="387.3" r="11" fill="#7a4fd3"/>
+  <text x="240" y="381" fill="#33353c" font-size="22">Groq LPU, SRAM</text>
+  <text x="240" y="405" fill="#676b76" font-size="20">0.23 GB · 80 TB/s</text>
+  <circle cx="797.5" cy="155.1" r="11" fill="#7a4fd3"/>
+  <text x="816" y="149" fill="#33353c" font-size="22">Cerebras WSE-3, SRAM</text>
+  <text x="816" y="173" fill="#676b76" font-size="20">44 GB · 21,000 TB/s</text>
+  <!-- HBM points (both at 288 GB) -->
+  <circle cx="1003.5" cy="441.1" r="11" fill="#2f6bd8"/>
+  <text x="985" y="426" fill="#33353c" font-size="22" text-anchor="end">Rubin, HBM4</text>
+  <text x="985" y="450" fill="#676b76" font-size="20" text-anchor="end">288 GB · 22 TB/s</text>
+  <circle cx="1003.5" cy="483.3" r="11" fill="#2f6bd8"/>
+  <text x="985" y="490" fill="#33353c" font-size="22" text-anchor="end">Blackwell Ultra B300, HBM3e</text>
+  <text x="985" y="514" fill="#676b76" font-size="20" text-anchor="end">288 GB · 8 TB/s</text>
+</svg>
+</div><figcaption><b>Figure 2.</b> Capacity against bandwidth for on-die SRAM and stacked HBM, both axes logarithmic. SRAM wins bandwidth by about three orders of magnitude and loses capacity by about one; weights are fixed at deploy time and suit the upper left, while the KV cache grows with users and context and needs the right.</figcaption></figure>
+
+<p>What decides the market is what each memory holds. Weights are fixed at deploy time, so a trillion-parameter model such as Kimi can be spread across wafers and streamed fast <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1668s" target="_blank" rel="noopener">27:48</a>, [15]. The KV cache is sized by users times context, is unknown until runtime, and "frequently gets to be larger than the weights" <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1704s" target="_blank" rel="noopener">28:24</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1742s" target="_blank" rel="noopener">29:02</a>. That is the thorn for SRAM-only designs, which he expects to end up as accelerators beside GPUs <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1842s" target="_blank" rel="noopener">30:42</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1842s" target="_blank" rel="noopener">30:42</a> "You want offchip memory for capacity and onchip memory for speed. We want to hybridize these two things."</p><cite>Neil Movva</cite></blockquote>
+<p>He calls the placement of a memory-bound attention layer beside a compute-bound multilayer-perceptron (MLP) layer in every transformer block the architecture's "original sin": no single chip serves both well <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1876s" target="_blank" rel="noopener">31:16</a>. His cut is by layer, attention on the GPU and MLP weights on an SRAM chip, which he says he believes NVIDIA and Groq are doing <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1913s" target="_blank" rel="noopener">31:53</a>. The hybrid has moved from prediction to product: NVIDIA licensed Groq's SRAM-based processor technology for about $20 billion on 2025-12-24 [16], and Google's TPU 8i pairs 288 GB of HBM with 384 MB of SRAM [17]. The layer split is his own; the mainstream cut is by phase, with NVIDIA's Dynamo framework scheduling prefill and decode on different GPUs [18]. One claim is wrong: Anthropic was not first to a million-token context <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=1811s" target="_blank" rel="noopener">30:11</a>; Google's Gemini 1.5 Pro offered one in private preview from 2024-02-15 [19], Anthropic in August 2025 [20].</p>
+<h2 id="the-scavenger-strategy-buys-what-frontier-labs-find-illegible">The scavenger strategy buys what frontier labs find illegible</h2>
+<p>Movva's rule for chips is "no bad chips", only "bad pricing"; he will make any chip work at the right price <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=2744s" target="_blank" rel="noopener">45:44</a>. AMD's parts are good and under-programmed, an edge for a kernel team, though Meta and OpenAI have now bought heavily <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=2812s" target="_blank" rel="noopener">46:52</a>, each in a 6 GW, multi-generation AMD Instinct deal whose first gigawatt of MI450 GPUs starts in the second half of 2026 [21], [22].</p>
+<p>The data-center layer inverts the usual economics. A gigawatt site is now essentially impossible in the United States, he argues, 100 MW increasingly hard, 10 MW at the edge and 1 MW plentiful <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3231s" target="_blank" rel="noopener">53:51</a>. With liquid cooling a megawatt is about eight refrigerator-sized racks <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3303s" target="_blank" rel="noopener">55:03</a>, consistent with the 132 to 140 kW a GB300 NVL72 rack draws [23]. Sail's planned sites will drop diesel backup, redundant power and fiber, and service-level agreements, and some may run at 95 percent uptime <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3414s" target="_blank" rel="noopener">56:54</a>. He will be the first buyer, for two reasons. A control plane can move work elsewhere as long as failures are uncorrelated, which makes him "linearly happy" across 95, 98 and 99 percent <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3442s" target="_blank" rel="noopener">57:22</a>; and a failed hour-long turn costs the agent only an extra minute or two, or ten <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3476s" target="_blank" rel="noopener">57:56</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3514s" target="_blank" rel="noopener">58:34</a> "our average throughput is going to be very competitive, but our P99, our 99th percentile latency, it's not going to be controlled. It cannot be. And in return, I'll give you unbeatable economics."</p><cite>Neil Movva</cite></blockquote>
+<p>Power completes the chain. He would take 80 percent uptime at the right price, which makes solar and wind usable, since he can model the weather and move the workload before a site goes dark <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3542s" target="_blank" rel="noopener">59:02</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3575s" target="_blank" rel="noopener">59:35</a>. The chips at such a site will not be NVIDIA racks, and if they are cheap enough he does not mind them idle <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3575s" target="_blank" rel="noopener">59:35</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3606s" target="_blank" rel="noopener">1:00:06</a>. Hence the name: scavenge chips, then scavenge power; never bid against Anthropic or OpenAI for concentrated supply; build the best steel factory from "mini mills", not one monolithic plant <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3606s" target="_blank" rel="noopener">1:00:06</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3642s" target="_blank" rel="noopener">1:00:42</a>.</p>
+<p>Our reading: interruptibility is the new part, and its hidden cost is stated nowhere. When a GPU is pulled, the sandbox state moves but the KV cache does not, so the receiving GPU recomputes the whole context, compute-bound work paid twice; weather outages are site-wide, so every session at a site re-prefills at once. That needs warm spare capacity, the idle capital Movva says he does not mind <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3606s" target="_blank" rel="noopener">1:00:06</a>, minutes before saying that idle GPUs in private pools pain him physically <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3893s" target="_blank" rel="noopener">1:04:53</a>. Whether Sail's control plane makes this net positive is asserted, never described.</p>
+<h2 id="the-hardware-numbers-check-out-the-narrative-claims-lean-one-way">The hardware numbers check out; the narrative claims lean one way</h2>
+<p>Movva's stack-rank of waste points at bytes and idle time, not FLOPs. Mixture-of-experts (MoE) models already activate few parameters per token, frontier models near 1 percent, he thinks <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3819s" target="_blank" rel="noopener">1:03:39</a>. The KV cache stores many kilobytes per token, off by an order of magnitude or two, and DeepSeek publishes roughly an order of magnitude of compression a year <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3855s" target="_blank" rel="noopener">1:04:15</a>.</p>
+<p>The record supports the memory story. Multi-head latent attention cut DeepSeek-V2's cache by 93.3 percent in May 2024 [24]; DeepSeek-V4-Pro, in April 2026, needs 10 percent of V3.2's cache at one million tokens [25], about 9.6 GiB per million-token sequence in 16-bit precision against 83.9 GiB for a V3.2-style model [26]. A Llama-3-70B-class design with grouped-query attention stores about 320 KB per token, over 300 GB for the same sequence (our arithmetic). The density claim is half right: DeepSeek-V4-Pro and Kimi K2 run at 3 percent active [25], [15], and no disclosed model is near 1 percent.</p>
+<figure class="fig fig-inline" id="fig-3"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart, log scale: HBM for one 1M-token context in bf16. Llama 3 70B grouped-query attention 320 GB; DeepSeek-V3.2-class latent attention 90 GB; DeepSeek-V4-Pro compressed sparse attention 10 GB. Contexts per 288 GB GPU before weights: under 1, about 3, about 28.">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- plot card: x 1 -> 1000 GB maps to 420 -> 900 (160 px per decade) -->
+  <rect x="420" y="60" width="480" height="470" fill="#fff"/>
+  <g stroke="#676b76" stroke-width="1" stroke-dasharray="4 5">
+    <line x1="580" y1="60" x2="580" y2="530"/>
+    <line x1="740" y1="60" x2="740" y2="530"/>
+  </g>
+  <line x1="420" y1="530" x2="900" y2="530" stroke="#676b76" stroke-width="1.5"/>
+  <g font-size="20" fill="#676b76" text-anchor="middle">
+    <text x="420" y="562">1</text>
+    <text x="580" y="562">10</text>
+    <text x="740" y="562">100</text>
+    <text x="900" y="562">1,000</text>
+  </g>
+  <text x="660" y="600" font-size="20" fill="#676b76" text-anchor="middle">HBM for one 1M-token context, bf16 (GB, log scale)</text>
+
+  <!-- row 1: Llama 3 70B, 320 GB -> log10(320)=2.505 -> x = 420 + 2.505*160 = 820.8 -->
+  <text x="395" y="190" font-size="24" fill="#33353c" text-anchor="end" font-weight="600">Llama 3 70B,</text>
+  <text x="395" y="220" font-size="22" fill="#676b76" text-anchor="end">grouped-query attention</text>
+  <rect x="420" y="170" width="400.8" height="60" fill="#2f6bd8"/>
+  <text x="832" y="209" font-size="24" fill="#33353c" font-weight="600">320 GB</text>
+  <text x="940" y="209" font-size="24" fill="#676b76">under 1</text>
+
+  <!-- row 2: DeepSeek-V3.2-class, 90 GB -> log10(90)=1.954 -> x = 732.7 -->
+  <text x="395" y="320" font-size="24" fill="#33353c" text-anchor="end" font-weight="600">DeepSeek-V3.2-class,</text>
+  <text x="395" y="350" font-size="22" fill="#676b76" text-anchor="end">latent attention</text>
+  <rect x="420" y="300" width="312.7" height="60" fill="#2f6bd8"/>
+  <text x="744" y="339" font-size="24" fill="#33353c" font-weight="600">90 GB</text>
+  <text x="940" y="339" font-size="24" fill="#676b76">about 3</text>
+
+  <!-- row 3: DeepSeek-V4-Pro, 10 GB -> log10(10)=1 -> x = 580 -->
+  <text x="395" y="450" font-size="24" fill="#33353c" text-anchor="end" font-weight="600">DeepSeek-V4-Pro,</text>
+  <text x="395" y="480" font-size="22" fill="#676b76" text-anchor="end">compressed sparse attention</text>
+  <rect x="420" y="430" width="160" height="60" fill="#e08a1e"/>
+  <text x="592" y="469" font-size="24" fill="#33353c" font-weight="600">10 GB</text>
+  <text x="940" y="469" font-size="24" fill="#676b76">about 28</text>
+
+  <!-- annotation column heading -->
+  <g font-size="20" fill="#676b76">
+    <text x="940" y="88">Contexts per</text>
+    <text x="940" y="114">288 GB GPU,</text>
+    <text x="940" y="140">before weights</text>
+  </g>
+
+  <!-- footnote -->
+  <text x="40" y="655" font-size="20" fill="#676b76">Per token: 320 KB · about 90 KB · about 10 KB. GiB values from vLLM rounded to GB.</text>
+</svg>
+</div><figcaption><b>Figure 3.</b> Memory one agent's context occupies at one million tokens, in bf16, for three attention designs. This number sets how many long-running agents share a GPU, and so the batch sizes the thesis needs; the serving provider inherits it from the model's authors.</figcaption></figure>
+
+<p>The internet, about 30 trillion tokens of high-quality text or 300 trillion on a wider definition, has already been seen many times over, he says <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=2174s" target="_blank" rel="noopener">36:14</a>. The 300 trillion is Epoch AI's estimate of the effective stock of public text, whose exhaustion Epoch projects for 2026 to 2032 [27]; 30 trillion is what one frontier pre-training run consumes [28].</p>
+<p>The contrarian take on chips is right for one number format. Performance per watt in BF16, the 16-bit format used for training, has barely moved from Hopper to Blackwell to Rubin or across the recent process nodes of Taiwan Semiconductor Manufacturing Company (TSMC), Movva says, so losing TSMC would be a supply shock rather than a catastrophe <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4611s" target="_blank" rel="noopener">1:16:51</a>. Hopper to Blackwell was a real gain of about 60 percent in dense BF16 per watt, 989 TFLOPS at 700 W against 2,250 at 1,000 W [29], [30]. Blackwell to Rubin is flat because NVIDIA spent its transistors on the 4-bit and 8-bit formats FP4 and FP8 [31], which is why NVIDIA's partners claim about ten times the tokens per megawatt for Vera Rubin at NVFP4 [32]. Both statements are true, and precision, as Movva admits, is the labs' choice <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4684s" target="_blank" rel="noopener">1:18:04</a>.</p>
+<p>His reading that memory makers avoid capex for a cyclical market <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4780s" target="_blank" rel="noopener">1:19:40</a> describes late 2025: Micron has raised fiscal 2026 capex above $25 billion [33], and SK hynix approved 54 trillion won for two fabs on 2026-08-07, with the DRAM fab's cleanroom due in June 2029 [34]. The shortage he is betting on persists; the intent behind it has changed.</p>
+<figure class="fig fig-inline" id="fig-4"><div class="inl">
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#f6f5f1;padding:16px 0;color:#33353c;">
+<div style="background:#fff;border:1px solid rgba(103,107,118,0.28);border-radius:8px;overflow-x:auto;">
+<table style="width:100%;min-width:600px;border-collapse:collapse;table-layout:fixed;">
+<colgroup><col style="width:22%"><col style="width:26%"><col style="width:25%"><col style="width:27%"></colgroup>
+<thead><tr><th style="padding:10px 12px;text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#676b76;border-bottom:1px solid rgba(103,107,118,0.55);">Claim</th><th style="padding:10px 12px;text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#676b76;border-bottom:1px solid rgba(103,107,118,0.55);">The talk</th><th style="padding:10px 12px;text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#676b76;border-bottom:1px solid rgba(103,107,118,0.55);">Public record</th><th style="padding:10px 12px;text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#676b76;border-bottom:1px solid rgba(103,107,118,0.55);">Verdict</th></tr></thead>
+<tbody>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;border-top:none;font-weight:700;color:#17181c;">8-way tensor parallel</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;border-top:none;">4–5x [t=21:32]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;border-top:none;">4.5–6x measured</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;border-top:none;"><span style="display:inline-block;background:#0f9d8c;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">supported</span></td></tr>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;font-weight:700;color:#17181c;">Blackwell HBM vs SRAM</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">288 GB vs 500 MB [t=25:50]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">288 GB; 126 MB L2</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;"><span style="display:inline-block;background:#0f9d8c;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">supported, SRAM 2x high</span></td></tr>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;font-weight:700;color:#17181c;">Cerebras WSE-3</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">50 GB, 21 PB/s [t=27:08]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">44 GB, 21 PB/s</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;"><span style="display:inline-block;background:#0f9d8c;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">supported</span></td></tr>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;font-weight:700;color:#17181c;">One megawatt</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">8 racks [t=55:03]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">132–140 kW per rack</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;"><span style="display:inline-block;background:#0f9d8c;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">supported</span></td></tr>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;font-weight:700;color:#17181c;">KV cache per token</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">many KB, 1–2 orders slack [t=1:04:15]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">320 KB to 10 KB by design</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;"><span style="display:inline-block;background:#0f9d8c;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">supported</span></td></tr>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;font-weight:700;color:#17181c;">Trillion tokens, OpenAI</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">at least $5M [t=1:15:11]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">$5 per M input; $4 since 2026-08-22</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;"><span style="display:inline-block;background:#0f9d8c;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">supported, input floor</span></td></tr>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;font-weight:700;color:#17181c;">Frontier MoE density</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">near 1 percent [t=1:03:39]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">lowest disclosed 3 percent</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;"><span style="display:inline-block;background:#e08a1e;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">unsupported</span></td></tr>
+<tr><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;font-weight:700;color:#17181c;">First 1M-token context</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">Anthropic [t=30:11]</td><td style="padding:11px 12px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;">Gemini 1.5 Pro, 2024-02-15</td><td style="padding:11px 8px;vertical-align:top;border-top:1px solid rgba(103,107,118,0.28);line-height:1.35;font-size:14px;"><span style="display:inline-block;background:#e08a1e;color:#fff;font-size:11px;font-weight:600;line-height:1.3;padding:3px 7px;border-radius:999px;max-width:100%;overflow-wrap:anywhere;">contradicted</span></td></tr>
+</tbody></table></div>
+<p style="margin:10px 2px 0;font-size:12px;color:#676b76;">Timestamps point into the video. Six supported, one unsupported, one contradicted.</p>
+</div>
+</div><figcaption><b>Figure 4.</b> Eight checkable claims from the talk against primary sources: six hold, one is unsupported by any disclosed model, one is contradicted. The narrative claims that lean toward the thesis are discussed in the text.</figcaption></figure>
+
+<h2 id="the-verifiable-saving-is-one-order-of-magnitude-the-rest-is-a-roadmap">The verifiable saving is one order of magnitude; the rest is a roadmap</h2>
+<p>The price anchor is OpenAI's list: a trillion tokens costs at least $5 million on GPT-5.5 or 5.6 <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4511s" target="_blank" rel="noopener">1:15:11</a>, exactly $5 per million input tokens on GPT-5.5 [35]. GPT-5.6 Sol, also $5 at list as late as 2026-07-30 [36], now carries a promotional $4 input price that OpenAI's page says runs at least through 2026-11-21 [35]; secondary trackers date the cut to the days around the episode's release, and we could not fetch a primary announcement. Sail lists GLM-5.2 at $0.80 per million input and $3.00 output, with completion-window tiers that trade turnaround time for a discount; the site states those discounts against other providers, about 5 to 35 percent for the default window and 60 to 80 percent for the deepest [4], not against its own list. That is $800,000 per trillion at list and, comparing the two stated ranges, very roughly $200,000 to $500,000 on the deepest tier (our arithmetic; Sail publishes no flex-tier rate card). Movva's "tens of thousands of dollars" for some model sizes <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4548s" target="_blank" rel="noopener">1:15:48</a> implies about five cents per million (our arithmetic), a model with a few billion active parameters, and no published rate.</p>
+<figure class="fig fig-inline" id="fig-5"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cost of one trillion input tokens, log scale, eight rows from GPT-5.5 list at 5 million dollars down to the talk's per-person target of 5 thousand dollars" style="font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;background:#f6f5f1">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- legend -->
+  <g font-size="20" fill="#33353c">
+    <circle cx="390" cy="30" r="8" fill="#2f6bd8"/>
+    <text x="406" y="37">Public price list, closed lab</text>
+    <circle cx="700" cy="30" r="8" fill="#e08a1e"/>
+    <text x="716" y="37">Sail list, or a target from the talk</text>
+  </g>
+
+  <!-- plot card -->
+  <rect x="370" y="52" width="580" height="488" fill="#fff"/>
+
+  <!-- decade grid -->
+  <g stroke="#676b76" stroke-width="1" stroke-opacity="0.35">
+    <line x1="380" y1="52" x2="380" y2="540"/>
+    <line x1="520" y1="52" x2="520" y2="540"/>
+    <line x1="660" y1="52" x2="660" y2="540"/>
+    <line x1="800" y1="52" x2="800" y2="540"/>
+    <line x1="940" y1="52" x2="940" y2="540"/>
+  </g>
+
+  <!-- leader lines (left margin to dot) -->
+  <g stroke="#676b76" stroke-width="1.5" stroke-opacity="0.6">
+    <line x1="350" y1="80"  x2="897.9" y2="80"/>
+    <line x1="350" y1="138" x2="884.3" y2="138"/>
+    <line x1="350" y1="196" x2="842.1" y2="196"/>
+    <line x1="350" y1="254" x2="786.4" y2="254"/>
+    <line x1="350" y1="312" x2="702.1" y2="312"/>
+    <line x1="350" y1="370" x2="702.1" y2="370"/>
+    <line x1="350" y1="428" x2="520"   y2="428"/>
+    <line x1="350" y1="486" x2="477.9" y2="486"/>
+  </g>
+
+  <!-- row labels -->
+  <g font-size="20" fill="#33353c">
+    <text x="24" y="74">GPT-5.5, list</text>
+    <text x="24" y="98">(the talk's anchor)</text>
+    <text x="24" y="132">GPT-5.6 Sol,</text>
+    <text x="24" y="156">promo, Aug 2026</text>
+    <text x="24" y="203">GPT-5.6 Terra</text>
+    <text x="24" y="261">Sail, GLM-5.2 list</text>
+    <text x="24" y="319">GPT-5.6 Luna</text>
+    <text x="24" y="364">Sail, deepest flex tier</text>
+    <text x="24" y="388">(derived range)</text>
+    <text x="24" y="422">Talk: "tens of thousands"</text>
+    <text x="24" y="446">(unpublished)</text>
+    <text x="24" y="493">Talk: per-person target</text>
+  </g>
+
+  <!-- closed-lab dots (blue) -->
+  <g fill="#2f6bd8">
+    <circle cx="897.9" cy="80"  r="9"/>
+    <circle cx="884.3" cy="138" r="9"/>
+    <circle cx="842.1" cy="196" r="9"/>
+    <circle cx="702.1" cy="312" r="9"/>
+  </g>
+  <!-- Sail / target dots (orange) -->
+  <g fill="#e08a1e">
+    <circle cx="786.4" cy="254" r="9"/>
+    <circle cx="477.9" cy="486" r="9"/>
+  </g>
+  <!-- row 6: band $0.2M to $0.5M (derived range) with center diamond -->
+  <rect x="702.1" y="358" width="55.8" height="24" fill="#e08a1e" fill-opacity="0.28"/>
+  <polygon points="730,361 739,370 730,379 721,370" fill="#e08a1e"/>
+  <!-- row 7: band $10k to $99k with center diamond -->
+  <rect x="520" y="416" width="139.4" height="24" fill="#e08a1e" fill-opacity="0.28"/>
+  <polygon points="589.7,419 598.7,428 589.7,437 580.7,428" fill="#e08a1e"/>
+
+  <!-- value labels -->
+  <g font-size="20" fill="#676b76">
+    <text x="912"   y="87">$5.0M</text>
+    <text x="898.3" y="145">$4.0M</text>
+    <text x="856.1" y="203">$2.0M</text>
+    <text x="800.4" y="261">$0.8M</text>
+    <text x="716.1" y="319">$0.2M</text>
+    <text x="772"   y="377">$0.2M–$0.5M</text>
+    <text x="672"   y="435">$10k–$99k</text>
+    <text x="491.9" y="493">$5k</text>
+  </g>
+
+  <!-- x axis -->
+  <line x1="370" y1="540" x2="950" y2="540" stroke="#17181c" stroke-width="1.5"/>
+  <g stroke="#17181c" stroke-width="1.5">
+    <line x1="380" y1="540" x2="380" y2="548"/>
+    <line x1="520" y1="540" x2="520" y2="548"/>
+    <line x1="660" y1="540" x2="660" y2="548"/>
+    <line x1="800" y1="540" x2="800" y2="548"/>
+    <line x1="940" y1="540" x2="940" y2="548"/>
+  </g>
+  <g font-size="20" fill="#17181c" text-anchor="middle">
+    <text x="380" y="570">$1k</text>
+    <text x="520" y="570">$10k</text>
+    <text x="660" y="570">$100k</text>
+    <text x="800" y="570">$1M</text>
+    <text x="940" y="570">$10M</text>
+  </g>
+  <text x="660" y="600" font-size="20" fill="#17181c" text-anchor="middle">USD per one trillion input tokens (log scale)</text>
+
+  <!-- brackets, right side -->
+  <g fill="none" stroke="#17181c" stroke-width="1.2">
+    <!-- rows 1 to 4 -->
+    <path d="M977 80 H985 V254 H977"/>
+    <!-- rows 1 to 7 -->
+    <path d="M1002 80 H1010 V428 H1002"/>
+  </g>
+  <g font-size="20" fill="#676b76">
+    <text x="1028" y="150">about 1 order</text>
+    <text x="1028" y="174">of magnitude,</text>
+    <text x="1028" y="198">list to list</text>
+    <line x1="1010" y1="167" x2="1020" y2="167" stroke="#676b76" stroke-width="1"/>
+    <text x="1028" y="340">about 3 orders</text>
+    <text x="1028" y="364">of magnitude,</text>
+    <text x="1028" y="388">to the target</text>
+    <text x="1028" y="412">band</text>
+  </g>
+
+  <!-- footnote -->
+  <g font-size="20" fill="#676b76">
+    <text x="24" y="638">Input tokens only; output prices are higher.</text>
+    <text x="24" y="662">Rows mix model classes: GPT-5.x are closed flagship or mid tiers, GLM-5.2 is an open-weight model.</text>
+  </g>
+</svg>
+</div><figcaption><b>Figure 5.</b> What one trillion input tokens costs on public price lists (blue) against Sail's list price and the talk's targets (orange), on a logarithmic scale. The checkable gap between the flagship anchor and Sail's list is about one order of magnitude; the lower rungs are targets, and for smaller models.</figcaption></figure>
+
+<p>Decomposed into multipliers (our analysis), the demonstrated part is about one to one and a half orders of magnitude: six times from serving an open model instead of a flagship, and roughly 1.5 to 5 times from the deepest completion-window tier relative to Sail's default (our inference from the ranges Sail states against other providers). Incumbents have both: NVIDIA reported on 2026-02-12 that providers including Baseten, Fireworks and Together cut cost per token by up to ten times versus Hopper on Blackwell with NVFP4 and Dynamo, the ten-times case on GB200 NVL72 [37]. He expects much better kernel-writing models within six months and agrees that the software edge erodes over time <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=2485s" target="_blank" rel="noopener">41:25</a>. The remaining levers, KV-cache compression, FLOPs per dollar on other silicon, cheaper sites and power, and recovered idle capacity, are each a plausible two to ten times; five compound to three orders of magnitude, and six requires a much smaller model. Our reading: the trajectory belongs to the industry, and the only part of Sail's plan no incumbent can copy, scavenged silicon on interruptible power, is the part nobody outside Sail has seen.</p>
+<p>For teams that build agents rather than serve them, the actionable content is the workload split. Tag every request with whether a person is waiting and route the rest to a throughput tier; the discount exists today, and the ratio is measurable. Build agents that survive losing their GPU mid-turn, with durable state outside the model and checkpoints at tool boundaries, which matches Anthropic's harness guidance [38]. Choose long-running models by KV bytes per token as well as price; at one million tokens of context a Llama-3-class and a DeepSeek-V4-class design differ by 300 GB against 10 GB of HBM per agent. And track cost per completed task, tokens per task times price times one plus the retry rate, the arithmetic behind the spending caps Movva sees on Claude Code <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=3058s" target="_blank" rel="noopener">50:58</a>.</p>
+<p>For the industry, NVIDIA is untroubled: Movva is bullish on it in the short term <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4577s" target="_blank" rel="noopener">1:16:17</a>, and it will not sell tokens itself because Jensen Huang keeps a diverse set of GPU cloud providers, the so-called NeoClouds, competing for its chips <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4815s" target="_blank" rel="noopener">1:20:15</a>, <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4846s" target="_blank" rel="noopener">1:20:46</a>. His own levers, cache compression and KV offload to flash <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4444s" target="_blank" rel="noopener">1:14:04</a>, are demand-side attacks on the HBM shortage the memory makers profit from. Sail also rides on open weights staying three to six months behind <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4210s" target="_blank" rel="noopener">1:10:10</a>, and the labs are acting on the distillation he calls inevitable <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4278s" target="_blank" rel="noopener">1:11:18</a>: Fable 5 ships with a distillation classifier [39].</p>
+<h2 id="five-signals-will-settle-the-forecast-the-first-by-2026-12-31">Five signals will settle the forecast, the first by 2026-12-31</h2>
+<p>The 50/50 checkpoint comes first, four months away. The proxy is token share on batch or completion-window tiers. If by mid-2027 Baseten, Fireworks and Together have not launched asynchronous tiers carrying most of their volume, the shift is late; if they have, Sail's edge must show in its fleet rather than its scheduler.</p>
+<p>The one-hour agent must become a one-day agent before 95 percent uptime is cheap, because migration plus re-prefill is negligible only when the reliability-weighted horizon dwarfs a ten-minute hiccup. If METR's 80 percent-success horizon passes about four hours by mid-2027, three doublings from Opus 4.5's half hour at roughly a six-month cadence [7], the argument holds; if it keeps lagging, tail latency still matters.</p>
+<p>Our reading is that the HBM-scarce regime expires around 2029, when SK hynix's Yongin DRAM fab and Micron's new capacity land [34], [33]. Chips that sidestep HBM have roughly a 30-month window; after that, HBM-rich NVIDIA silicon gets cheaper too, and no bad chips, only bad pricing, cuts against the scavenger as much as for him.</p>
+<p>Precision is a fork Movva admits he does not control <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4650s" target="_blank" rel="noopener">1:17:30</a>. If open frontier models ship at native FP4 or FP8 quality by 2027, NVIDIA's per-watt gains are real and older silicon loses value; if serving stays at BF16 and FP8, his flat-per-watt claim holds.</p>
+<p>Open-weight lag caps the abundance story. If no open model reaches Mythos-class agentic capability by the end of 2027, Sail's tokens are second-tier intelligence and the thesis narrows to the verifiable-task niches it already serves.</p>
+<p>Movva's closing claim is that there will always be demand for intelligence, and that the on-ramps are the product community's problem, not his <a class="ts" href="https://www.youtube.com/watch?v=uyzqxIoiobU&t=4548s" target="_blank" rel="noopener">1:15:48</a>. The talk earns its hearing on the physics, which is sound, and asks for faith on the demand curve, which nobody has measured. The first date on which that faith can be checked is 2026-12-31.</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://www.youtube.com/watch?v=uyzqxIoiobU" target="_blank" rel="noopener">Ex-NVIDIA Engineer: Why AI Is About to Get 1000x Cheaper</a> — Invest Like The Best, 2026-08-25</li>
+<li><a href="https://fortune.com/2026/06/25/exclusive-sail-apple-kleiner-perkins-gpu-token-nvdia-sequoia-80-million/" target="_blank" rel="noopener">Sail Research emerges from stealth with $80 million from Kleiner Perkins</a> — Fortune, 2026-06-25</li>
+<li><a href="https://www.kleinerperkins.com/perspectives/sail-the-inference-platform-for-long-horizon-agents/" target="_blank" rel="noopener">Sail: The Inference Platform for Long-Horizon Agents</a> — Kleiner Perkins, 2026-06-25</li>
+<li><a href="https://www.sailresearch.com/" target="_blank" rel="noopener">Sail Research — Infrastructure for long-horizon agents</a> — Sail Research, fetched 2026-08-30</li>
+<li><a href="https://openai.com/index/learning-to-reason-with-llms/" target="_blank" rel="noopener">Learning to reason with LLMs</a> — OpenAI, 2024-09-12</li>
+<li><a href="https://www.anthropic.com/news/claude-opus-4-5" target="_blank" rel="noopener">Introducing Claude Opus 4.5</a> — Anthropic, 2025-11-24</li>
+<li><a href="https://metr.org/blog/2026-1-29-time-horizon-1-1/" target="_blank" rel="noopener">Time Horizon 1.1</a> — METR, 2026-01-29</li>
+<li><a href="https://metr.org/time-horizons/" target="_blank" rel="noopener">Task-Completion Time Horizons of Frontier AI Models</a> — METR, updated 2026-05-08</li>
+<li><a href="https://www.anthropic.com/research/measuring-agent-autonomy" target="_blank" rel="noopener">Measuring AI agent autonomy in practice</a> — Anthropic, 2026-02-18</li>
+<li><a href="https://www.premai.io/blog/multi-gpu-llm-inference-tp-vs-pp-vs-ep-parallelism-guide-2026/" target="_blank" rel="noopener">Multi-GPU LLM Inference: TP vs PP vs EP Parallelism Guide (2026)</a> — Prem AI, 2026-03-17</li>
+<li><a href="https://www.cerebras.ai/press-release/cerebras-announces-third-generation-wafer-scale-engine" target="_blank" rel="noopener">Cerebras Systems Unveils World's Fastest AI Chip (WSE-3)</a> — Cerebras, 2024-03-13</li>
+<li><a href="https://www.cerebras.ai/blog/cerebras-cs-3-vs-groq-lpu" target="_blank" rel="noopener">Cerebras CS-3 vs. Groq LPU</a> — Cerebras, 2025-09-19</li>
+<li><a href="https://www.nvidia.com/en-us/data-center/gb300-nvl72/" target="_blank" rel="noopener">NVIDIA GB300 NVL72</a> — NVIDIA, 2026</li>
+<li><a href="https://chipsandcheese.com/p/nvidias-b200-keeping-the-cuda-juggernaut" target="_blank" rel="noopener">Nvidia's B200: Keeping the CUDA Juggernaut Rolling</a> — Chips and Cheese, 2025-12-15</li>
+<li><a href="https://arxiv.org/abs/2507.20534" target="_blank" rel="noopener">Kimi K2: Open Agentic Intelligence</a> — arXiv, 2025-07-28</li>
+<li><a href="https://www.cnbc.com/2025/12/24/nvidia-buying-ai-chip-startup-groq-for-about-20-billion-biggest-deal.html" target="_blank" rel="noopener">Nvidia buying AI chip startup Groq's assets for about $20 billion</a> — CNBC, 2025-12-24</li>
+<li><a href="https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/eighth-generation-tpu-agentic-era/" target="_blank" rel="noopener">Our eighth generation TPUs: two chips for the agentic era</a> — Google, 2026-04-22</li>
+<li><a href="https://docs.nvidia.com/dynamo/user-guides/disaggregated-serving" target="_blank" rel="noopener">Disaggregated Serving — NVIDIA Dynamo docs</a> — NVIDIA, 2026</li>
+<li><a href="https://blog.google/innovation-and-ai/products/google-gemini-next-generation-model-february-2024/" target="_blank" rel="noopener">Introducing Gemini 1.5</a> — Google, 2024-02-15</li>
+<li><a href="https://claude.com/blog/1m-context" target="_blank" rel="noopener">Claude Sonnet 4 now supports 1M tokens of context</a> — Anthropic, 2025-08-12</li>
+<li><a href="https://www.amd.com/en/newsroom/press-releases/2025-10-6-amd-and-openai-announce-strategic-partnership-to-d.html" target="_blank" rel="noopener">AMD and OpenAI Announce Strategic Partnership to Deploy 6 Gigawatts of AMD GPUs</a> — AMD, 2025-10-06</li>
+<li><a href="https://www.amd.com/en/newsroom/press-releases/2026-2-24-amd-and-meta-announce-expanded-strategic-partnersh.html" target="_blank" rel="noopener">AMD and Meta Announce Expanded Strategic Partnership to Deploy 6 Gigawatts of AMD GPUs</a> — AMD, 2026-02-24</li>
+<li><a href="https://lenovopress.lenovo.com/lp2357-lenovo-nvidia-gb300-nvl72-rack-scale-ai" target="_blank" rel="noopener">Lenovo NVIDIA GB300 NVL72 Rack Scale AI product guide</a> — Lenovo Press, 2025</li>
+<li><a href="https://arxiv.org/abs/2405.04434" target="_blank" rel="noopener">DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</a> — arXiv, 2024-05-07</li>
+<li><a href="https://arxiv.org/abs/2606.19348" target="_blank" rel="noopener">DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence</a> — arXiv, 2026-04-26</li>
+<li><a href="https://vllm.ai/blog/2026-04-24-deepseek-v4" target="_blank" rel="noopener">DeepSeek V4 in vLLM: Efficient Long-context Attention</a> — vLLM, 2026-04-24</li>
+<li><a href="https://epoch.ai/publications/will-we-run-out-of-data-limits-of-llm-scaling-based-on-human-generated-data" target="_blank" rel="noopener">Will we run out of data? Limits of LLM scaling based on human-generated data</a> — Epoch AI, 2024-06-06</li>
+<li><a href="https://ai.meta.com/blog/llama-4-multimodal-intelligence/" target="_blank" rel="noopener">The Llama 4 herd</a> — Meta AI, 2025-04-05</li>
+<li><a href="https://www.thundercompute.com/blog/nvidia-h100-specs-full-guide" target="_blank" rel="noopener">NVIDIA H100 specs full guide</a> — Thunder Compute, 2026</li>
+<li><a href="https://www.server-parts.eu/post/nvidia-b300-gpu-blackwell-ultra-architecture" target="_blank" rel="noopener">NVIDIA Blackwell Ultra B300: full specs</a> — server-parts.eu, 2025</li>
+<li><a href="https://newsletter.semianalysis.com/p/vera-rubin-extreme-co-design-an-evolution" target="_blank" rel="noopener">Vera Rubin — Extreme Co-Design</a> — SemiAnalysis, 2026-02-25</li>
+<li><a href="https://blogs.nvidia.com/blog/vera-rubin/" target="_blank" rel="noopener">NVIDIA Vera Rubin Driving Performance Per Watt, Lower Token Costs</a> — NVIDIA, 2026-07-21</li>
+<li><a href="https://www.trendforce.com/news/2026/03/19/news-micron-ramps-fy26-capex-to-25b-signs-first-5-year-customer-deal/" target="_blank" rel="noopener">Micron ramps FY26 capex to $25B, signs first 5-year customer deal</a> — TrendForce, 2026-03-19</li>
+<li><a href="https://news.skhynix.com/en/fab-facility-investment-2026/" target="_blank" rel="noopener">SK hynix invests 54 trillion won in Yongin Y2 and Cheongju M17</a> — SK hynix Newsroom, 2026-08-07</li>
+<li><a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener">OpenAI API pricing</a> — OpenAI, fetched 2026-08-30</li>
+<li><a href="https://www.cloudzero.com/blog/openai-pricing/" target="_blank" rel="noopener">OpenAI API pricing in 2026: every model after the price cuts</a> — CloudZero, 2026-08</li>
+<li><a href="https://blogs.nvidia.com/blog/inference-open-source-models-blackwell-reduce-cost-per-token/" target="_blank" rel="noopener">Leading Inference Providers Achieve Lowest Token Cost With Open Source Models on NVIDIA Blackwell</a> — NVIDIA, 2026-02-12</li>
+<li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" target="_blank" rel="noopener">Effective harnesses for long-running agents</a> — Anthropic, 2025-11-26</li>
+<li><a href="https://www.anthropic.com/news/claude-fable-5-mythos-5" target="_blank" rel="noopener">Claude Fable 5 and Claude Mythos 5</a> — Anthropic, 2026-06-09</li>
+</ol>
+</article>
+
+<footer class="credits">
+  <p>Written from the video’s transcript by a multi-agent pipeline — background research, six analytical lenses, synthesis, and an editorial pass — then illustrated in this blog’s house style and narrated with Higgs TTS. Timestamps link to the moment in the source video.</p>
+  <p>The original video belongs to its creator; this article is commentary and summary, not a substitute for watching it.</p>
+</footer>
+</div>
+
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+
+<script>
+(function(){
+  var bar=document.getElementById('pbar');
+  function prog(){var h=document.documentElement,s=h.scrollTop||document.body.scrollTop,m=h.scrollHeight-h.clientHeight;bar.style.width=(m>0?Math.min(100,s/m*100):0)+'%';}
+  addEventListener('scroll',prog,{passive:true});prog();
+  var a=document.getElementById('narr'),chips=document.querySelectorAll('.chip'),now=document.getElementById('now');
+  if(a&&chips.length){
+    var secs=[].map.call(chips,function(c){return {t:+c.dataset.t,el:c};});
+    chips.forEach(function(c){c.addEventListener('click',function(){a.currentTime=+c.dataset.t;a.play();});});
+    a.addEventListener('timeupdate',function(){var cur=null;for(var i=0;i<secs.length;i++){if(a.currentTime>=secs[i].t-0.2)cur=secs[i];}
+      secs.forEach(function(s){s.el.classList.toggle('on',s===cur);});
+      if(now)now.textContent=cur?('Now reading: '+cur.el.textContent):'';});
+  }
+})();
+</script>
+</body>
+</html>

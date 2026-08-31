@@ -1,0 +1,44 @@
+{
+  "posts_js_entry": {
+    "slug": "ai-1000x-cheaper",
+    "title": "The token factory — what a 1000x cost cut actually rests on",
+    "date": "2026-08-30",
+    "description": "Ex-NVIDIA engineer Neil Movva on why background agents, throughput-first GPUs, scavenged chips and cheap intermittent power make tokens 1000x cheaper. 2026-08-25 공개된 Invest Like The Best 인터뷰에서 Sail Research 공동창업자이자 전 NVIDIA 커널 엔지니어인 Neil Movva는 AI inference 비용이 급격히 내려갈 것이라고 주장한다.",
+    "tags": [
+      "deep-dive",
+      "ai-infra"
+    ],
+    "lang": "en · ko",
+    "art": "ribbon"
+  },
+  "en": {
+    "file": "index.html",
+    "title": "The token factory — what a 1000x cost cut actually rests on",
+    "words": 4187,
+    "read_min": 18,
+    "listen_min": 19,
+    "summary": "In an Invest Like The Best interview published 2026-08-25, Neil Movva, co-founder of Sail Research and a former NVIDIA kernel engineer, argues that AI inference is about to get drastically cheaper because its dominant workload will change, from chatbots a person waits on to background agents that run for hours. Once nobody is waiting, a provider can batch for throughput instead of latency, use chips without NVIDIA's NVLink interconnect, tolerate data centers with 95 percent uptime, and site them on solar and wind. This article follows that chain layer by layer, checks the talk's numbers against primary sources, and separates what is delivered (about one order of magnitude on public price lists) from what is a roadmap (the three to six orders of magnitude the speaker asks for). It matters now because the first checkpoint, a 50/50 split between background and real-time workloads, is dated to the end of 2026.",
+    "tags": [
+      "deep-dive",
+      "ai-infra"
+    ],
+    "date": "2026-08-30",
+    "category": "ai-engineering"
+  },
+  "ko": {
+    "file": "ko.html",
+    "title": "토큰 공장 — 1000배 비용 절감이 실제로 기대고 있는 것",
+    "words": 4597,
+    "read_min": 15,
+    "listen_min": 25,
+    "summary": "2026-08-25 공개된 Invest Like The Best 인터뷰에서 Sail Research 공동창업자이자 전 NVIDIA 커널 엔지니어인 Neil Movva는 AI inference 비용이 급격히 내려갈 것이라고 주장한다. 지배적인 워크로드가 사람이 기다리는 챗봇에서 몇 시간씩 도는 백그라운드 agent로 바뀌기 때문이다. 아무도 기다리지 않게 되면 사업자는 지연 시간 대신 처리량을 위해 batch를 짤 수 있고, NVIDIA의 NVLink 인터커넥트가 없는 칩을 쓸 수 있으며, 가동률 95퍼센트의 데이터센터를 감수하고 태양광과 풍력 위에 부지를 둘 수 있다. 이 글은 그 사슬을 층별로 따라가고, 대담의 숫자를 1차 출처와 대조하며, 이미 이뤄진 것(공개 요금표상 약 10배)과 로드맵인 것(화자가 요구하는 1,000배에서 100만 배)을 가른다. 지금 중요한 이유는 첫 체크포인트, 즉 백그라운드와 실시간 워크로드의 50 대 50 분할이 2026년 말로 못 박혀 있기 때문이다.",
+    "tags": [
+      "deep-dive",
+      "ai-infra"
+    ],
+    "date": "2026-08-30",
+    "category": "ai-engineering"
+  },
+  "post_dir": "/Users/jaewon/mywork_2026/blog-dev/yt-articles/ai-1000x-cheaper/post",
+  "publish": "cd my_blog && ./new-post.sh /Users/jaewon/mywork_2026/blog-dev/yt-articles/ai-1000x-cheaper/post ai-1000x-cheaper  (answers: title/description/tags/date from posts_js_entry)"
+}
