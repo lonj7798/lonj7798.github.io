@@ -14,7 +14,7 @@ window.POSTS = [
       "ai-infra"
     ],
     "lang": "en · ko",
-    "art": "ribbon"
+    "art": "factory"
   },
   {
     "slug": "company-brain",

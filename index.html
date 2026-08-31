@@ -373,7 +373,7 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   // per-post generative cover — a MOTIF (structure) + palette, both seeded by slug.
   // posts.js can pin the motif via "art": "wave" | "ridge" | "cells" | "ribbon";
   // unset posts draw from the family by hash, so no two neighbors need to match.
-  const MOTIFS = ["wave", "ridge", "cells", "ribbon", "synapse"];
+  const MOTIFS = ["wave", "ridge", "cells", "ribbon", "synapse", "factory"];
   const mixc = (a, b, u, al) =>
     `rgba(${(a[0] + (b[0] - a[0]) * u) | 0},${(a[1] + (b[1] - a[1]) * u) | 0},${(a[2] + (b[2] - a[2]) * u) | 0},${al})`;
 
@@ -480,6 +480,63 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
         ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(4.5, h * 0.036), 0, 7); ctx.stroke(); };
       ring(nodes[0], mixc(a.c1, a.c2, 0, 0.9));
       ring(nodes[paths[0][paths[0].length - 1]], mixc(a.c1, a.c2, 1, 0.9));
+    },
+
+    // factory — a token factory: many small emitters (west) stream batched tokens along
+    // lanes that converge into one dense throughput band (east); a lane may idle
+    // (intermittent power). Tokens glide east on hover, keeping their identity.
+    factory(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const lanes = Math.max(5, Math.round(h / 27));
+      const s = Math.max(2.6, h * 0.024);            // token size
+      const pitch = s * 1.9;                         // token spacing along a lane
+      const bs = s * 2.4;                            // emitter box size
+      const x0 = w * 0.075 + bs, x1 = w + s;         // stream start / end
+      const drift = t * 34;                          // flow on hover
+      const n = Math.floor(drift / pitch), frac = drift - n * pitch;
+      const ease = p => p * p * (3 - 2 * p);
+      for (let l = 0; l < lanes; l++) {
+        const u = lanes > 1 ? l / (lanes - 1) : 0.5;
+        const yL = h * 0.13 + h * 0.74 * u;          // spread across the height at the emitters
+        const yR = h * 0.5 + (u - 0.5) * h * 0.30;   // converged band at the east edge
+        const laneY = x => {
+          const p = Math.min(1, Math.max(0, (x - x0) / (w * 0.80)));
+          return yL + (yR - yL) * ease(p) + noise(x * 0.003 * a.sp + a.o1, l * 2.9) * h * 0.018;
+        };
+        const live = noise(a.o2 + l * 1.7, 3 + t * 0.12) > -0.42;   // most lanes run; a few idle
+        // lane guide — barely-there ink
+        ctx.strokeStyle = "rgba(23,24,28,.055)"; ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = x0; x <= x1; x += 6) ctx.lineTo(x, laneY(x));
+        ctx.stroke();
+        // emitter — a small hollow box, lit when the lane runs
+        const ex = x0 - bs - s * 0.6, ey = laneY(x0) - bs / 2;
+        ctx.lineWidth = Math.max(1, s * 0.22);
+        ctx.strokeStyle = live ? mixc(a.c1, a.c2, 0.02, 0.80) : "rgba(23,24,28,.22)";
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(ex, ey, bs, bs, bs * 0.22) : ctx.rect(ex, ey, bs, bs);
+        ctx.stroke();
+        if (live) {
+          ctx.fillStyle = mixc(a.c1, a.c2, 0.02, 0.55);
+          ctx.fillRect(ex + bs * 0.32, ey + bs * 0.32, bs * 0.36, bs * 0.36);
+        }
+        // tokens — batches with gaps, sampled by world index so they glide without flicker
+        for (let k = -1; ; k++) {
+          const x = x0 + s + k * pitch + frac;
+          if (x > x1) break;
+          if (x < x0) continue;
+          const idx = k - n;
+          const batch = noise(idx * 0.19 * a.sp, a.o2 + l * 2.3);
+          if (batch < -0.02) continue;                 // gap between batches
+          const det = noise(idx * 0.9, a.o1 + l * 1.1);
+          const al = live ? 0.42 + 0.50 * Math.min(1, Math.abs(det) + batch * 0.6) : 0.12;
+          ctx.fillStyle = mixc(a.c1, a.c2, x / w, al);
+          const y = laneY(x);
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(x - s / 2, y - s / 2, s, s, s * 0.22) : ctx.rect(x - s / 2, y - s / 2, s, s);
+          ctx.fill();
+        }
+      }
     },
 
     // soundwave — amplitude bars around a centerline (the original)
