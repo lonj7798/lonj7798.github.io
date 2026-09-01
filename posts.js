@@ -5,6 +5,18 @@
 // Fields: slug*, title*, date* (YYYY-MM-DD), description, tags[], lang
 window.POSTS = [
   {
+    "slug": "ai-uncertainty",
+    "title": "Teaching AI to Doubt — Zoubin Ghahramani's Bayesian Bet",
+    "date": "2026-09-01",
+    "description": "Zoubin Ghahramani argues AI's missing piece is a mathematical sense of its own uncertainty — and Bayes' rule may be the key. 2026년 8월 26일 공개된 Google DeepMind 팟캐스트 에피소드에서 Hannah Fry가 Zoubin Ghahramani를 인터뷰한다.",
+    "tags": [
+      "deep-dive",
+      "bayesian"
+    ],
+    "lang": "en · ko",
+    "art": "ridge"
+  },
+  {
     "slug": "alphago-self-play",
     "title": "Search Is the Teacher — Lessons From a $10K AlphaGo Rebuild",
     "date": "2026-08-31",

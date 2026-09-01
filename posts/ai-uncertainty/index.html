@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teaching AI to Doubt — Zoubin Ghahramani's Bayesian Bet</title>
+<meta name="description" content="In an episode of Google DeepMind&#x27;s podcast published on 2026-08-26, Hannah Fry interviews Zoubin Ghahramani — Cambridge professor, VP of Research at Google DeepMind, and a founding figure of Bayesian machine learning. His argument is that intelligence is decision-making under uncertainty, and that t">
+<link rel="alternate" hreflang="ko" href="ko.html">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#17181c;--body:#33353c;--mut:#676b76;--hair:rgba(23,24,28,.08);
+--blue:#2f6bd8;--purple:#7a4fd3;--orange:#e08a1e;--pink:#d34f6e;--teal:#0f9d8c;
+--serif:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--shadow:0 1px 2px rgba(23,24,28,.03),0 10px 30px rgba(23,24,28,.05)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:760px;margin:0 auto;padding:0 22px}
+#pbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--ink);opacity:.75;z-index:50}
+header.top{padding:58px 0 18px}
+.eyebrow{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow .yt{display:inline-flex;align-items:center;gap:7px}
+.eyebrow .yt i{width:7px;height:7px;border-radius:50%;background:var(--pink);display:inline-block}
+.lang-sw{display:inline-flex;background:rgba(255,255,255,.85);border-radius:999px;padding:3px;box-shadow:inset 0 0 0 1px var(--hair);text-transform:none;letter-spacing:0}
+.lang-sw a{padding:4px 12px;border-radius:999px;color:var(--mut);text-decoration:none;font-size:12px;letter-spacing:.03em}
+.lang-sw a.on{background:var(--ink);color:#fff}
+h1{font-family:var(--serif);font-weight:650;font-size:clamp(30px,5.4vw,44px);line-height:1.22;letter-spacing:-.012em;color:var(--ink);margin:18px 0 12px}
+.lede{font-size:19px;line-height:1.6;color:var(--body);max-width:640px;margin:0 0 16px}
+.meta{font-size:13.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.meta .sep{opacity:.5}
+.tag{font-weight:650;text-decoration:none}
+.tag.c0{color:var(--blue)}.tag.c1{color:var(--purple)}.tag.c2{color:var(--orange)}.tag.c3{color:var(--pink)}.tag.c4{color:var(--teal)}
+figure.hero{margin:22px 0 6px}
+figure.hero img{width:100%;height:auto;display:block;border-radius:22px}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:24px 26px;margin:22px 0}
+.card .ct{font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:650}
+.summary p{margin:0 0 10px;font-size:16.5px;color:var(--ink)}
+.summary ul{margin:10px 0 0;padding-left:20px}
+.summary li{margin:5px 0;font-size:15.5px}
+.listen{display:flex;flex-direction:column;gap:12px}
+.listen audio{width:100%;height:40px}
+.listen .who{font-size:13.5px;color:var(--mut);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--bg);color:var(--mut);border:1px solid var(--hair);cursor:pointer;transition:background .15s,color .15s}
+.chip:hover{color:var(--ink);border-color:rgba(23,24,28,.2)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.now{font-size:12.5px;color:var(--mut);min-height:18px}
+.source{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+.source img{width:100%;border-radius:12px;display:block;aspect-ratio:16/9;object-fit:cover}
+.source .t{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0 0 4px;line-height:1.35}
+.source .s{font-size:13.5px;color:var(--mut)}
+.source a.watch{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink);text-decoration:none;font-weight:650;border-bottom:1px solid rgba(23,24,28,.25)}
+.chapters{margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;columns:2;column-gap:18px}
+.chapters li{break-inside:avoid;margin:2px 0}
+.chapters a{color:var(--mut);text-decoration:none;font-variant-numeric:tabular-nums}
+.chapters a:hover{color:var(--ink)}
+.chapters .ct{margin:0 0 6px}
+@media(max-width:560px){.source{grid-template-columns:1fr}.chapters{columns:1}.card{padding:20px 18px;border-radius:18px}}
+article.body{padding:8px 0 30px}
+.body h2{font-family:var(--serif);font-size:clamp(24px,3.6vw,30px);line-height:1.3;color:var(--ink);margin:48px 0 12px;font-weight:650;letter-spacing:-.01em}
+.body h3{font-size:19px;color:var(--ink);margin:30px 0 8px;font-weight:650}
+.body h4{font-size:16px;color:var(--ink);margin:22px 0 6px;font-weight:650}
+.body p{margin:0 0 18px}
+.body a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(23,24,28,.25)}
+.body a:hover{border-color:var(--ink)}
+.body a.ts{font-family:var(--mono);font-size:.8em;color:var(--blue);border:0;background:rgba(47,107,216,.08);padding:1px 7px;border-radius:999px;white-space:nowrap;vertical-align:.08em}
+.body ul,.body ol{padding-left:24px;margin:0 0 18px}
+.body li{margin:6px 0}
+.body li>p{margin:0 0 6px}
+.body strong{color:var(--ink);font-weight:650}
+.body blockquote{margin:26px 0;padding:0 0 0 20px;border-left:3px solid var(--ink);color:var(--ink);font-family:var(--serif);font-size:19.5px;line-height:1.5}
+.body blockquote p{margin:0 0 6px}
+.body blockquote cite,.body blockquote em.by{display:block;font-family:var(--sans);font-style:normal;font-size:13.5px;color:var(--mut);margin-top:4px}
+.body blockquote.pull{border:0;padding:22px 26px;background:var(--card);border-radius:20px;box-shadow:var(--shadow)}
+.body code{font-family:var(--mono);font-size:.88em;background:rgba(23,24,28,.05);padding:.1em .4em;border-radius:6px}
+.body pre{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;overflow:auto;font-size:13.5px;line-height:1.55;margin:0 0 20px}
+.body pre code{background:none;padding:0}
+figure.fig{margin:30px -6px}
+figure.fig img{width:100%;height:auto;display:block;border-radius:16px;background:#fff}
+figure.fig figcaption{font-size:13.5px;color:var(--mut);margin:10px 8px 0;line-height:1.5}
+figure.fig figcaption b{color:var(--ink);font-weight:650}
+figure.fig-inline .inl{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;overflow-x:auto}
+figure.fig-inline .inl svg{max-width:100%;height:auto;display:block}
+.tbl{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--hair)}
+th{color:var(--ink);font-weight:650}
+hr{border:0;height:1px;background:var(--hair);margin:36px 0}
+.body #references+ol,.body #references+p+ol,.refs ol{font-size:14.5px}
+.body sup{font-size:.7em}
+footer.credits{padding:26px 0 96px;color:var(--mut);font-size:13.5px;line-height:1.65;border-top:1px solid var(--hair);margin-top:24px}
+footer.credits p{margin:0 0 8px}
+@media print{#pbar,.lang-sw,.listen,#jw-home{display:none}}
+
+</style>
+</head>
+<body>
+<div id="pbar" aria-hidden="true"></div>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">
+    <span class="yt"><i></i>YouTube · Google DeepMind · 2026-08-26</span>
+    <nav class="lang-sw" aria-label="language">
+      <a href="index.html" class="on">EN</a>
+      <a href="ko.html" class="">한국어</a>
+    </nav>
+  </div>
+  <h1>Teaching AI to Doubt — Zoubin Ghahramani's Bayesian Bet</h1>
+  <p class="lede">What the DeepMind podcast's case for mathematical uncertainty shows, what its own exhibits prove, and what to watch next</p>
+  <div class="meta">
+    <span>2026-09-01</span>
+    <span class="sep">·</span><span>16 min read</span>
+    <span class="sep">·</span><span>19 min listen</span>
+    <span class="sep">·</span><a class="tag c0" href="../../?tag=deep-dive">#deep-dive</a><a class="tag c1" href="../../?tag=bayesian">#bayesian</a>
+  </div>
+</header>
+
+<figure class="hero"><img src="figures/hero.png" alt="A single confident prediction fraying into a fan of possible futures"></figure>
+
+<section class="card summary" aria-label="In brief">
+  <p class="ct">In brief</p>
+  <p>In an episode of Google DeepMind's podcast published on 2026-08-26, Hannah Fry interviews Zoubin Ghahramani — Cambridge professor, VP of Research at Google DeepMind, and a founding figure of Bayesian machine learning. His argument is that intelligence is decision-making under uncertainty, and that today's language models, probabilistic though they are at the token level, hold no explicit representation of their own beliefs — they fake confidence rather than compute it. He offers GenCast's ensemble weather forecasts and AlphaFold's confidence scores as proof that principled uncertainty pays, and Bayes' rule as the route to continual learning and data efficiency. The catch, which he names himself, is that exact Bayesian inference is computationally intractable, and his remedy is an unfinished research program rather than an architecture. The conversation matters now because every major lab treats confident wrongness as a commercially load-bearing failure — while disagreeing on whether the cure is architecture, incentives, or measurement.</p>
+  <ul><li>Ghahramani's core claim: intelligence is decision-making under uncertainty, and LLMs fake confidence instead of computing it.</li><li>His exhibits — GenCast, AlphaFold, semantic entropy — get useful uncertainty from trained networks, not explicit Bayes.</li><li>Anthropic and OpenAI results complicate the diagnosis: calibration exists but is format-dependent and incentive-shaped.</li><li>Exact Bayesian inference is NP-hard; 'compute catches up' is a license to explore, not a forecast.</li><li>Usable now: type your uncertainty, ship ensembles, test calibration, and never gate pipelines on verbalized confidence.</li></ul>
+</section>
+
+
+<section class="card listen" aria-label="Listen to this article">
+  <p class="ct">Listen to this article</p>
+  <audio id="narr" controls preload="none" src="audio/en.mp3"></audio>
+  <div class="who"><span>Read by Eleanor · Higgs TTS</span><span>18:44</span></div>
+  <div class="chips" id="chips" role="list" aria-label="Jump to a section">
+    <button class="chip" data-t="1.2" role="listitem">A Bayesian voice at the center of the scale-first era</button><button class="chip" data-t="104.03" role="listitem">Intelligence is decision-making under uncertainty</button><button class="chip" data-t="253.48" role="listitem">The autobiography is the argument: he left neural networks before they won</button><button class="chip" data-t="376.69" role="listitem">One update rule, four jobs — and a diagnosis of LLMs as mimics</button><button class="chip" data-t="491.83" role="listitem">The exhibits are probabilistic, but none of them computes Bayes' rule</button><button class="chip" data-t="705.19" role="listitem">The counter-literature the episode never engages</button><button class="chip" data-t="804.97" role="listitem">The uncertainty toolkit transfers now, without new architecture</button><button class="chip" data-t="910.43" role="listitem">The curse is real, the analogy is seductive, and the clock is checkable</button>
+  </div><div class="now" id="now"></div>
+</section>
+
+
+<section class="card source" aria-label="Source video">
+  <a href="https://www.youtube.com/watch?v=tBjgCj_dGZM" target="_blank" rel="noopener"><img src="figures/thumb.jpg" alt=""></a>
+  <div>
+    <p class="ct">Source video</p>
+    <p class="t">The mathematics of AI uncertainty</p>
+    <div class="s">Google DeepMind · 2026-08-26 · 44:41</div>
+    <a class="watch" href="https://www.youtube.com/watch?v=tBjgCj_dGZM" target="_blank" rel="noopener">Watch on YouTube ↗</a>
+    <ul class="chapters"><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=0s" target="_blank" rel="noopener">0:00</a> Introduction</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=66s" target="_blank" rel="noopener">1:06</a> The role of uncertainty</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=465s" target="_blank" rel="noopener">7:45</a> Correctness vs confidence</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=580s" target="_blank" rel="noopener">9:40</a> Historical perspectives</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=970s" target="_blank" rel="noopener">16:10</a> Bayesian thinking in AI</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1590s" target="_blank" rel="noopener">26:30</a> Uncertainty in the real world</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2202s" target="_blank" rel="noopener">36:42</a> Future research and AGI</li></ul>
+  </div>
+</section>
+
+<article class="body">
+<h2 id="a-bayesian-voice-at-the-center-of-the-scale-first-era">A Bayesian voice at the center of the scale-first era</h2>
+<p>Google DeepMind's own podcast is an unlikely venue for doubts about the scale-first consensus, which is what makes this episode worth its forty-five minutes [1]. Hannah Fry's guest is Zoubin Ghahramani — Professor of Information Engineering at Cambridge, VP of Research at Google DeepMind (the episode introduces him as co-leading frontier AI <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=0s" target="_blank" rel="noopener">0:00</a>), and one of the founding figures of Bayesian machine learning. The career behind those titles runs from a 1990 Penn degree through an MIT PhD, a postdoc with Geoffrey Hinton, the Gatsby Unit, Cambridge, Uber's chief-scientist office, and the leadership of Google Brain until its 2023 merger into DeepMind [2].</p>
+<p>Fry frames the conversation as a debate between two camps: those hoping that pure scale — more data, more compute — keeps improving AI, and those, Ghahramani among them, who believe true intelligence requires innovations in architecture, with a mathematical sense of uncertainty as one missing piece <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=42s" target="_blank" rel="noopener">0:42</a>. The episode aired on 2026-08-26, and its Hurricane Melissa reference places the recording after late October 2025, a detail that will matter later.</p>
+<p>The timing is not one lab's editorial accident: within roughly a year, all three leading labs published diagnoses of the same customer-facing failure, the confidently wrong answer — OpenAI blaming training and benchmark incentives that reward guessing [3], Anthropic measuring how much models actually know about what they know [4][5], and DeepMind, here, arguing that the fix is architectural. Our reading: when every lab converges on one failure from three directions, the failure has become commercially load-bearing, and this interview is best heard as an advocate's opening statement, not a neutral survey.</p>
+<h2 id="intelligence-is-decision-making-under-uncertainty">Intelligence is decision-making under uncertainty</h2>
+<p>Ghahramani's opening move is definitional. Intelligence, from bacteria to robots, is about making decisions; real-world decisions are made with limited perception and an unpredictable future; therefore an intelligent system must treat uncertainty as a first-class quantity, expressible in the mathematics of probability <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=66s" target="_blank" rel="noopener">1:06</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=115s" target="_blank" rel="noopener">1:55</a> "[…] to build an intelligent system, you need a system that can represent uncertainty, that can update its uncertainty and then can use that to make good decisions under uncertainty."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>His taxonomy does real work rather than decoration. Aleatoric uncertainty is the world's irreducible randomness — which way the pedestrian turns — and the rational response may be to give up on prediction. Epistemic uncertainty is a gap in your own knowledge, and its rational response is to gather information; one bit of information, he reminds us, is by definition whatever halves your uncertainty <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=250s" target="_blank" rel="noopener">4:10</a>. The self-driving car supplies the stakes: however much data the car trained on, a long tail of unseen situations remains — his example is a horse jumping out in a hailstorm — and what you want then is not a confident guess but the self-awareness that the situation is novel, which justifies the cheap, safe act of slowing down <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=157s" target="_blank" rel="noopener">2:37</a>.</p>
+<p>Humans, he observes, are a strange mixture on this score. Kahneman and Tversky showed that our conscious probability estimates are systematically biased [6]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=388s" target="_blank" rel="noopener">6:28</a>, while our unconscious perceptual systems come close to statistically optimal inference — though that second half of the claim comes from the Bayesian-perception literature rather than from Kahneman and Tversky themselves [7]. The talk compresses two literatures into one sentence; the compression is fair, but the attribution is worth keeping straight.</p>
+<p>Confidence, not correctness, is his sharpest wedge, and he drives it in with the adversarial-example story: change a few imperceptible pixels and a classifier declares a school bus a cheetah at 99 percent confidence, for any target category you like <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=465s" target="_blank" rel="noopener">7:45</a>. The phenomenon, the imperceptibility, the arbitrary-target property and the dating all check out [8]; the details have drifted, though — the canonical 2013 image turned the school bus into an ostrich with no 99 percent attached, and the famous 99.3 percent belongs to a 2014 panda-turned-gibbon [9]. In a conversation about miscalibrated confidence, the fluent retelling of garbled specifics is a small irony — and a preview of the episode's central claim about language models.</p>
+<h2 id="the-autobiography-is-the-argument-he-left-neural-networks-before-they-won">The autobiography is the argument: he left neural networks before they won</h2>
+<p>In 1986, as a Penn freshman looking for a summer job, Ghahramani was handed the two just-published Parallel Distributed Processing volumes by the computational linguist Aravind Joshi and told to read and explain them [10]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=621s" target="_blank" rel="noopener">10:21</a> — the same year the backpropagation paper launched the modern neural-network era [11]. He wrote a 1989 undergraduate thesis on parsing natural language with neural networks, coding on a Connection Machine, the black cube blinking with red lights for its 65,000 processors — 65,536, strictly [12] — and jokes that, had he published it, it would have been a very early paper on small language models <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=702s" target="_blank" rel="noopener">11:42</a>. Neural networks, he recalls, were the counterculture then, set against the rule-based establishment <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=741s" target="_blank" rel="noopener">12:21</a>.</p>
+<p>Then he left them. By the early 1990s the mathematics of neural networks felt well understood, datasets were tiny, and the live frontier seemed to be their connection to probability theory — so he spent years with Hinton on probabilistic approaches to deep learning ("We were overcomplicating things," he concedes, not having yet seen large-scale data <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=824s" target="_blank" rel="noopener">13:44</a>) and then decades building Bayesian machine learning. Hinton went on to share the 2024 Nobel Prize in Physics for neural-network foundations [13]. Ghahramani's counter-manifesto landed in 2015: a Nature review arguing that many aspects of intelligence depend crucially on the careful probabilistic representation of uncertainty [14]. Fry bills it as sharing an issue with the foundational deep-learning papers; more precisely, it ran in Nature's machine-intelligence special issue alongside the commissioned deep-learning review by LeCun, Bengio and Hinton [15]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=868s" target="_blank" rel="noopener">14:28</a>.</p>
+<p>The story's shape is a pendulum, and he swings it deliberately: neural networks were dismissed as computationally hopeless and won when compute and data arrived; Bayesian inference was sidelined as intractable; perhaps its turn comes next. Whether that analogy holds is, in our view, the single load-bearing question of the episode, and we return to it at the end.</p>
+<h2 id="one-update-rule-four-jobs-and-a-diagnosis-of-llms-as-mimics">One update rule, four jobs — and a diagnosis of LLMs as mimics</h2>
+<p>The Bayesian machinery gets one clean walkthrough, by whodunit. Start with prior beliefs over the suspects, multiply by the likelihood of the new evidence — the murder weapon found in the pantry — renormalize so the probabilities sum to one, and the posterior becomes the prior for the next clue <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1014s" target="_blank" rel="noopener">16:54</a>. The episode's coherence comes from claiming this single loop four times over: for perception, rustling leaves in Costa Rica read against the prior that jaguars live there; for learning, parameters updated datum by datum <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1064s" target="_blank" rel="noopener">17:44</a>; for ensemble weather forecasting <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1686s" target="_blank" rel="noopener">28:06</a>; and for continual learning without catastrophic forgetting <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2289s" target="_blank" rel="noopener">38:09</a>. One mechanism, four instantiations — the economy is the persuasion.</p>
+<figure class="fig fig-inline" id="fig-1"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Bayesian update loop with three instantiations" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f6f5f1;display:block">
+  <defs>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6bd8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- ===== loop nodes ===== -->
+  <!-- node 1: Prior beliefs -->
+  <rect x="40" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="160" y="188" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Prior beliefs</text>
+
+  <!-- node 2: Weigh evidence (likelihood) -->
+  <rect x="340" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="460" y="172" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Weigh evidence</text>
+  <text x="460" y="206" text-anchor="middle" font-size="24" fill="#33353c">(likelihood)</text>
+
+  <!-- node 3: Renormalize -->
+  <rect x="640" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="760" y="188" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Renormalize</text>
+
+  <!-- node 4: Posterior beliefs -->
+  <rect x="940" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="1060" y="188" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Posterior beliefs</text>
+
+  <!-- forward arrows -->
+  <line x1="284" y1="180" x2="332" y2="180" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+  <line x1="584" y1="180" x2="632" y2="180" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+  <line x1="884" y1="180" x2="932" y2="180" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- return arrow: posterior back to prior, under the row -->
+  <path d="M 1060 234 C 1060 330, 900 340, 610 340 C 320 340, 160 330, 160 242" fill="none" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+  <text x="610" y="378" text-anchor="middle" font-size="26" font-style="italic" fill="#2f6bd8">Posterior becomes next prior</text>
+
+  <!-- ===== divider ===== -->
+  <line x1="60" y1="440" x2="1140" y2="440" stroke="#676b76" stroke-width="1" stroke-dasharray="2 6"/>
+  <text x="60" y="425" font-size="21" letter-spacing="2" fill="#676b76">SAME LOOP, THREE PLACES</text>
+
+  <!-- ===== instantiation rows ===== -->
+  <circle cx="80" cy="495" r="9" fill="#0f9d8c"/>
+  <text x="108" y="504" font-size="26" fill="#17181c">Perception: rustling leaves, jaguar?</text>
+
+  <circle cx="80" cy="555" r="9" fill="#0f9d8c"/>
+  <text x="108" y="564" font-size="26" fill="#17181c">Weather: ensemble meets new observations</text>
+
+  <circle cx="80" cy="615" r="9" fill="#0f9d8c"/>
+  <text x="108" y="624" font-size="26" fill="#17181c">Learning: update without forgetting</text>
+</svg>
+</div><figcaption><b>Figure 1.</b> The loop the episode keeps reusing: represent beliefs as probabilities, weigh new evidence, renormalize, act on the posterior — which becomes the next prior.</figcaption></figure>
+
+<p>Large language models, on this scheme, are probabilistic in the wrong place. They compute genuine distributions over the next token, but nothing in the architecture holds an explicit belief: confidence lives distributed across billions of activations, with no variable anyone could point to and call the model's degree of conviction <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=914s" target="_blank" rel="noopener">15:14</a>. So when you ask a model how sure it is:</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1196s" target="_blank" rel="noopener">19:56</a> "you can ask it, how confident are you. And it might say something back, but it's really doing next token prediction. It doesn't have an explicit representation of how confident it is. It's not calculating Bayes' rule."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>The observable symptom, he argues, is the flip-flop: push back with an evidence-free "you're wrong" and the model apologizes and reverses <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1237s" target="_blank" rel="noopener">20:37</a>. A Bayesian agent would stand its ground, because a bare assertion carries almost no likelihood; he invokes Star Trek's Data as the ideal of an agent that updates on evidence rather than social pressure, and wants AI systems that are to reasoning what a calculator is to multiplication <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1152s" target="_blank" rel="noopener">19:12</a>. The cause, he says, is that the training paradigm never prioritized belief representation: a model of many different people's conflicting reasoning ends up holding a soup of everyone's voices, not a view of its own <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1237s" target="_blank" rel="noopener">20:37</a>.</p>
+<h2 id="the-exhibits-are-probabilistic-but-none-of-them-computes-bayes-rule">The exhibits are probabilistic, but none of them computes Bayes' rule</h2>
+<p>Asked how one might actually give a language model uncertainty, the conversation turns to semantic entropy, credited to one of Ghahramani's students <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1375s" target="_blank" rel="noopener">22:55</a>, and settles on a description: the model holds a probability distribution over possible next tokens, and its entropy — spiky for the Eiffel Tower in Paris, spread out where data is thin — reveals uncertainty <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1415s" target="_blank" rel="noopener">23:35</a>. Two corrections earn their space here. The published method is subtler than the on-air gloss: semantic entropy samples several complete answers, clusters them by meaning using bidirectional entailment, and computes entropy over the meaning clusters, precisely because token-level entropy confuses different wordings with different beliefs [16][17]. And the lineage runs one generation longer than stated: the papers come from Yarin Gal's Oxford group, and it is Gal who was Ghahramani's Cambridge PhD student [18]. To his credit, Ghahramani supplies the deepest objection himself two minutes later: reading confidence off co-occurrence statistics is still "faking it in the sense that you're relying on the data" — you do not want to fake a calculator, you want one that actually calculates <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1463s" target="_blank" rel="noopener">24:23</a><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1506s" target="_blank" rel="noopener">25:06</a>.</p>
+<figure class="fig fig-inline" id="fig-2"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two-panel comparison of token-level entropy versus semantic entropy over meaning clusters" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <marker id="arrowTeal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#676b76"/>
+    </marker>
+  </defs>
+
+  <!-- panel cards -->
+  <rect x="24" y="24" width="558" height="627" rx="14" fill="#fff" stroke="#e3e1da" stroke-width="1.5"/>
+  <rect x="618" y="24" width="558" height="627" rx="14" fill="#fff" stroke="#e3e1da" stroke-width="1.5"/>
+  <!-- divider -->
+  <line x1="600" y1="60" x2="600" y2="615" stroke="#e3e1da" stroke-width="2"/>
+
+  <!-- ===================== LEFT PANEL ===================== -->
+  <text x="303" y="82" text-anchor="middle" font-size="27" font-weight="700" fill="#17181c">Described on air</text>
+  <text x="303" y="114" text-anchor="middle" font-size="19" fill="#676b76">entropy of next-token distribution</text>
+
+  <!-- prompt chip -->
+  <rect x="163" y="146" width="280" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="303" y="176" text-anchor="middle" font-size="19" fill="#33353c">The Eiffel Tower is in &#8230;</text>
+
+  <!-- bar chart -->
+  <!-- axes -->
+  <line x1="140" y1="250" x2="140" y2="562" stroke="#676b76" stroke-width="2"/>
+  <line x1="140" y1="562" x2="510" y2="562" stroke="#676b76" stroke-width="2"/>
+  <text x="112" y="406" text-anchor="middle" font-size="18" fill="#676b76" transform="rotate(-90 112 406)">probability</text>
+
+  <!-- bars: Paris tall, Vegas short, New York short -->
+  <rect x="176" y="292" width="72" height="270" fill="#2f6bd8"/>
+  <rect x="292" y="508" width="72" height="54" fill="#2f6bd8" opacity="0.45"/>
+  <rect x="408" y="508" width="72" height="54" fill="#2f6bd8" opacity="0.45"/>
+
+  <text x="212" y="592" text-anchor="middle" font-size="19" fill="#17181c">Paris</text>
+  <text x="328" y="592" text-anchor="middle" font-size="19" fill="#17181c">Vegas</text>
+  <text x="444" y="592" text-anchor="middle" font-size="19" fill="#17181c">New York</text>
+
+  <!-- ===================== RIGHT PANEL ===================== -->
+  <text x="897" y="82" text-anchor="middle" font-size="27" font-weight="700" fill="#17181c">Published method</text>
+  <text x="897" y="114" text-anchor="middle" font-size="19" fill="#676b76">entropy over meaning clusters</text>
+
+  <!-- sampled answer chips (left column) -->
+  <rect x="648" y="210" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="736" y="240" text-anchor="middle" font-size="18" fill="#33353c">It's in Paris</text>
+
+  <rect x="648" y="286" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="736" y="316" text-anchor="middle" font-size="18" fill="#33353c">Paris, France</text>
+
+  <rect x="648" y="362" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="736" y="392" text-anchor="middle" font-size="18" fill="#33353c">Rome</text>
+
+  <!-- arrow note -->
+  <line x1="836" y1="309" x2="900" y2="309" stroke="#676b76" stroke-width="2" marker-end="url(#arrowTeal)"/>
+  <text x="869" y="288" text-anchor="middle" font-size="16" fill="#676b76">cluster by</text>
+  <text x="869" y="338" text-anchor="middle" font-size="16" fill="#676b76">meaning</text>
+
+  <!-- cluster: Paris -->
+  <rect x="916" y="152" width="234" height="186" rx="18" fill="none" stroke="#0f9d8c" stroke-width="2.5"/>
+  <text x="1033" y="184" text-anchor="middle" font-size="18" font-weight="700" fill="#0f9d8c">Cluster: Paris</text>
+  <rect x="945" y="202" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="1033" y="232" text-anchor="middle" font-size="18" fill="#33353c">It's in Paris</text>
+  <rect x="945" y="264" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="1033" y="294" text-anchor="middle" font-size="18" fill="#33353c">Paris, France</text>
+
+  <!-- cluster: Rome -->
+  <rect x="916" y="368" width="234" height="124" rx="18" fill="none" stroke="#0f9d8c" stroke-width="2.5"/>
+  <text x="1033" y="400" text-anchor="middle" font-size="18" font-weight="700" fill="#0f9d8c">Cluster: Rome</text>
+  <rect x="945" y="418" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="1033" y="448" text-anchor="middle" font-size="18" fill="#33353c">Rome</text>
+</svg>
+</div><figcaption><b>Figure 2.</b> What the conversation describes is token-level entropy (left); the published method samples whole answers, clusters them by meaning, and takes entropy over the clusters (right).</figcaption></figure>
+
+<p>The weather story is the episode's best evidence, and its numbers are exactly right. GenCast, DeepMind's diffusion-based forecaster, generates an ensemble of more than 50 alternative 15-day global trajectories, each produced in about eight minutes on a single TPU v5 where physics-based ensembles occupy a supercomputer for hours, and it beat the European Centre's operational ENS ensemble on 97.2 percent of 1,320 verification targets [19][20]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1590s" target="_blank" rel="noopener">26:30</a>. Fry lands the counterintuitive lesson — you add uncertainty to the system and the predictions get more accurate <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1728s" target="_blank" rel="noopener">28:48</a> — which is true in the precise sense that an honest distribution beats a false point estimate. One attribution needs repair, though: the Hurricane Melissa ensemble the episode credits to GenCast <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1631s" target="_blank" rel="noopener">27:11</a> ran, by DeepMind's own account, on WeatherNext, the productized successor family, which worked with the US National Hurricane Center as Melissa approached its Category 5 landfall in Jamaica and flagged that outcome at roughly 80 percent probability five days in advance [21]. The next generation, WeatherNext 2, was open-sourced on 2026-08-06 — twenty days before this episode aired, and unmentioned in it [22].</p>
+<figure class="fig fig-inline" id="fig-3"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Timeline of DeepMind probabilistic weather models: GenCast (2024-12), Hurricane Melissa forecast (2025-10), WeatherNext 2 open-sourced (2026-08)" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: block;">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- title -->
+  <text x="100" y="72" font-size="34" font-weight="600" fill="#17181c">DeepMind&#8217;s probabilistic weather line</text>
+
+  <!-- axis -->
+  <line x1="90" y1="370" x2="1096" y2="370" stroke="#2f6bd8" stroke-width="3"/>
+  <path d="M 1096 360 L 1116 370 L 1096 380 Z" fill="#2f6bd8"/>
+
+  <!-- ================= milestone 1: GenCast (card above) ================= -->
+  <rect x="110" y="110" width="350" height="190" rx="10" fill="#fff" stroke="#2f6bd8" stroke-width="2"/>
+  <text x="132" y="155" font-size="30" font-weight="600" fill="#17181c">GenCast</text>
+  <text x="132" y="196" font-size="24" fill="#33353c">15-day forecast in 8 min</text>
+  <text x="132" y="230" font-size="24" fill="#33353c">one Cloud TPU v5</text>
+  <text x="132" y="264" font-size="24" fill="#33353c">beats ENS: 97.2% of 1,320</text>
+  <line x1="230" y1="300" x2="230" y2="357" stroke="#2f6bd8" stroke-width="2" stroke-dasharray="4 5"/>
+  <circle cx="230" cy="370" r="11" fill="#2f6bd8"/>
+  <text x="230" y="414" font-size="24" fill="#676b76" text-anchor="middle">2024-12</text>
+
+  <!-- ================= milestone 2: Hurricane Melissa (card below) ================= -->
+  <circle cx="620" cy="370" r="13" fill="#e08a1e"/>
+  <text x="620" y="340" font-size="24" fill="#676b76" text-anchor="middle">2025-10</text>
+  <line x1="620" y1="385" x2="620" y2="432" stroke="#e08a1e" stroke-width="2" stroke-dasharray="4 5"/>
+  <rect x="418" y="432" width="404" height="160" rx="10" fill="#fff" stroke="#e08a1e" stroke-width="2"/>
+  <text x="440" y="477" font-size="30" font-weight="600" fill="#17181c">Hurricane Melissa</text>
+  <text x="440" y="518" font-size="24" fill="#33353c">WeatherNext ensembles, with NHC</text>
+  <text x="440" y="552" font-size="24" fill="#33353c">Cat-5 landfall: ~80%, 5 days out</text>
+
+  <!-- ================= milestone 3: WeatherNext 2 (card above) ================= -->
+  <rect x="838" y="192" width="314" height="108" rx="10" fill="#fff" stroke="#2f6bd8" stroke-width="2"/>
+  <text x="860" y="238" font-size="30" font-weight="600" fill="#17181c">WeatherNext 2</text>
+  <text x="860" y="276" font-size="24" fill="#33353c">open-sourced, Apache 2.0</text>
+  <line x1="990" y1="300" x2="990" y2="357" stroke="#2f6bd8" stroke-width="2" stroke-dasharray="4 5"/>
+  <circle cx="990" cy="370" r="11" fill="#2f6bd8"/>
+  <text x="990" y="414" font-size="24" fill="#676b76" text-anchor="middle">2026-08</text>
+</svg>
+</div><figcaption><b>Figure 3.</b> Twenty months of DeepMind's probabilistic weather line, with the verified numbers — and the model family the Hurricane Melissa forecast actually ran on.</figcaption></figure>
+
+<p>AlphaFold completes the exhibit set: every predicted protein structure carries a per-residue confidence score, pLDDT, rendered as color bands, and low-confidence regions often mark parts of the protein that genuinely wiggle — physical flexibility and prediction uncertainty sharing one readout [23]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1818s" target="_blank" rel="noopener">30:18</a>.</p>
+<p>Now the tension the episode never quite states. All three exhibits are data-trained deep networks with an uncertainty readout attached. GenCast's spread comes from re-running a diffusion model as fresh observations arrive — its Nature paper describes no Bayesian update; that gloss at <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1686s" target="_blank" rel="noopener">28:06</a> is Ghahramani's interpretive frame [20]. AlphaFold's pLDDT is a learned confidence head, not a computed posterior [23]. Semantic entropy measures a trained model from the outside [17]. Our analysis: the exhibits prove the modest thesis — principled uncertainty representation makes systems measurably better — and prove it well; they do not prove the strong thesis that an explicitly Bayesian architecture is the missing piece, because none of them has one. Read cold, the evidence cuts toward the camp he positions himself against: train on data, then attach or extract the uncertainty.</p>
+<h2 id="the-counter-literature-the-episode-never-engages">The counter-literature the episode never engages</h2>
+<p>The faking-it diagnosis is one pole of a live debate, not a field consensus. Anthropic reported in 2022 that large models are surprisingly well calibrated on multiple-choice questions and can partly predict whether they know an answer [4]. OpenAI's September 2025 paper on hallucination reframes overconfidence as an incentive problem: training and benchmarks reward a confident guess over an honest abstention, so models learn to guess [3]. Anthropic's October 2025 introspection study found that models can sometimes genuinely report on their internal states, though unreliably [5]. All three predate the episode's publication; none is engaged in it.</p>
+<p>The omission matters because the flip-flop, Ghahramani's signature symptom, has a cheaper rival explanation: sycophancy shaped by preference training. If incentives cause the caving, fixing incentives fixes the symptom with no new architecture — and a model that computes its confidence becomes hard to distinguish, even in principle, from one that merely behaves calibratedly, because the episode offers no observable criterion. The defensible version of the claim, in our reading, is narrower and still important: models expose usable confidence signals in constrained formats, but hold no explicit, coherent belief they can defend and update on evidence alone — which is what his high-stakes examples demand. The constrained-format caveat cuts both ways, though: nobody has demonstrated strong calibration for open-ended generation on long-tail queries, which is precisely the territory — the hailstorm horse, the rare diagnosis — Ghahramani cares about <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2133s" target="_blank" rel="noopener">35:33</a>.</p>
+<h2 id="the-uncertainty-toolkit-transfers-now-without-new-architecture">The uncertainty toolkit transfers now, without new architecture</h2>
+<p>The episode prescribes no stack, so what follows is our extrapolation from its examples; the patterns themselves are concrete. Never gate an automated pipeline on a model's self-reported confidence, which is generated text like everything else <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1196s" target="_blank" rel="noopener">19:56</a>; where a score is needed today, log-probabilities over a fixed answer set are the defensible option, per the calibration evidence [4]. Route by uncertainty type: epistemic uncertainty should trigger retrieval, a clarifying question or a tool call, aleatoric uncertainty should trigger an ensemble or a hedged plan, and novelty — the out-of-distribution case — should trigger a fallback whose cost scales with the stakes, the software equivalent of the car slowing down <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=250s" target="_blank" rel="noopener">4:10</a><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=157s" target="_blank" rel="noopener">2:37</a>.</p>
+<figure class="fig fig-inline" id="fig-4"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Decision flow: a model that must act routes epistemic uncertainty to information gathering, aleatoric uncertainty to hedging, and out-of-distribution inputs to a fallback." style="display:block;background:#f6f5f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <marker id="fig04-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#676b76"/>
+    </marker>
+  </defs>
+
+  <!-- Entry node -->
+  <rect x="45" y="282" width="230" height="110" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="160" y="329" text-anchor="middle" font-size="30" font-weight="700" fill="#17181c">Model</text>
+  <text x="160" y="365" text-anchor="middle" font-size="30" font-weight="700" fill="#17181c">must act</text>
+
+  <!-- Fan-out arrows from entry to type nodes -->
+  <path d="M275,317 C 350,317 360,145 430,131" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M275,337 L 430,337" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M275,357 C 350,357 360,529 430,543" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+
+  <!-- Type node: Epistemic -->
+  <rect x="438" y="70" width="310" height="120" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="593" y="120" text-anchor="middle" font-size="29" font-weight="700" fill="#2f6bd8">Epistemic:</text>
+  <text x="593" y="158" text-anchor="middle" font-size="27" fill="#17181c">reducible gap</text>
+
+  <!-- Type node: Aleatoric -->
+  <rect x="438" y="276" width="310" height="120" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="593" y="326" text-anchor="middle" font-size="29" font-weight="700" fill="#2f6bd8">Aleatoric:</text>
+  <text x="593" y="364" text-anchor="middle" font-size="27" fill="#17181c">irreducible randomness</text>
+
+  <!-- Type node: Out-of-distribution -->
+  <rect x="438" y="482" width="310" height="120" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="593" y="532" text-anchor="middle" font-size="29" font-weight="700" fill="#2f6bd8">Out-of-distribution:</text>
+  <text x="593" y="570" text-anchor="middle" font-size="27" fill="#17181c">never seen</text>
+
+  <!-- Arrows type -> action -->
+  <path d="M748,130 L 804,130" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M748,336 L 804,336" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M748,542 L 804,542" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+
+  <!-- Action box: Gather info -->
+  <rect x="812" y="70" width="360" height="120" rx="14" fill="#fff" stroke="#0f9d8c" stroke-width="3"/>
+  <text x="992" y="120" text-anchor="middle" font-size="29" font-weight="700" fill="#0f9d8c">Gather info:</text>
+  <text x="992" y="158" text-anchor="middle" font-size="27" fill="#17181c">retrieve, ask, tools</text>
+
+  <!-- Action box: Hedge -->
+  <rect x="812" y="276" width="360" height="120" rx="14" fill="#fff" stroke="#0f9d8c" stroke-width="3"/>
+  <text x="992" y="326" text-anchor="middle" font-size="29" font-weight="700" fill="#0f9d8c">Hedge:</text>
+  <text x="992" y="364" text-anchor="middle" font-size="25" fill="#17181c">ensemble, distribution, ranges</text>
+
+  <!-- Action box: Fall back -->
+  <rect x="812" y="482" width="360" height="120" rx="14" fill="#fff" stroke="#0f9d8c" stroke-width="3"/>
+  <text x="992" y="532" text-anchor="middle" font-size="29" font-weight="700" fill="#0f9d8c">Fall back:</text>
+  <text x="992" y="570" text-anchor="middle" font-size="27" fill="#17181c">slow down, escalate</text>
+</svg>
+</div><figcaption><b>Figure 4.</b> The aleatoric–epistemic distinction as a routing rule: reducible uncertainty triggers information gathering, irreducible uncertainty triggers hedging, and novelty triggers a fallback.</figcaption></figure>
+
+<p>When the predicted future is genuinely random, copy the GenCast pattern: model the distribution, re-run as data arrives, and let downstream decisions consume the spread rather than the mean — the accuracy gain there is measured, not hoped for [19]. Expose confidence at the granularity of the artifact, the way pLDDT colors each residue: per-claim confidence in a generated report beats a document-level disclaimer, and it dodges the failure Fry worries about — a model so honest it never commits <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1861s" target="_blank" rel="noopener">31:01</a> — because high-confidence regions still read as definite [23]. Make calibration a test in the eval suite; the definition is directly measurable — across all the days a forecaster says 70 percent, it should rain on 70 percent of them <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1861s" target="_blank" rel="noopener">31:01</a> — and score abstention explicitly, because public benchmarks currently reward the confident guess [3]. For high-stakes calls, semantic entropy is deployable on off-the-shelf models if you implement the published method, at the price of several inferences per query [17].</p>
+<h2 id="the-curse-is-real-the-analogy-is-seductive-and-the-clock-is-checkable">The curse is real, the analogy is seductive, and the clock is checkable</h2>
+<p>Why did the field walk away from all this? Ghahramani is unusually precise about the obstacle: representing and updating probabilities over everything is computationally intractable, and exact inference in Bayesian networks — the general-purpose representation for probabilistic models — was proved NP-hard in 1990 [24].</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2421s" target="_blank" rel="noopener">40:21</a> "The magic trick comes with a big curse. The curse here is that to do all of this is computationally very slow."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>His case for revisiting: compute has exploded — his undergraduate Connection Machine is slower than the Pixel phone in his pocket <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2470s" target="_blank" rel="noopener">41:10</a> — and decades of approximation ideas sit on the shelf <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2514s" target="_blank" rel="noopener">41:54</a>. Fry offers the historical rhyme, that they said the same about neural networks in the eighties, and he takes it <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2470s" target="_blank" rel="noopener">41:10</a>. Our reading is that the rhyme is the argument's weakest link. Neural networks won when compute met data and a working algorithm; approximate Bayesian inference at frontier scale still lacks its scale-proven algorithm, worst-case hardness does not melt under more FLOPs the way a training-cost bottleneck does, and his own architectural ideas are, by his own admission, "not super well formed yet" <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1551s" target="_blank" rel="noopener">25:51</a>. He is candid about the symmetry: the scale camp is "not completely wrong. Just like I'm not completely right" <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2133s" target="_blank" rel="noopener">35:33</a>.</p>
+<p>The stakes if he is right are larger than podcast philosophy. Sequential Bayesian updating solves continual learning on paper — the posterior after each datum becomes the next prior, so nothing is overwritten — and DeepMind's own Elastic Weight Consolidation was derived in 2017 as an approximation of exactly that update [25]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2289s" target="_blank" rel="noopener">38:09</a>. A working version at frontier scale would replace the train-release-retrain cycle Ghahramani describes, in which the field builds a giant model, ships it, and builds another months later <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2203s" target="_blank" rel="noopener">36:43</a> — currently the industry's dominant capital expense and, alongside proprietary data, its moat. The efficiency framing points the same way: a brain runs at light-bulb power, conventionally around 20 watts [26], while data-center training sits orders of magnitude away <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2330s" target="_blank" rel="noopener">38:50</a>, and data-efficient learning is as much an economics agenda as a scientific one <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2374s" target="_blank" rel="noopener">39:34</a>. Calibrated uncertainty, meanwhile, is the entry ticket to the markets he names — medical decision support, driving — where regulators demand error characterization and overconfidence is disqualifying <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2000s" target="_blank" rel="noopener">33:20</a><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2133s" target="_blank" rel="noopener">35:33</a>.</p>
+<p>So, a watchlist — ours, not his, since he gives no dates. Watch for a Ghahramani-affiliated paper or feature on explicit belief representation — a research VP announcing an active exploration usually precedes publication, and silence through early 2028 would suggest the curse held again. Watch the measurement path outrun the rebuild path: semantic-entropy-style detectors shipping in products while no frontier model carries an explicit belief state would vindicate his diagnosis without his prescription [17]. Watch for benchmarks that score calibrated abstention on out-of-distribution queries, which OpenAI has already proposed [3], and for ensemble-native models spreading beyond weather along the now open-sourced WeatherNext line [22]. Above all, watch continual learning: a frontier model updating on a live data stream without periodic retraining, from any lab, would move this episode from advocacy to prophecy.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2612s" target="_blank" rel="noopener">43:32</a> "for […] all problems that matter, I would rather have an AI system that knows when it doesn't know than an AI system that is arrogant and overconfident."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>On that sentence, no camp disagrees. The open question is whether the doubt must be built in, or can be trained out.</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM" target="_blank" rel="noopener">The mathematics of AI uncertainty</a> — Google DeepMind, 2026-08-26</li>
+<li><a href="https://en.wikipedia.org/wiki/Zoubin_Ghahramani" target="_blank" rel="noopener">Zoubin Ghahramani</a> — Wikipedia, accessed 2026-09-01</li>
+<li><a href="https://openai.com/index/why-language-models-hallucinate/" target="_blank" rel="noopener">Why language models hallucinate</a> — OpenAI, 2025-09</li>
+<li><a href="https://arxiv.org/abs/2207.05221" target="_blank" rel="noopener">Language Models (Mostly) Know What They Know</a> — arXiv (Anthropic), 2022-07-11</li>
+<li><a href="https://transformer-circuits.pub/2025/introspection/index.html" target="_blank" rel="noopener">Emergent Introspective Awareness in Large Language Models</a> — Anthropic (Transformer Circuits), 2025-10-29</li>
+<li><a href="https://www.science.org/doi/10.1126/science.185.4157.1124" target="_blank" rel="noopener">Judgment under Uncertainty: Heuristics and Biases</a> — Science 185, 1974-09-27</li>
+<li><a href="https://www.nature.com/articles/415429a" target="_blank" rel="noopener">Humans integrate visual and haptic information in a statistically optimal fashion</a> — Nature 415, 2002-01-24</li>
+<li><a href="https://arxiv.org/abs/1312.6199" target="_blank" rel="noopener">Intriguing properties of neural networks</a> — arXiv (Szegedy et al.), 2013-12-21</li>
+<li><a href="https://arxiv.org/abs/1412.6572" target="_blank" rel="noopener">Explaining and Harnessing Adversarial Examples</a> — arXiv (Goodfellow et al.), 2014-12</li>
+<li><a href="https://mitpress.mit.edu/9780262680530/parallel-distributed-processing-volume-1/" target="_blank" rel="noopener">Parallel Distributed Processing, Volume 1</a> — MIT Press, 1986</li>
+<li><a href="https://www.nature.com/articles/323533a0" target="_blank" rel="noopener">Learning representations by back-propagating errors</a> — Nature 323, 1986-10-09</li>
+<li><a href="https://www.computerhistory.org/revolution/supercomputers/10/73" target="_blank" rel="noopener">The Connection Machine</a> — Computer History Museum, accessed 2026-09-01</li>
+<li><a href="https://www.nobelprize.org/prizes/physics/2024/press-release/" target="_blank" rel="noopener">The Nobel Prize in Physics 2024 — press release</a> — NobelPrize.org, 2024-10-08</li>
+<li><a href="https://www.nature.com/articles/nature14541" target="_blank" rel="noopener">Probabilistic machine learning and artificial intelligence</a> — Nature 521, 2015-05-28</li>
+<li><a href="https://www.nature.com/articles/nature14539" target="_blank" rel="noopener">Deep learning</a> — Nature 521 (LeCun, Bengio &amp; Hinton), 2015-05-28</li>
+<li><a href="https://arxiv.org/abs/2302.09664" target="_blank" rel="noopener">Semantic Uncertainty: Linguistic Invariances for Uncertainty Estimation in Natural Language Generation</a> — arXiv / ICLR 2023, 2023-02-19</li>
+<li><a href="https://www.nature.com/articles/s41586-024-07421-0" target="_blank" rel="noopener">Detecting hallucinations in large language models using semantic entropy</a> — Nature 630, 2024-06-19</li>
+<li><a href="https://mlg.eng.cam.ac.uk/people/yarin-gal/" target="_blank" rel="noopener">Yarin Gal — Machine Learning Group profile</a> — University of Cambridge, accessed 2026-09-01</li>
+<li><a href="https://deepmind.google/blog/gencast-predicts-weather-and-the-risks-of-extreme-conditions-with-sota-accuracy/" target="_blank" rel="noopener">GenCast predicts weather and the risks of extreme conditions with state-of-the-art accuracy</a> — Google DeepMind, 2024-12-04</li>
+<li><a href="https://www.nature.com/articles/s41586-024-08252-9" target="_blank" rel="noopener">Probabilistic weather forecasting with machine learning</a> — Nature (Price et al.), 2024-12-04</li>
+<li><a href="https://deepmind.google/blog/how-weathernext-helped-the-national-hurricane-center-better-predict-hurricane-melissas-historic-landfall-in-jamaica/" target="_blank" rel="noopener">How WeatherNext helped the National Hurricane Center better predict Hurricane Melissa's historic landfall in Jamaica</a> — Google DeepMind, 2026-05-19</li>
+<li><a href="https://blog.google/innovation-and-ai/models-and-research/google-deepmind/weathernext-2-cyclones/" target="_blank" rel="noopener">Our WeatherNext 2 AI model demonstrated a massive leap forward in predicting cyclones</a> — Google (blog.google), 2026-08-06</li>
+<li><a href="https://www.nature.com/articles/s41586-021-03819-2" target="_blank" rel="noopener">Highly accurate protein structure prediction with AlphaFold</a> — Nature 596, 2021-07-15</li>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/000437029090060D" target="_blank" rel="noopener">The computational complexity of probabilistic inference using Bayesian belief networks</a> — Artificial Intelligence 42 (Cooper), 1990</li>
+<li><a href="https://www.pnas.org/doi/10.1073/pnas.1611835114" target="_blank" rel="noopener">Overcoming catastrophic forgetting in neural networks</a> — PNAS (Kirkpatrick et al.), 2017-03</li>
+<li><a href="https://www.britannica.com/science/The-Human-Brain-Runs-on-Less-Power-than-a-Light-Bulb" target="_blank" rel="noopener">The Human Brain Runs on Less Power than a Light Bulb</a> — Britannica, accessed 2026-09-01</li>
+</ol>
+</article>
+
+<footer class="credits">
+  <p>Written from the video’s transcript by a multi-agent pipeline — background research, six analytical lenses, synthesis, and an editorial pass — then illustrated in this blog’s house style and narrated with Higgs TTS. Timestamps link to the moment in the source video.</p>
+  <p>The original video belongs to its creator; this article is commentary and summary, not a substitute for watching it.</p>
+</footer>
+</div>
+
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+
+<script>
+(function(){
+  var bar=document.getElementById('pbar');
+  function prog(){var h=document.documentElement,s=h.scrollTop||document.body.scrollTop,m=h.scrollHeight-h.clientHeight;bar.style.width=(m>0?Math.min(100,s/m*100):0)+'%';}
+  addEventListener('scroll',prog,{passive:true});prog();
+  var a=document.getElementById('narr'),chips=document.querySelectorAll('.chip'),now=document.getElementById('now');
+  if(a&&chips.length){
+    var secs=[].map.call(chips,function(c){return {t:+c.dataset.t,el:c};});
+    chips.forEach(function(c){c.addEventListener('click',function(){a.currentTime=+c.dataset.t;a.play();});});
+    a.addEventListener('timeupdate',function(){var cur=null;for(var i=0;i<secs.length;i++){if(a.currentTime>=secs[i].t-0.2)cur=secs[i];}
+      secs.forEach(function(s){s.el.classList.toggle('on',s===cur);});
+      if(now)now.textContent=cur?('Now reading: '+cur.el.textContent):'';});
+  }
+})();
+</script>
+</body>
+</html>

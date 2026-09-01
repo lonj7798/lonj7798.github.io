@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI에게 의심을 가르치다 — Zoubin Ghahramani의 베이지안 승부수</title>
+<meta name="description" content="2026년 8월 26일 공개된 Google DeepMind 팟캐스트 에피소드에서 Hannah Fry가 Zoubin Ghahramani를 인터뷰한다. 케임브리지 교수이자 Google DeepMind 리서치 부사장이며 베이지안 머신러닝의 창시자 격인 인물이다. 그의 논지는 지능이란 불확실성 아래에서의 의사결정이며, 오늘날의 언어 모델은 토큰 수준에서는 확률적일지언정 자기 믿음에 대한 명시적 표현을 갖고 있지 않다는 것 — 확신을 계산하는 게 아니라 흉내 낸다는 것이다. 그는 원칙 있는 불확실성이 실제로 성과를 낸다는 증거로 GenCas">
+<link rel="alternate" hreflang="en" href="index.html">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#17181c;--body:#33353c;--mut:#676b76;--hair:rgba(23,24,28,.08);
+--blue:#2f6bd8;--purple:#7a4fd3;--orange:#e08a1e;--pink:#d34f6e;--teal:#0f9d8c;
+--serif:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--shadow:0 1px 2px rgba(23,24,28,.03),0 10px 30px rgba(23,24,28,.05)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:760px;margin:0 auto;padding:0 22px}
+#pbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--ink);opacity:.75;z-index:50}
+header.top{padding:58px 0 18px}
+.eyebrow{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow .yt{display:inline-flex;align-items:center;gap:7px}
+.eyebrow .yt i{width:7px;height:7px;border-radius:50%;background:var(--pink);display:inline-block}
+.lang-sw{display:inline-flex;background:rgba(255,255,255,.85);border-radius:999px;padding:3px;box-shadow:inset 0 0 0 1px var(--hair);text-transform:none;letter-spacing:0}
+.lang-sw a{padding:4px 12px;border-radius:999px;color:var(--mut);text-decoration:none;font-size:12px;letter-spacing:.03em}
+.lang-sw a.on{background:var(--ink);color:#fff}
+h1{font-family:var(--serif);font-weight:650;font-size:clamp(30px,5.4vw,44px);line-height:1.22;letter-spacing:-.012em;color:var(--ink);margin:18px 0 12px}
+.lede{font-size:19px;line-height:1.6;color:var(--body);max-width:640px;margin:0 0 16px}
+.meta{font-size:13.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.meta .sep{opacity:.5}
+.tag{font-weight:650;text-decoration:none}
+.tag.c0{color:var(--blue)}.tag.c1{color:var(--purple)}.tag.c2{color:var(--orange)}.tag.c3{color:var(--pink)}.tag.c4{color:var(--teal)}
+figure.hero{margin:22px 0 6px}
+figure.hero img{width:100%;height:auto;display:block;border-radius:22px}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:24px 26px;margin:22px 0}
+.card .ct{font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:650}
+.summary p{margin:0 0 10px;font-size:16.5px;color:var(--ink)}
+.summary ul{margin:10px 0 0;padding-left:20px}
+.summary li{margin:5px 0;font-size:15.5px}
+.listen{display:flex;flex-direction:column;gap:12px}
+.listen audio{width:100%;height:40px}
+.listen .who{font-size:13.5px;color:var(--mut);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--bg);color:var(--mut);border:1px solid var(--hair);cursor:pointer;transition:background .15s,color .15s}
+.chip:hover{color:var(--ink);border-color:rgba(23,24,28,.2)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.now{font-size:12.5px;color:var(--mut);min-height:18px}
+.source{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+.source img{width:100%;border-radius:12px;display:block;aspect-ratio:16/9;object-fit:cover}
+.source .t{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0 0 4px;line-height:1.35}
+.source .s{font-size:13.5px;color:var(--mut)}
+.source a.watch{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink);text-decoration:none;font-weight:650;border-bottom:1px solid rgba(23,24,28,.25)}
+.chapters{margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;columns:2;column-gap:18px}
+.chapters li{break-inside:avoid;margin:2px 0}
+.chapters a{color:var(--mut);text-decoration:none;font-variant-numeric:tabular-nums}
+.chapters a:hover{color:var(--ink)}
+.chapters .ct{margin:0 0 6px}
+@media(max-width:560px){.source{grid-template-columns:1fr}.chapters{columns:1}.card{padding:20px 18px;border-radius:18px}}
+article.body{padding:8px 0 30px}
+.body h2{font-family:var(--serif);font-size:clamp(24px,3.6vw,30px);line-height:1.3;color:var(--ink);margin:48px 0 12px;font-weight:650;letter-spacing:-.01em}
+.body h3{font-size:19px;color:var(--ink);margin:30px 0 8px;font-weight:650}
+.body h4{font-size:16px;color:var(--ink);margin:22px 0 6px;font-weight:650}
+.body p{margin:0 0 18px}
+.body a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(23,24,28,.25)}
+.body a:hover{border-color:var(--ink)}
+.body a.ts{font-family:var(--mono);font-size:.8em;color:var(--blue);border:0;background:rgba(47,107,216,.08);padding:1px 7px;border-radius:999px;white-space:nowrap;vertical-align:.08em}
+.body ul,.body ol{padding-left:24px;margin:0 0 18px}
+.body li{margin:6px 0}
+.body li>p{margin:0 0 6px}
+.body strong{color:var(--ink);font-weight:650}
+.body blockquote{margin:26px 0;padding:0 0 0 20px;border-left:3px solid var(--ink);color:var(--ink);font-family:var(--serif);font-size:19.5px;line-height:1.5}
+.body blockquote p{margin:0 0 6px}
+.body blockquote cite,.body blockquote em.by{display:block;font-family:var(--sans);font-style:normal;font-size:13.5px;color:var(--mut);margin-top:4px}
+.body blockquote.pull{border:0;padding:22px 26px;background:var(--card);border-radius:20px;box-shadow:var(--shadow)}
+.body code{font-family:var(--mono);font-size:.88em;background:rgba(23,24,28,.05);padding:.1em .4em;border-radius:6px}
+.body pre{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;overflow:auto;font-size:13.5px;line-height:1.55;margin:0 0 20px}
+.body pre code{background:none;padding:0}
+figure.fig{margin:30px -6px}
+figure.fig img{width:100%;height:auto;display:block;border-radius:16px;background:#fff}
+figure.fig figcaption{font-size:13.5px;color:var(--mut);margin:10px 8px 0;line-height:1.5}
+figure.fig figcaption b{color:var(--ink);font-weight:650}
+figure.fig-inline .inl{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;overflow-x:auto}
+figure.fig-inline .inl svg{max-width:100%;height:auto;display:block}
+.tbl{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--hair)}
+th{color:var(--ink);font-weight:650}
+hr{border:0;height:1px;background:var(--hair);margin:36px 0}
+.body #references+ol,.body #references+p+ol,.refs ol{font-size:14.5px}
+.body sup{font-size:.7em}
+footer.credits{padding:26px 0 96px;color:var(--mut);font-size:13.5px;line-height:1.65;border-top:1px solid var(--hair);margin-top:24px}
+footer.credits p{margin:0 0 8px}
+@media print{#pbar,.lang-sw,.listen,#jw-home{display:none}}
+
+</style>
+</head>
+<body>
+<div id="pbar" aria-hidden="true"></div>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">
+    <span class="yt"><i></i>YouTube · Google DeepMind · 2026-08-26</span>
+    <nav class="lang-sw" aria-label="language">
+      <a href="index.html" class="">EN</a>
+      <a href="ko.html" class="on">한국어</a>
+    </nav>
+  </div>
+  <h1>AI에게 의심을 가르치다 — Zoubin Ghahramani의 베이지안 승부수</h1>
+  <p class="lede">수학적 불확실성을 옹호하는 DeepMind 팟캐스트의 논증이 보여주는 것, 그 증거들이 실제로 입증하는 것, 그리고 앞으로 지켜볼 것</p>
+  <div class="meta">
+    <span>2026-09-01</span>
+    <span class="sep">·</span><span>읽기 14분</span>
+    <span class="sep">·</span><span>듣기 21분</span>
+    <span class="sep">·</span><a class="tag c0" href="../../?tag=deep-dive">#deep-dive</a><a class="tag c1" href="../../?tag=bayesian">#bayesian</a>
+  </div>
+</header>
+
+<figure class="hero"><img src="figures/hero.png" alt="하나의 확신에 찬 예측이 여러 갈래의 가능한 미래로 풀려나가는 모습"></figure>
+
+<section class="card summary" aria-label="요약">
+  <p class="ct">요약</p>
+  <p>2026년 8월 26일 공개된 Google DeepMind 팟캐스트 에피소드에서 Hannah Fry가 Zoubin Ghahramani를 인터뷰한다. 케임브리지 교수이자 Google DeepMind 리서치 부사장이며 베이지안 머신러닝의 창시자 격인 인물이다. 그의 논지는 지능이란 불확실성 아래에서의 의사결정이며, 오늘날의 언어 모델은 토큰 수준에서는 확률적일지언정 자기 믿음에 대한 명시적 표현을 갖고 있지 않다는 것 — 확신을 계산하는 게 아니라 흉내 낸다는 것이다. 그는 원칙 있는 불확실성이 실제로 성과를 낸다는 증거로 GenCast의 앙상블 기상 예보와 AlphaFold의 신뢰도 점수를 제시하고, 지속 학습과 데이터 효율로 가는 길로 베이즈 규칙을 내세운다. 다만 그 자신이 인정하듯 정확한 베이지안 추론은 계산적으로 다루기 어렵고, 그가 내놓는 처방은 완성된 아키텍처가 아니라 미완의 연구 프로그램이다. 이 대화가 지금 중요한 이유는, 주요 연구소들이 하나같이 '자신 있게 틀리는 답'을 상업적으로 치명적인 실패로 취급하면서도 그 해법이 아키텍처인지, 인센티브인지, 측정인지를 두고는 서로 다른 진단을 내리고 있기 때문이다.</p>
+  <ul><li>Ghahramani의 핵심 주장: 지능은 불확실성 아래의 의사결정이며, LLM은 확신을 계산하지 않고 흉내 낸다.</li><li>그의 증거인 GenCast, AlphaFold, 시맨틱 엔트로피는 명시적 베이즈가 아니라 학습된 네트워크에서 유용한 불확실성을 얻는다.</li><li>Anthropic과 OpenAI의 결과는 이 진단을 복잡하게 만든다: 캘리브레이션은 존재하지만 형식과 인센티브에 좌우된다.</li><li>정확한 베이지안 추론은 NP-hard다. '컴퓨트가 따라잡는다'는 예측이 아니라 탐구 허가증이다.</li><li>지금 쓸 수 있는 것: 불확실성의 유형을 구분하고, 앙상블을 배포하고, 캘리브레이션을 테스트하고, 말로 표현된 확신으로는 절대 파이프라인을 제어하지 말 것.</li></ul>
+</section>
+
+
+<section class="card listen" aria-label="이 글 듣기">
+  <p class="ct">이 글 듣기</p>
+  <audio id="narr" controls preload="none" src="audio/ko.mp3"></audio>
+  <div class="who"><span>유진(Yujin) 목소리 · Higgs TTS</span><span>21:17</span></div>
+  <div class="chips" id="chips" role="list" aria-label="섹션으로 이동">
+    <button class="chip" data-t="1.2" role="listitem">스케일 우선 시대의 한복판에 선 베이지안의 목소리</button><button class="chip" data-t="128.13" role="listitem">지능이란 불확실성 아래에서의 의사결정이다</button><button class="chip" data-t="305.04" role="listitem">자서전이 곧 논증이다 — 그는 신경망이 이기기 전에 떠났다</button><button class="chip" data-t="445.61" role="listitem">하나의 업데이트 규칙, 네 가지 역할 — 그리고 LLM은 흉내쟁이라는 진단</button><button class="chip" data-t="589.79" role="listitem">전시된 증거들은 확률적이지만, 그중 무엇도 베이즈 규칙을 계산하지 않는다</button><button class="chip" data-t="823.43" role="listitem">이 에피소드가 다루지 않은 반대편 문헌들</button><button class="chip" data-t="925.19" role="listitem">불확실성 도구상자는 새 아키텍처 없이도 지금 쓸 수 있다</button><button class="chip" data-t="1033.91" role="listitem">저주는 실재하고, 유비는 매혹적이며, 시계는 확인 가능하다</button>
+  </div><div class="now" id="now"></div>
+</section>
+
+
+<section class="card source" aria-label="원본 영상">
+  <a href="https://www.youtube.com/watch?v=tBjgCj_dGZM" target="_blank" rel="noopener"><img src="figures/thumb.jpg" alt=""></a>
+  <div>
+    <p class="ct">원본 영상</p>
+    <p class="t">The mathematics of AI uncertainty</p>
+    <div class="s">Google DeepMind · 2026-08-26 · 44:41</div>
+    <a class="watch" href="https://www.youtube.com/watch?v=tBjgCj_dGZM" target="_blank" rel="noopener">YouTube에서 보기 ↗</a>
+    <ul class="chapters"><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=0s" target="_blank" rel="noopener">0:00</a> Introduction</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=66s" target="_blank" rel="noopener">1:06</a> The role of uncertainty</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=465s" target="_blank" rel="noopener">7:45</a> Correctness vs confidence</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=580s" target="_blank" rel="noopener">9:40</a> Historical perspectives</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=970s" target="_blank" rel="noopener">16:10</a> Bayesian thinking in AI</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1590s" target="_blank" rel="noopener">26:30</a> Uncertainty in the real world</li><li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2202s" target="_blank" rel="noopener">36:42</a> Future research and AGI</li></ul>
+  </div>
+</section>
+
+<article class="body">
+<h2 id="스케일-우선-시대의-한복판에-선-베이지안의-목소리">스케일 우선 시대의 한복판에 선 베이지안의 목소리</h2>
+<p>스케일 우선 합의에 대한 회의론을 듣기에 Google DeepMind의 자체 팟캐스트만큼 뜻밖의 무대도 없는데, 바로 그 점이 이 에피소드에 45분을 쓸 이유가 된다 [1]. Hannah Fry의 게스트는 Zoubin Ghahramani — 케임브리지대학교 정보공학 교수이자 Google DeepMind 리서치 부사장(에피소드는 그를 프런티어 AI 공동 책임자로 소개한다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=0s" target="_blank" rel="noopener">0:00</a>)이며, 베이지안 머신러닝의 창시자 격인 인물이다. 그 직함 뒤의 경력은 1990년 펜실베이니아대 학위에서 시작해 MIT 박사, Geoffrey Hinton 밑에서의 포스닥, Gatsby Unit, 케임브리지, Uber 수석과학자실을 거쳐 2023년 DeepMind와 합병되기 전까지 Google Brain을 이끄는 데까지 이어진다 [2].</p>
+<p>Fry는 이 대화를 두 진영 사이의 논쟁 구도로 짠다. 한쪽에는 순수한 스케일 — 더 많은 데이터, 더 많은 컴퓨트 — 이 AI를 계속 개선해 주리라 기대하는 이들이 있고, 다른 쪽에는 진정한 지능에는 아키텍처의 혁신이 필요하며 수학적인 불확실성 감각이 그 빠진 조각 중 하나라고 믿는, Ghahramani를 포함한 이들이 있다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=42s" target="_blank" rel="noopener">0:42</a>. 에피소드는 2026-08-26에 공개됐고, 허리케인 Melissa에 대한 언급으로 미루어 녹음은 2025년 10월 말 이후인데, 이 디테일은 뒤에서 중요해진다.</p>
+<p>이 타이밍은 한 연구소의 편집상 우연이 아니다. 대략 1년 사이에 세 주요 연구소가 모두 같은 고객 대면 실패 — 자신 있게 틀리는 답 — 에 대한 진단을 내놓았는데, OpenAI는 추측을 보상하는 학습과 벤치마크 인센티브를 탓했고 [3], Anthropic은 모델이 자신이 아는 것에 대해 실제로 얼마나 아는지를 측정했으며 [4][5], DeepMind는 여기서 해법이 아키텍처에 있다고 주장한다. 우리의 해석은 이렇다. 모든 연구소가 세 방향에서 하나의 실패로 수렴했다는 것은 그 실패가 상업적으로 치명적인 무게를 갖게 됐다는 뜻이고, 이 인터뷰는 중립적 개관이 아니라 한쪽 옹호자의 모두진술로 듣는 것이 가장 정확하다.</p>
+<h2 id="지능이란-불확실성-아래에서의-의사결정이다">지능이란 불확실성 아래에서의 의사결정이다</h2>
+<p>Ghahramani의 첫수는 정의에서 시작한다. 박테리아부터 로봇까지, 지능이란 결정을 내리는 일이고, 현실 세계의 결정은 제한된 지각과 예측 불가능한 미래 속에서 내려지므로, 지능적인 시스템은 불확실성을 확률의 수학으로 표현되는 일급 대상으로 다뤄야 한다는 것이다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=66s" target="_blank" rel="noopener">1:06</a>.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=115s" target="_blank" rel="noopener">1:55</a> "[…] 지능적인 시스템을 만들려면, 불확실성을 표현할 수 있고, 그 불확실성을 갱신할 수 있으며, 그것을 바탕으로 불확실성 아래에서 좋은 결정을 내릴 수 있는 시스템이 필요하다."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>그의 분류법은 장식이 아니라 실제로 일을 한다. 우연적(aleatoric) 불확실성은 세계의 환원 불가능한 무작위성 — 보행자가 어느 쪽으로 꺾을지 — 이고, 여기에 대한 합리적 대응은 예측을 포기하는 것일 수도 있다. 인식적(epistemic) 불확실성은 나 자신의 지식의 공백이며, 그 합리적 대응은 정보를 모으는 것인데, 그가 상기시키듯 1비트의 정보란 정의상 불확실성을 절반으로 줄여주는 무언가다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=250s" target="_blank" rel="noopener">4:10</a>. 자율주행차가 그 무게를 보여준다. 차가 아무리 많은 데이터로 학습했더라도 본 적 없는 상황의 긴 꼬리는 남는데 — 그의 예시는 우박 폭풍 속에서 튀어나오는 말이다 — 그때 필요한 것은 자신 있는 추측이 아니라 상황이 낯설다는 자각이고, 그 자각이 속도를 늦추는, 값싸고 안전한 행동을 정당화한다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=157s" target="_blank" rel="noopener">2:37</a>.</p>
+<p>인간은 이 점에서 묘한 혼합체라고 그는 관찰한다. Kahneman과 Tversky는 우리의 의식적 확률 추정이 체계적으로 편향돼 있음을 보였지만 [6]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=388s" target="_blank" rel="noopener">6:28</a>, 우리의 무의식적 지각 시스템은 통계적으로 최적에 가까운 추론을 해낸다 — 다만 이 후반부 주장은 Kahneman과 Tversky가 아니라 베이지안 지각 문헌에서 나온 것이다 [7]. 방송은 두 문헌을 한 문장으로 압축했는데, 압축 자체는 공정하지만 출처는 바로잡아 둘 가치가 있다.</p>
+<p>그의 가장 날카로운 쐐기는 정확성이 아니라 확신이고, 그는 적대적 예제(adversarial example) 이야기로 그 쐐기를 박아 넣는다. 지각할 수 없는 몇 개의 픽셀만 바꾸면 분류기가 스쿨버스를 99퍼센트 확신으로 치타라고 선언하는데, 목표 범주는 무엇이든 마음대로 고를 수 있다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=465s" target="_blank" rel="noopener">7:45</a>. 현상 자체, 지각 불가능성, 임의 목표 속성, 연도까지 모두 사실과 맞는다 [8]. 다만 디테일은 흘러내렸다 — 2013년의 그 유명한 이미지는 스쿨버스를 타조로 바꿨고 99퍼센트라는 수치는 붙어 있지 않았으며, 그 유명한 99.3퍼센트는 2014년의 판다-긴팔원숭이 사례에 속한다 [9]. 잘못 보정된 확신을 논하는 대화에서 뒤엉킨 세부를 유창하게 다시 들려주는 것은 작은 아이러니이자, 언어 모델에 관한 이 에피소드의 핵심 주장에 대한 예고편이기도 하다.</p>
+<h2 id="자서전이-곧-논증이다-그는-신경망이-이기기-전에-떠났다">자서전이 곧 논증이다 — 그는 신경망이 이기기 전에 떠났다</h2>
+<p>1986년, 여름 일자리를 찾던 펜실베이니아대 신입생 Ghahramani는 전산언어학자 Aravind Joshi에게서 막 출간된 Parallel Distributed Processing 두 권을 건네받고 읽고 설명해 보라는 말을 들었다 [10]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=621s" target="_blank" rel="noopener">10:21</a> — 역전파(backpropagation) 논문이 현대 신경망 시대를 연 바로 그해다 [11]. 그는 1989년 신경망으로 자연어를 파싱하는 학부 논문을 썼는데, 6만 5천 개 — 정확히는 65,536개 [12] — 의 프로세서를 위해 빨간 불빛이 깜박이던 검은 큐브, Connection Machine 위에서 코딩했고, 그때 그 논문을 출판했더라면 소형 언어 모델에 관한 아주 이른 논문이 됐을 거라고 농담한다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=702s" target="_blank" rel="noopener">11:42</a>. 당시 신경망은 규칙 기반의 주류에 맞서는 반문화(counterculture)였다고 그는 회고한다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=741s" target="_blank" rel="noopener">12:21</a>.</p>
+<p>그리고 그는 신경망을 떠났다. 1990년대 초에는 신경망의 수학이 충분히 이해된 것처럼 느껴졌고 데이터셋은 미미했으며 살아 있는 최전선은 신경망과 확률 이론의 연결처럼 보였기에, 그는 Hinton과 함께 딥러닝에 대한 확률적 접근에 몇 년을 보냈고("우리가 일을 너무 복잡하게 만들고 있었다"고 그는 인정하는데, 대규모 데이터를 아직 보지 못했던 시절이다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=824s" target="_blank" rel="noopener">13:44</a>) 이후 수십 년간 베이지안 머신러닝을 쌓아 올렸다. Hinton은 신경망 기초 연구로 2024년 노벨 물리학상을 공동 수상하게 된다 [13]. Ghahramani의 반격 선언문은 2015년에 나왔다. 지능의 많은 측면이 불확실성의 신중한 확률적 표현에 결정적으로 의존한다고 주장하는 Nature 리뷰다 [14]. Fry는 이 논문이 기초적인 딥러닝 논문들과 같은 호에 실렸다고 소개하는데, 더 정확히 말하면 Nature의 머신 인텔리전스 특집호에서 LeCun, Bengio, Hinton의 청탁 딥러닝 리뷰와 나란히 실렸다 [15]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=868s" target="_blank" rel="noopener">14:28</a>.</p>
+<p>이 이야기의 형태는 진자(pendulum)이고, 그는 그 진자를 의도적으로 흔든다. 신경망은 계산적으로 가망 없다고 무시당하다가 컴퓨트와 데이터가 도착하자 이겼고, 베이지안 추론은 다루기 어렵다는 이유로 밀려났으니, 다음 차례는 그쪽일지도 모른다는 것이다. 이 유비가 성립하는지가, 우리가 보기에는 이 에피소드의 하중을 홀로 떠받치는 단 하나의 질문이며, 글의 끝에서 다시 다룬다.</p>
+<h2 id="하나의-업데이트-규칙-네-가지-역할-그리고-llm은-흉내쟁이라는-진단">하나의 업데이트 규칙, 네 가지 역할 — 그리고 LLM은 흉내쟁이라는 진단</h2>
+<p>베이지안 기계장치는 추리소설 한 편으로 깔끔하게 시연된다. 용의자들에 대한 사전 믿음(prior)에서 출발해, 새 증거 — 식료품 저장실에서 발견된 흉기 — 의 가능도(likelihood)를 곱하고, 확률의 합이 1이 되도록 재정규화하면, 그 사후 확률(posterior)이 다음 단서를 위한 사전 확률이 된다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1014s" target="_blank" rel="noopener">16:54</a>. 에피소드의 일관성은 이 하나의 루프를 네 번 되풀이해 쓰는 데서 나온다. 지각에서는 코스타리카의 바스락거리는 잎사귀 소리를 재규어가 산다는 사전 지식에 비추어 읽어내고, 학습에서는 파라미터를 데이터 하나하나마다 갱신하며 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1064s" target="_blank" rel="noopener">17:44</a>, 앙상블 기상 예보에서 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1686s" target="_blank" rel="noopener">28:06</a>, 그리고 파국적 망각(catastrophic forgetting) 없는 지속 학습에서 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2289s" target="_blank" rel="noopener">38:09</a> 같은 루프가 돌아간다. 하나의 메커니즘, 네 개의 사례 — 그 경제성이 곧 설득력이다.</p>
+<figure class="fig fig-inline" id="fig-1"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Bayesian update loop with three instantiations" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f6f5f1;display:block">
+  <defs>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6bd8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- ===== loop nodes ===== -->
+  <!-- node 1: Prior beliefs -->
+  <rect x="40" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="160" y="188" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Prior beliefs</text>
+
+  <!-- node 2: Weigh evidence (likelihood) -->
+  <rect x="340" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="460" y="172" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Weigh evidence</text>
+  <text x="460" y="206" text-anchor="middle" font-size="24" fill="#33353c">(likelihood)</text>
+
+  <!-- node 3: Renormalize -->
+  <rect x="640" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="760" y="188" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Renormalize</text>
+
+  <!-- node 4: Posterior beliefs -->
+  <rect x="940" y="130" width="240" height="100" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="1060" y="188" text-anchor="middle" font-size="27" font-weight="600" fill="#17181c">Posterior beliefs</text>
+
+  <!-- forward arrows -->
+  <line x1="284" y1="180" x2="332" y2="180" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+  <line x1="584" y1="180" x2="632" y2="180" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+  <line x1="884" y1="180" x2="932" y2="180" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- return arrow: posterior back to prior, under the row -->
+  <path d="M 1060 234 C 1060 330, 900 340, 610 340 C 320 340, 160 330, 160 242" fill="none" stroke="#2f6bd8" stroke-width="3.5" marker-end="url(#arrowBlue)"/>
+  <text x="610" y="378" text-anchor="middle" font-size="26" font-style="italic" fill="#2f6bd8">Posterior becomes next prior</text>
+
+  <!-- ===== divider ===== -->
+  <line x1="60" y1="440" x2="1140" y2="440" stroke="#676b76" stroke-width="1" stroke-dasharray="2 6"/>
+  <text x="60" y="425" font-size="21" letter-spacing="2" fill="#676b76">SAME LOOP, THREE PLACES</text>
+
+  <!-- ===== instantiation rows ===== -->
+  <circle cx="80" cy="495" r="9" fill="#0f9d8c"/>
+  <text x="108" y="504" font-size="26" fill="#17181c">Perception: rustling leaves, jaguar?</text>
+
+  <circle cx="80" cy="555" r="9" fill="#0f9d8c"/>
+  <text x="108" y="564" font-size="26" fill="#17181c">Weather: ensemble meets new observations</text>
+
+  <circle cx="80" cy="615" r="9" fill="#0f9d8c"/>
+  <text x="108" y="624" font-size="26" fill="#17181c">Learning: update without forgetting</text>
+</svg>
+</div><figcaption><b>그림 1.</b> 에피소드가 반복해서 재사용하는 루프: 믿음을 확률로 표현하고, 새 증거를 가중하고, 재정규화하고, 사후 확률에 따라 행동한다 — 그 사후 확률이 다음 사전 확률이 된다.</figcaption></figure>
+
+<p>이 도식에서 보면 대형 언어 모델은 엉뚱한 자리에서 확률적이다. 다음 토큰에 대한 진짜 분포를 계산하기는 하지만, 아키텍처 어디에도 명시적 믿음을 담는 곳이 없다. 확신은 수십억 개의 활성값에 흩어져 있어서, 누구도 가리키며 "이것이 모델의 확신 정도"라고 부를 변수가 없다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=914s" target="_blank" rel="noopener">15:14</a>. 그래서 모델에게 얼마나 확신하느냐고 물으면:</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1196s" target="_blank" rel="noopener">19:56</a> "얼마나 확신하느냐고 물어볼 수는 있다. 그러면 뭔가 대답이 돌아오겠지만, 실제로는 다음 토큰 예측을 하고 있을 뿐이다. 자신이 얼마나 확신하는지에 대한 명시적 표현이 없는 것이다. 베이즈 규칙을 계산하고 있는 게 아니다."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>관찰 가능한 증상은 태세 전환이라고 그는 주장한다. 근거 없이 "네가 틀렸어"라고 밀어붙이면 모델은 사과하며 입장을 뒤집는다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1237s" target="_blank" rel="noopener">20:37</a>. 베이지안 에이전트라면 버텼을 것이다. 증거 없는 단언은 가능도를 거의 싣고 있지 않기 때문이다. 그는 사회적 압력이 아니라 증거에 따라 갱신하는 에이전트의 이상형으로 스타트렉의 Data를 소환하고, 곱셈에 대한 계산기와 같은 관계를 추론에 대해 갖는 AI 시스템을 원한다고 말한다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1152s" target="_blank" rel="noopener">19:12</a>. 원인은 학습 패러다임이 믿음 표현을 우선한 적이 없다는 데 있다는 것이 그의 설명이다. 수많은 서로 다른 사람들의 상충하는 추론을 모델링한 결과물은 자기 자신의 견해가 아니라 모두의 목소리가 뒤섞인 잡탕(soup)을 담게 된다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1237s" target="_blank" rel="noopener">20:37</a>.</p>
+<h2 id="전시된-증거들은-확률적이지만-그중-무엇도-베이즈-규칙을-계산하지-않는다">전시된 증거들은 확률적이지만, 그중 무엇도 베이즈 규칙을 계산하지 않는다</h2>
+<p>언어 모델에 실제로 불확실성을 부여하려면 어떻게 해야 하느냐는 질문에, 대화는 Ghahramani의 제자 중 한 명의 공로로 소개되는 시맨틱 엔트로피(semantic entropy)로 넘어가 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1375s" target="_blank" rel="noopener">22:55</a> 이런 설명에 안착한다. 모델은 가능한 다음 토큰들에 대한 확률 분포를 쥐고 있고, 그 엔트로피 — 파리의 에펠탑에서는 뾰족하고, 데이터가 얇은 곳에서는 퍼져 있는 — 가 불확실성을 드러낸다는 것이다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1415s" target="_blank" rel="noopener">23:35</a>. 여기서는 두 가지를 바로잡아 둘 가치가 있다. 출판된 방법은 방송의 설명보다 정교한데, 시맨틱 엔트로피는 완성된 답변 여러 개를 샘플링한 뒤 양방향 함의(bidirectional entailment)로 의미별로 클러스터링하고 그 의미 클러스터들 위에서 엔트로피를 계산한다. 토큰 수준 엔트로피가 표현의 차이와 믿음의 차이를 혼동하기 때문에 바로 그렇게 설계된 것이다 [16][17]. 그리고 계보도 방송에서 말한 것보다 한 세대 길다. 이 논문들은 옥스퍼드의 Yarin Gal 그룹에서 나왔고, Ghahramani의 케임브리지 박사과정 제자였던 것은 Gal이다 [18]. 공정하게 말하면, 가장 깊은 반론은 2분 뒤 Ghahramani 자신이 내놓는다. 공출현 통계에서 확신을 읽어내는 것은 여전히 "데이터에 의존한다는 의미에서 흉내 내기"라는 것 — 흉내 내는 계산기가 아니라 실제로 계산하는 계산기를 원한다는 것이다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1463s" target="_blank" rel="noopener">24:23</a><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1506s" target="_blank" rel="noopener">25:06</a>.</p>
+<figure class="fig fig-inline" id="fig-2"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two-panel comparison of token-level entropy versus semantic entropy over meaning clusters" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <marker id="arrowTeal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#676b76"/>
+    </marker>
+  </defs>
+
+  <!-- panel cards -->
+  <rect x="24" y="24" width="558" height="627" rx="14" fill="#fff" stroke="#e3e1da" stroke-width="1.5"/>
+  <rect x="618" y="24" width="558" height="627" rx="14" fill="#fff" stroke="#e3e1da" stroke-width="1.5"/>
+  <!-- divider -->
+  <line x1="600" y1="60" x2="600" y2="615" stroke="#e3e1da" stroke-width="2"/>
+
+  <!-- ===================== LEFT PANEL ===================== -->
+  <text x="303" y="82" text-anchor="middle" font-size="27" font-weight="700" fill="#17181c">Described on air</text>
+  <text x="303" y="114" text-anchor="middle" font-size="19" fill="#676b76">entropy of next-token distribution</text>
+
+  <!-- prompt chip -->
+  <rect x="163" y="146" width="280" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="303" y="176" text-anchor="middle" font-size="19" fill="#33353c">The Eiffel Tower is in &#8230;</text>
+
+  <!-- bar chart -->
+  <!-- axes -->
+  <line x1="140" y1="250" x2="140" y2="562" stroke="#676b76" stroke-width="2"/>
+  <line x1="140" y1="562" x2="510" y2="562" stroke="#676b76" stroke-width="2"/>
+  <text x="112" y="406" text-anchor="middle" font-size="18" fill="#676b76" transform="rotate(-90 112 406)">probability</text>
+
+  <!-- bars: Paris tall, Vegas short, New York short -->
+  <rect x="176" y="292" width="72" height="270" fill="#2f6bd8"/>
+  <rect x="292" y="508" width="72" height="54" fill="#2f6bd8" opacity="0.45"/>
+  <rect x="408" y="508" width="72" height="54" fill="#2f6bd8" opacity="0.45"/>
+
+  <text x="212" y="592" text-anchor="middle" font-size="19" fill="#17181c">Paris</text>
+  <text x="328" y="592" text-anchor="middle" font-size="19" fill="#17181c">Vegas</text>
+  <text x="444" y="592" text-anchor="middle" font-size="19" fill="#17181c">New York</text>
+
+  <!-- ===================== RIGHT PANEL ===================== -->
+  <text x="897" y="82" text-anchor="middle" font-size="27" font-weight="700" fill="#17181c">Published method</text>
+  <text x="897" y="114" text-anchor="middle" font-size="19" fill="#676b76">entropy over meaning clusters</text>
+
+  <!-- sampled answer chips (left column) -->
+  <rect x="648" y="210" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="736" y="240" text-anchor="middle" font-size="18" fill="#33353c">It's in Paris</text>
+
+  <rect x="648" y="286" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="736" y="316" text-anchor="middle" font-size="18" fill="#33353c">Paris, France</text>
+
+  <rect x="648" y="362" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="736" y="392" text-anchor="middle" font-size="18" fill="#33353c">Rome</text>
+
+  <!-- arrow note -->
+  <line x1="836" y1="309" x2="900" y2="309" stroke="#676b76" stroke-width="2" marker-end="url(#arrowTeal)"/>
+  <text x="869" y="288" text-anchor="middle" font-size="16" fill="#676b76">cluster by</text>
+  <text x="869" y="338" text-anchor="middle" font-size="16" fill="#676b76">meaning</text>
+
+  <!-- cluster: Paris -->
+  <rect x="916" y="152" width="234" height="186" rx="18" fill="none" stroke="#0f9d8c" stroke-width="2.5"/>
+  <text x="1033" y="184" text-anchor="middle" font-size="18" font-weight="700" fill="#0f9d8c">Cluster: Paris</text>
+  <rect x="945" y="202" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="1033" y="232" text-anchor="middle" font-size="18" fill="#33353c">It's in Paris</text>
+  <rect x="945" y="264" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="1033" y="294" text-anchor="middle" font-size="18" fill="#33353c">Paris, France</text>
+
+  <!-- cluster: Rome -->
+  <rect x="916" y="368" width="234" height="124" rx="18" fill="none" stroke="#0f9d8c" stroke-width="2.5"/>
+  <text x="1033" y="400" text-anchor="middle" font-size="18" font-weight="700" fill="#0f9d8c">Cluster: Rome</text>
+  <rect x="945" y="418" width="176" height="46" rx="23" fill="#f6f5f1" stroke="#c9c6bd" stroke-width="1.5"/>
+  <text x="1033" y="448" text-anchor="middle" font-size="18" fill="#33353c">Rome</text>
+</svg>
+</div><figcaption><b>그림 2.</b> 대화가 묘사하는 것은 토큰 수준 엔트로피다(왼쪽). 출판된 방법은 완성된 답변들을 샘플링해 의미별로 클러스터링하고, 클러스터 위에서 엔트로피를 취한다(오른쪽).</figcaption></figure>
+
+<p>날씨 이야기는 이 에피소드 최고의 증거이고, 그 숫자들은 정확히 맞는다. DeepMind의 확산(diffusion) 기반 예보 모델 GenCast는 50개가 넘는 15일치 전 지구 대안 궤적의 앙상블을 생성하는데, 물리 기반 앙상블이 슈퍼컴퓨터를 몇 시간씩 점유하는 동안 각 궤적을 TPU v5 하나에서 약 8분 만에 만들어내며, 1,320개 검증 지표 가운데 97.2퍼센트에서 유럽중기예보센터의 현업 ENS 앙상블을 이겼다 [19][20]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1590s" target="_blank" rel="noopener">26:30</a>. Fry는 반직관적인 교훈을 짚는다 — 시스템에 불확실성을 더했더니 예측이 더 정확해진다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1728s" target="_blank" rel="noopener">28:48</a> — 이는 정직한 분포가 거짓 점추정을 이긴다는 정확한 의미에서 참이다. 다만 한 가지 귀속은 손봐야 한다. 에피소드가 GenCast의 공으로 돌리는 허리케인 Melissa 앙상블은 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1631s" target="_blank" rel="noopener">27:11</a> DeepMind 자신의 기록에 따르면 제품화된 후속 제품군인 WeatherNext에서 돌았고, WeatherNext는 Melissa가 자메이카에 카테고리 5로 상륙하기까지 미국 국립허리케인센터와 협력하며 그 결과를 5일 전에 약 80퍼센트 확률로 짚어냈다 [21]. 다음 세대인 WeatherNext 2는 2026-08-06에 오픈소스로 공개됐다 — 이 에피소드 공개 20일 전인데, 방송에서는 언급되지 않는다 [22].</p>
+<figure class="fig fig-inline" id="fig-3"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Timeline of DeepMind probabilistic weather models: GenCast (2024-12), Hurricane Melissa forecast (2025-10), WeatherNext 2 open-sourced (2026-08)" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: block;">
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- title -->
+  <text x="100" y="72" font-size="34" font-weight="600" fill="#17181c">DeepMind&#8217;s probabilistic weather line</text>
+
+  <!-- axis -->
+  <line x1="90" y1="370" x2="1096" y2="370" stroke="#2f6bd8" stroke-width="3"/>
+  <path d="M 1096 360 L 1116 370 L 1096 380 Z" fill="#2f6bd8"/>
+
+  <!-- ================= milestone 1: GenCast (card above) ================= -->
+  <rect x="110" y="110" width="350" height="190" rx="10" fill="#fff" stroke="#2f6bd8" stroke-width="2"/>
+  <text x="132" y="155" font-size="30" font-weight="600" fill="#17181c">GenCast</text>
+  <text x="132" y="196" font-size="24" fill="#33353c">15-day forecast in 8 min</text>
+  <text x="132" y="230" font-size="24" fill="#33353c">one Cloud TPU v5</text>
+  <text x="132" y="264" font-size="24" fill="#33353c">beats ENS: 97.2% of 1,320</text>
+  <line x1="230" y1="300" x2="230" y2="357" stroke="#2f6bd8" stroke-width="2" stroke-dasharray="4 5"/>
+  <circle cx="230" cy="370" r="11" fill="#2f6bd8"/>
+  <text x="230" y="414" font-size="24" fill="#676b76" text-anchor="middle">2024-12</text>
+
+  <!-- ================= milestone 2: Hurricane Melissa (card below) ================= -->
+  <circle cx="620" cy="370" r="13" fill="#e08a1e"/>
+  <text x="620" y="340" font-size="24" fill="#676b76" text-anchor="middle">2025-10</text>
+  <line x1="620" y1="385" x2="620" y2="432" stroke="#e08a1e" stroke-width="2" stroke-dasharray="4 5"/>
+  <rect x="418" y="432" width="404" height="160" rx="10" fill="#fff" stroke="#e08a1e" stroke-width="2"/>
+  <text x="440" y="477" font-size="30" font-weight="600" fill="#17181c">Hurricane Melissa</text>
+  <text x="440" y="518" font-size="24" fill="#33353c">WeatherNext ensembles, with NHC</text>
+  <text x="440" y="552" font-size="24" fill="#33353c">Cat-5 landfall: ~80%, 5 days out</text>
+
+  <!-- ================= milestone 3: WeatherNext 2 (card above) ================= -->
+  <rect x="838" y="192" width="314" height="108" rx="10" fill="#fff" stroke="#2f6bd8" stroke-width="2"/>
+  <text x="860" y="238" font-size="30" font-weight="600" fill="#17181c">WeatherNext 2</text>
+  <text x="860" y="276" font-size="24" fill="#33353c">open-sourced, Apache 2.0</text>
+  <line x1="990" y1="300" x2="990" y2="357" stroke="#2f6bd8" stroke-width="2" stroke-dasharray="4 5"/>
+  <circle cx="990" cy="370" r="11" fill="#2f6bd8"/>
+  <text x="990" y="414" font-size="24" fill="#676b76" text-anchor="middle">2026-08</text>
+</svg>
+</div><figcaption><b>그림 3.</b> DeepMind 확률적 기상 라인의 20개월, 검증된 숫자들과 함께 — 그리고 허리케인 Melissa 예보가 실제로 돌았던 모델 제품군.</figcaption></figure>
+
+<p>AlphaFold가 증거 세트를 완성한다. 예측된 모든 단백질 구조에는 잔기별 신뢰도 점수 pLDDT가 색 띠로 함께 표시되는데, 신뢰도가 낮은 구역은 실제로 흔들리는 단백질 부위와 겹치는 경우가 많다 — 물리적 유연성과 예측 불확실성이 하나의 표시장치를 공유하는 셈이다 [23]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1818s" target="_blank" rel="noopener">30:18</a>.</p>
+<p>이제 에피소드가 끝내 명시하지 않는 긴장을 보자. 세 증거 모두 불확실성 판독 장치가 붙은, 데이터로 학습된 심층 네트워크다. GenCast의 산포는 새 관측이 도착할 때마다 확산 모델을 다시 돌리는 데서 나오고 — Nature 논문 어디에도 베이지안 업데이트는 묘사되지 않으며, <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1686s" target="_blank" rel="noopener">28:06</a>의 그 설명은 Ghahramani의 해석적 프레임이다 [20]. AlphaFold의 pLDDT는 계산된 사후 확률이 아니라 학습된 신뢰도 헤드다 [23]. 시맨틱 엔트로피는 학습된 모델을 바깥에서 측정한다 [17]. 우리의 분석은 이렇다. 이 증거들은 온건한 테제 — 원칙 있는 불확실성 표현이 시스템을 측정 가능하게 개선한다 — 를 훌륭하게 입증하지만, 명시적으로 베이지안인 아키텍처가 빠진 조각이라는 강한 테제는 입증하지 못한다. 그중 어느 것도 그런 아키텍처를 갖고 있지 않기 때문이다. 냉정하게 읽으면 이 증거들은 오히려 그가 맞서겠다고 자리 잡은 진영 쪽으로 기운다. 데이터로 학습하고, 불확실성은 나중에 붙이거나 추출하라는 쪽 말이다.</p>
+<h2 id="이-에피소드가-다루지-않은-반대편-문헌들">이 에피소드가 다루지 않은 반대편 문헌들</h2>
+<p>'흉내 내기'라는 진단은 살아 있는 논쟁의 한쪽 극이지, 학계의 합의가 아니다. Anthropic은 2022년에 대형 모델이 객관식 문제에서 놀랄 만큼 잘 보정돼 있으며 자신이 답을 아는지 여부를 부분적으로 예측할 수 있다고 보고했다 [4]. OpenAI의 2025년 9월 환각(hallucination) 논문은 과신을 인센티브 문제로 재구성한다. 학습과 벤치마크가 정직한 기권보다 자신 있는 추측을 보상하니 모델이 추측을 학습한다는 것이다 [3]. Anthropic의 2025년 10월 내성(introspection) 연구는 모델이 때때로 자신의 내부 상태를 진짜로 보고할 수 있음을 — 신뢰하기 어려운 수준으로나마 — 발견했다 [5]. 세 편 모두 에피소드 공개보다 앞서지만, 방송에서는 하나도 다뤄지지 않는다.</p>
+<p>이 누락이 중요한 이유는, Ghahramani의 대표 증상인 태세 전환에 더 값싼 경쟁 설명이 있기 때문이다. 선호 학습이 빚어낸 아첨(sycophancy)이 그것이다. 굽히는 원인이 인센티브라면 인센티브를 고치는 것으로 새 아키텍처 없이 증상이 고쳐지고, 확신을 계산하는 모델과 보정된 듯 행동할 뿐인 모델은 원리적으로도 구별하기 어려워진다 — 에피소드는 관찰 가능한 판별 기준을 제시하지 않는다. 우리가 읽기에 방어 가능한 버전의 주장은 더 좁지만 여전히 중요하다. 모델은 제약된 형식에서는 쓸 만한 확신 신호를 노출하지만, 증거만으로 방어하고 갱신할 수 있는 명시적이고 일관된 믿음은 갖고 있지 않다 — 그리고 그의 고위험 사례들이 요구하는 것이 바로 후자다. 다만 제약된-형식이라는 단서는 양쪽을 다 벤다. 롱테일 질의에 대한 개방형 생성에서 강한 캘리브레이션을 입증한 사람은 아직 없는데, 그곳이 바로 Ghahramani가 신경 쓰는 영역 — 우박 폭풍의 말, 희귀 진단 — 이다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2133s" target="_blank" rel="noopener">35:33</a>.</p>
+<h2 id="불확실성-도구상자는-새-아키텍처-없이도-지금-쓸-수-있다">불확실성 도구상자는 새 아키텍처 없이도 지금 쓸 수 있다</h2>
+<p>에피소드는 구체적인 스택을 처방하지 않으므로 이하는 그 사례들에서 우리가 외삽한 것이지만, 패턴 자체는 구체적이다. 자동화된 파이프라인을 모델의 자기 보고 확신으로 제어하지 말 것 — 그것도 다른 모든 것과 마찬가지로 생성된 텍스트일 뿐이다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1196s" target="_blank" rel="noopener">19:56</a>. 오늘 점수가 필요하다면, 캘리브레이션 증거에 비추어 방어 가능한 선택지는 고정된 답변 집합 위의 로그 확률이다 [4]. 불확실성 유형에 따라 라우팅하라. 인식적 불확실성은 검색, 되묻기, 도구 호출을 촉발해야 하고, 우연적 불확실성은 앙상블이나 헤지된 계획을 촉발해야 하며, 새로움 — 분포 밖 상황 — 은 판돈에 비례해 비용이 커지는 폴백을 촉발해야 한다. 차가 속도를 늦추는 것의 소프트웨어 버전이다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=250s" target="_blank" rel="noopener">4:10</a><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=157s" target="_blank" rel="noopener">2:37</a>.</p>
+<figure class="fig fig-inline" id="fig-4"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Decision flow: a model that must act routes epistemic uncertainty to information gathering, aleatoric uncertainty to hedging, and out-of-distribution inputs to a fallback." style="display:block;background:#f6f5f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <marker id="fig04-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#676b76"/>
+    </marker>
+  </defs>
+
+  <!-- Entry node -->
+  <rect x="45" y="282" width="230" height="110" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="160" y="329" text-anchor="middle" font-size="30" font-weight="700" fill="#17181c">Model</text>
+  <text x="160" y="365" text-anchor="middle" font-size="30" font-weight="700" fill="#17181c">must act</text>
+
+  <!-- Fan-out arrows from entry to type nodes -->
+  <path d="M275,317 C 350,317 360,145 430,131" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M275,337 L 430,337" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M275,357 C 350,357 360,529 430,543" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+
+  <!-- Type node: Epistemic -->
+  <rect x="438" y="70" width="310" height="120" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="593" y="120" text-anchor="middle" font-size="29" font-weight="700" fill="#2f6bd8">Epistemic:</text>
+  <text x="593" y="158" text-anchor="middle" font-size="27" fill="#17181c">reducible gap</text>
+
+  <!-- Type node: Aleatoric -->
+  <rect x="438" y="276" width="310" height="120" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="593" y="326" text-anchor="middle" font-size="29" font-weight="700" fill="#2f6bd8">Aleatoric:</text>
+  <text x="593" y="364" text-anchor="middle" font-size="27" fill="#17181c">irreducible randomness</text>
+
+  <!-- Type node: Out-of-distribution -->
+  <rect x="438" y="482" width="310" height="120" rx="14" fill="#fff" stroke="#2f6bd8" stroke-width="3"/>
+  <text x="593" y="532" text-anchor="middle" font-size="29" font-weight="700" fill="#2f6bd8">Out-of-distribution:</text>
+  <text x="593" y="570" text-anchor="middle" font-size="27" fill="#17181c">never seen</text>
+
+  <!-- Arrows type -> action -->
+  <path d="M748,130 L 804,130" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M748,336 L 804,336" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+  <path d="M748,542 L 804,542" fill="none" stroke="#676b76" stroke-width="2.5" marker-end="url(#fig04-arrow)"/>
+
+  <!-- Action box: Gather info -->
+  <rect x="812" y="70" width="360" height="120" rx="14" fill="#fff" stroke="#0f9d8c" stroke-width="3"/>
+  <text x="992" y="120" text-anchor="middle" font-size="29" font-weight="700" fill="#0f9d8c">Gather info:</text>
+  <text x="992" y="158" text-anchor="middle" font-size="27" fill="#17181c">retrieve, ask, tools</text>
+
+  <!-- Action box: Hedge -->
+  <rect x="812" y="276" width="360" height="120" rx="14" fill="#fff" stroke="#0f9d8c" stroke-width="3"/>
+  <text x="992" y="326" text-anchor="middle" font-size="29" font-weight="700" fill="#0f9d8c">Hedge:</text>
+  <text x="992" y="364" text-anchor="middle" font-size="25" fill="#17181c">ensemble, distribution, ranges</text>
+
+  <!-- Action box: Fall back -->
+  <rect x="812" y="482" width="360" height="120" rx="14" fill="#fff" stroke="#0f9d8c" stroke-width="3"/>
+  <text x="992" y="532" text-anchor="middle" font-size="29" font-weight="700" fill="#0f9d8c">Fall back:</text>
+  <text x="992" y="570" text-anchor="middle" font-size="27" fill="#17181c">slow down, escalate</text>
+</svg>
+</div><figcaption><b>그림 4.</b> 우연적-인식적 구분을 라우팅 규칙으로: 줄일 수 있는 불확실성은 정보 수집을, 줄일 수 없는 불확실성은 헤징을, 새로움은 폴백을 촉발한다.</figcaption></figure>
+
+<p>예측하려는 미래가 진짜로 무작위라면 GenCast 패턴을 베끼면 된다. 분포를 모델링하고, 데이터가 도착할 때마다 다시 돌리고, 다운스트림 의사결정이 평균이 아니라 산포를 소비하게 하라 — 거기서의 정확도 이득은 희망 사항이 아니라 측정된 값이다 [19]. pLDDT가 잔기 하나하나에 색을 입히듯, 확신은 산출물의 입자 단위로 노출하라. 생성된 보고서의 주장별 신뢰도가 문서 수준 면책 문구를 이기고, Fry가 걱정하는 실패 — 너무 정직해서 아무것도 단언하지 못하는 모델 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1861s" target="_blank" rel="noopener">31:01</a> — 도 피해 간다. 신뢰도 높은 구역은 여전히 단정적으로 읽히기 때문이다 [23]. 캘리브레이션을 평가 스위트의 테스트로 만들어라. 정의 자체가 직접 측정 가능하다 — 예보관이 70퍼센트라고 말한 모든 날을 모으면 그중 70퍼센트에서 비가 와야 한다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1861s" target="_blank" rel="noopener">31:01</a> — 그리고 기권에도 명시적으로 점수를 매겨라. 공개 벤치마크는 현재 자신 있는 추측을 보상하고 있다 [3]. 고위험 판단에는, 출판된 방법대로 구현한다면 시맨틱 엔트로피를 기성 모델 위에 바로 배포할 수 있는데, 질의당 여러 번의 추론이라는 값을 치러야 한다 [17].</p>
+<h2 id="저주는-실재하고-유비는-매혹적이며-시계는-확인-가능하다">저주는 실재하고, 유비는 매혹적이며, 시계는 확인 가능하다</h2>
+<p>그렇다면 이 분야는 왜 이 모든 것에서 걸어 나갔을까? Ghahramani는 장애물에 대해 이례적으로 정확하다. 모든 것에 대한 확률을 표현하고 갱신하는 일은 계산적으로 다루기 어렵고, 확률 모델의 범용 표현인 베이지안 네트워크에서의 정확한 추론은 1990년에 NP-hard임이 증명됐다 [24].</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2421s" target="_blank" rel="noopener">40:21</a> "이 마법의 묘기에는 큰 저주가 따라온다. 여기서 저주란, 이 모든 것을 해내는 데 계산이 매우 느리다는 것이다."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>재도전의 근거는 이렇다. 컴퓨트는 폭발적으로 늘었고 — 그의 학부 시절 Connection Machine은 지금 그의 주머니 속 Pixel 폰보다 느리다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2470s" target="_blank" rel="noopener">41:10</a> — 수십 년치 근사 아이디어가 선반에 쌓여 있다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2514s" target="_blank" rel="noopener">41:54</a>. Fry가 역사의 라임을 건넨다. 80년대에 신경망을 두고도 똑같이 말했다는 것이고, 그는 그 라임을 받아든다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2470s" target="_blank" rel="noopener">41:10</a>. 우리가 보기에 이 라임이 논증의 가장 약한 고리다. 신경망은 컴퓨트가 데이터와 작동하는 알고리즘을 만났을 때 이겼지만, 프런티어 규모의 근사 베이지안 추론에는 규모로 검증된 알고리즘이 아직 없고, 최악의 경우(worst-case) 난해성은 학습 비용 병목과 달리 FLOPs를 더 붓는다고 녹지 않으며, 그 자신의 아키텍처 아이디어도 본인 인정대로 "아직 잘 여물지 않았다" <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=1551s" target="_blank" rel="noopener">25:51</a>. 그는 이 대칭성에 솔직하다. 스케일 진영은 "완전히 틀린 게 아니다. 내가 완전히 옳은 게 아니듯이" <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2133s" target="_blank" rel="noopener">35:33</a>.</p>
+<p>그가 옳을 경우의 판돈은 팟캐스트 철학보다 크다. 순차적 베이지안 업데이트는 종이 위에서는 지속 학습을 해결하고 — 데이터 하나를 본 뒤의 사후 확률이 다음 사전 확률이 되므로 아무것도 덮어써지지 않는다 — DeepMind 자신의 Elastic Weight Consolidation이 2017년에 바로 그 업데이트의 근사로 유도됐다 [25]<a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2289s" target="_blank" rel="noopener">38:09</a>. 프런티어 규모에서 작동하는 버전이 나온다면, 거대 모델을 만들어 출시하고 몇 달 뒤 또 하나를 만드는, Ghahramani가 묘사하는 학습-출시-재학습 사이클을 대체하게 된다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2203s" target="_blank" rel="noopener">36:43</a> — 현재 이 산업의 지배적 자본 지출이자, 독점 데이터와 나란히 놓이는 해자다. 효율성 프레임도 같은 방향을 가리킨다. 뇌는 전구 수준의 전력 — 통상 약 20와트 [26] — 으로 돌아가는 반면 데이터센터 학습은 그로부터 자릿수 단위로 떨어져 있고 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2330s" target="_blank" rel="noopener">38:50</a>, 데이터 효율적 학습은 과학의 의제인 만큼이나 경제학의 의제다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2374s" target="_blank" rel="noopener">39:34</a>. 한편 보정된 불확실성은 그가 이름을 대는 시장들 — 의료 의사결정 지원, 운전 — 의 입장권인데, 그곳에서는 규제 당국이 오류 특성화를 요구하고 과신은 결격 사유다 <a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2000s" target="_blank" rel="noopener">33:20</a><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2133s" target="_blank" rel="noopener">35:33</a>.</p>
+<p>그래서, 관전 목록 — 그가 날짜를 주지 않으니 그의 것이 아니라 우리의 것이다. 명시적 믿음 표현에 관한 Ghahramani 계열의 논문이나 기능을 지켜보라. 리서치 부사장이 활발한 탐구를 공언하면 대개 출판이 뒤따르고, 2028년 초까지 침묵이 이어진다면 저주가 또 한 번 버텼다는 뜻이 된다. 측정 경로가 재건 경로를 앞지르는지도 지켜보라. 시맨틱 엔트로피류 탐지기가 제품에 실리는 동안 어떤 프런티어 모델도 명시적 믿음 상태를 갖추지 않는다면, 그것은 그의 처방 없이 그의 진단만 입증하는 셈이다 [17]. 분포 밖 질의에 대한 보정된 기권을 채점하는 벤치마크 — OpenAI가 이미 제안한 것 [3] — 와, 이제 오픈소스가 된 WeatherNext 라인을 따라 앙상블 네이티브 모델이 날씨 너머로 퍼지는지도 지켜보라 [22]. 무엇보다 지속 학습을 지켜보라. 어느 연구소에서든 주기적 재학습 없이 라이브 데이터 스트림으로 갱신되는 프런티어 모델이 나온다면, 이 에피소드는 옹호론에서 예언으로 승격된다.</p>
+<blockquote class="pull"><p><a class="ts" href="https://www.youtube.com/watch?v=tBjgCj_dGZM&t=2612s" target="_blank" rel="noopener">43:32</a> "중요한 […] 모든 문제에서, 나는 오만하고 과신에 찬 AI 시스템보다 자신이 모른다는 것을 아는 AI 시스템을 갖겠다."</p><cite>Zoubin Ghahramani</cite></blockquote>
+<p>이 문장에는 어느 진영도 이견이 없다. 열린 질문은 그 의심을 안에 지어 넣어야 하는지, 아니면 학습으로 끌어낼 수 있는지다.</p>
+<h2 id="참고-자료">참고 자료</h2>
+<ol>
+<li><a href="https://www.youtube.com/watch?v=tBjgCj_dGZM" target="_blank" rel="noopener">The mathematics of AI uncertainty</a> — Google DeepMind, 2026-08-26</li>
+<li><a href="https://en.wikipedia.org/wiki/Zoubin_Ghahramani" target="_blank" rel="noopener">Zoubin Ghahramani</a> — Wikipedia, accessed 2026-09-01</li>
+<li><a href="https://openai.com/index/why-language-models-hallucinate/" target="_blank" rel="noopener">Why language models hallucinate</a> — OpenAI, 2025-09</li>
+<li><a href="https://arxiv.org/abs/2207.05221" target="_blank" rel="noopener">Language Models (Mostly) Know What They Know</a> — arXiv (Anthropic), 2022-07-11</li>
+<li><a href="https://transformer-circuits.pub/2025/introspection/index.html" target="_blank" rel="noopener">Emergent Introspective Awareness in Large Language Models</a> — Anthropic (Transformer Circuits), 2025-10-29</li>
+<li><a href="https://www.science.org/doi/10.1126/science.185.4157.1124" target="_blank" rel="noopener">Judgment under Uncertainty: Heuristics and Biases</a> — Science 185, 1974-09-27</li>
+<li><a href="https://www.nature.com/articles/415429a" target="_blank" rel="noopener">Humans integrate visual and haptic information in a statistically optimal fashion</a> — Nature 415, 2002-01-24</li>
+<li><a href="https://arxiv.org/abs/1312.6199" target="_blank" rel="noopener">Intriguing properties of neural networks</a> — arXiv (Szegedy et al.), 2013-12-21</li>
+<li><a href="https://arxiv.org/abs/1412.6572" target="_blank" rel="noopener">Explaining and Harnessing Adversarial Examples</a> — arXiv (Goodfellow et al.), 2014-12</li>
+<li><a href="https://mitpress.mit.edu/9780262680530/parallel-distributed-processing-volume-1/" target="_blank" rel="noopener">Parallel Distributed Processing, Volume 1</a> — MIT Press, 1986</li>
+<li><a href="https://www.nature.com/articles/323533a0" target="_blank" rel="noopener">Learning representations by back-propagating errors</a> — Nature 323, 1986-10-09</li>
+<li><a href="https://www.computerhistory.org/revolution/supercomputers/10/73" target="_blank" rel="noopener">The Connection Machine</a> — Computer History Museum, accessed 2026-09-01</li>
+<li><a href="https://www.nobelprize.org/prizes/physics/2024/press-release/" target="_blank" rel="noopener">The Nobel Prize in Physics 2024 — press release</a> — NobelPrize.org, 2024-10-08</li>
+<li><a href="https://www.nature.com/articles/nature14541" target="_blank" rel="noopener">Probabilistic machine learning and artificial intelligence</a> — Nature 521, 2015-05-28</li>
+<li><a href="https://www.nature.com/articles/nature14539" target="_blank" rel="noopener">Deep learning</a> — Nature 521 (LeCun, Bengio &amp; Hinton), 2015-05-28</li>
+<li><a href="https://arxiv.org/abs/2302.09664" target="_blank" rel="noopener">Semantic Uncertainty: Linguistic Invariances for Uncertainty Estimation in Natural Language Generation</a> — arXiv / ICLR 2023, 2023-02-19</li>
+<li><a href="https://www.nature.com/articles/s41586-024-07421-0" target="_blank" rel="noopener">Detecting hallucinations in large language models using semantic entropy</a> — Nature 630, 2024-06-19</li>
+<li><a href="https://mlg.eng.cam.ac.uk/people/yarin-gal/" target="_blank" rel="noopener">Yarin Gal — Machine Learning Group profile</a> — University of Cambridge, accessed 2026-09-01</li>
+<li><a href="https://deepmind.google/blog/gencast-predicts-weather-and-the-risks-of-extreme-conditions-with-sota-accuracy/" target="_blank" rel="noopener">GenCast predicts weather and the risks of extreme conditions with state-of-the-art accuracy</a> — Google DeepMind, 2024-12-04</li>
+<li><a href="https://www.nature.com/articles/s41586-024-08252-9" target="_blank" rel="noopener">Probabilistic weather forecasting with machine learning</a> — Nature (Price et al.), 2024-12-04</li>
+<li><a href="https://deepmind.google/blog/how-weathernext-helped-the-national-hurricane-center-better-predict-hurricane-melissas-historic-landfall-in-jamaica/" target="_blank" rel="noopener">How WeatherNext helped the National Hurricane Center better predict Hurricane Melissa's historic landfall in Jamaica</a> — Google DeepMind, 2026-05-19</li>
+<li><a href="https://blog.google/innovation-and-ai/models-and-research/google-deepmind/weathernext-2-cyclones/" target="_blank" rel="noopener">Our WeatherNext 2 AI model demonstrated a massive leap forward in predicting cyclones</a> — Google (blog.google), 2026-08-06</li>
+<li><a href="https://www.nature.com/articles/s41586-021-03819-2" target="_blank" rel="noopener">Highly accurate protein structure prediction with AlphaFold</a> — Nature 596, 2021-07-15</li>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/000437029090060D" target="_blank" rel="noopener">The computational complexity of probabilistic inference using Bayesian belief networks</a> — Artificial Intelligence 42 (Cooper), 1990</li>
+<li><a href="https://www.pnas.org/doi/10.1073/pnas.1611835114" target="_blank" rel="noopener">Overcoming catastrophic forgetting in neural networks</a> — PNAS (Kirkpatrick et al.), 2017-03</li>
+<li><a href="https://www.britannica.com/science/The-Human-Brain-Runs-on-Less-Power-than-a-Light-Bulb" target="_blank" rel="noopener">The Human Brain Runs on Less Power than a Light Bulb</a> — Britannica, accessed 2026-09-01</li>
+</ol>
+</article>
+
+<footer class="credits">
+  <p>이 글은 영상의 스크립트를 바탕으로 다중 에이전트 파이프라인(배경 조사 → 여섯 가지 분석 관점 → 종합 → 편집 검토)이 작성하고, 블로그 고유의 스타일로 시각화한 뒤 Higgs TTS로 낭독한 것입니다. 타임스탬프를 누르면 원본 영상의 해당 장면으로 이동합니다.</p>
+  <p>원본 영상의 권리는 제작자에게 있으며, 이 글은 요약과 해설일 뿐 영상을 대신하지 않습니다.</p>
+</footer>
+</div>
+
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+
+<script>
+(function(){
+  var bar=document.getElementById('pbar');
+  function prog(){var h=document.documentElement,s=h.scrollTop||document.body.scrollTop,m=h.scrollHeight-h.clientHeight;bar.style.width=(m>0?Math.min(100,s/m*100):0)+'%';}
+  addEventListener('scroll',prog,{passive:true});prog();
+  var a=document.getElementById('narr'),chips=document.querySelectorAll('.chip'),now=document.getElementById('now');
+  if(a&&chips.length){
+    var secs=[].map.call(chips,function(c){return {t:+c.dataset.t,el:c};});
+    chips.forEach(function(c){c.addEventListener('click',function(){a.currentTime=+c.dataset.t;a.play();});});
+    a.addEventListener('timeupdate',function(){var cur=null;for(var i=0;i<secs.length;i++){if(a.currentTime>=secs[i].t-0.2)cur=secs[i];}
+      secs.forEach(function(s){s.el.classList.toggle('on',s===cur);});
+      if(now)now.textContent=cur?('지금 읽는 부분: '+cur.el.textContent):'';});
+  }
+})();
+</script>
+</body>
+</html>

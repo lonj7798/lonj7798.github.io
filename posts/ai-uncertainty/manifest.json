@@ -1,0 +1,44 @@
+{
+  "posts_js_entry": {
+    "slug": "ai-uncertainty",
+    "title": "Teaching AI to Doubt — Zoubin Ghahramani's Bayesian Bet",
+    "date": "2026-09-01",
+    "description": "Zoubin Ghahramani argues AI's missing piece is a mathematical sense of its own uncertainty — and Bayes' rule may be the key. 2026년 8월 26일 공개된 Google DeepMind 팟캐스트 에피소드에서 Hannah Fry가 Zoubin Ghahramani를 인터뷰한다.",
+    "tags": [
+      "deep-dive",
+      "bayesian"
+    ],
+    "lang": "en · ko",
+    "art": "ridge"
+  },
+  "en": {
+    "file": "index.html",
+    "title": "Teaching AI to Doubt — Zoubin Ghahramani's Bayesian Bet",
+    "words": 3610,
+    "read_min": 16,
+    "listen_min": 19,
+    "summary": "In an episode of Google DeepMind's podcast published on 2026-08-26, Hannah Fry interviews Zoubin Ghahramani — Cambridge professor, VP of Research at Google DeepMind, and a founding figure of Bayesian machine learning. His argument is that intelligence is decision-making under uncertainty, and that today's language models, probabilistic though they are at the token level, hold no explicit representation of their own beliefs — they fake confidence rather than compute it. He offers GenCast's ensemble weather forecasts and AlphaFold's confidence scores as proof that principled uncertainty pays, and Bayes' rule as the route to continual learning and data efficiency. The catch, which he names himself, is that exact Bayesian inference is computationally intractable, and his remedy is an unfinished research program rather than an architecture. The conversation matters now because every major lab treats confident wrongness as a commercially load-bearing failure — while disagreeing on whether the cure is architecture, incentives, or measurement.",
+    "tags": [
+      "deep-dive",
+      "bayesian"
+    ],
+    "date": "2026-09-01",
+    "category": "talk-interview"
+  },
+  "ko": {
+    "file": "ko.html",
+    "title": "AI에게 의심을 가르치다 — Zoubin Ghahramani의 베이지안 승부수",
+    "words": 4255,
+    "read_min": 14,
+    "listen_min": 21,
+    "summary": "2026년 8월 26일 공개된 Google DeepMind 팟캐스트 에피소드에서 Hannah Fry가 Zoubin Ghahramani를 인터뷰한다. 케임브리지 교수이자 Google DeepMind 리서치 부사장이며 베이지안 머신러닝의 창시자 격인 인물이다. 그의 논지는 지능이란 불확실성 아래에서의 의사결정이며, 오늘날의 언어 모델은 토큰 수준에서는 확률적일지언정 자기 믿음에 대한 명시적 표현을 갖고 있지 않다는 것 — 확신을 계산하는 게 아니라 흉내 낸다는 것이다. 그는 원칙 있는 불확실성이 실제로 성과를 낸다는 증거로 GenCast의 앙상블 기상 예보와 AlphaFold의 신뢰도 점수를 제시하고, 지속 학습과 데이터 효율로 가는 길로 베이즈 규칙을 내세운다. 다만 그 자신이 인정하듯 정확한 베이지안 추론은 계산적으로 다루기 어렵고, 그가 내놓는 처방은 완성된 아키텍처가 아니라 미완의 연구 프로그램이다. 이 대화가 지금 중요한 이유는, 주요 연구소들이 하나같이 '자신 있게 틀리는 답'을 상업적으로 치명적인 실패로 취급하면서도 그 해법이 아키텍처인지, 인센티브인지, 측정인지를 두고는 서로 다른 진단을 내리고 있기 때문이다.",
+    "tags": [
+      "deep-dive",
+      "bayesian"
+    ],
+    "date": "2026-09-01",
+    "category": "talk-interview"
+  },
+  "post_dir": "/Users/jaewon/mywork_2026/blog-dev/yt-articles/ai-uncertainty/post",
+  "publish": "cd my_blog && ./new-post.sh /Users/jaewon/mywork_2026/blog-dev/yt-articles/ai-uncertainty/post ai-uncertainty  (answers: title/description/tags/date from posts_js_entry)"
+}
