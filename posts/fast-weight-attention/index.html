@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Off by One Token — Falcon Rewrites the Fast-Weight Update</title>
+<meta name="description" content="Falcon (Zhang et al., arXiv 2608.27763, 2026-08-27) recasts the state update of linear attention, DeltaNet, and Mamba-style models as an explicit online learning rule, and observes that the standard convention binds the key and value of the same step while read-after-write prediction actually reveal">
+<link rel="alternate" hreflang="ko" href="ko.html">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#17181c;--body:#33353c;--mut:#676b76;--hair:rgba(23,24,28,.08);
+--blue:#2f6bd8;--purple:#7a4fd3;--orange:#e08a1e;--pink:#d34f6e;--teal:#0f9d8c;
+--serif:"Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman","Apple SD Gothic Neo",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--shadow:0 1px 2px rgba(23,24,28,.03),0 10px 30px rgba(23,24,28,.05)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:760px;margin:0 auto;padding:0 22px}
+#pbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--ink);opacity:.75;z-index:50}
+header.top{padding:58px 0 18px}
+.eyebrow{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow .yt{display:inline-flex;align-items:center;gap:7px}
+.eyebrow .yt i{width:7px;height:7px;border-radius:50%;background:var(--pink);display:inline-block}
+.lang-sw{display:inline-flex;background:rgba(255,255,255,.85);border-radius:999px;padding:3px;box-shadow:inset 0 0 0 1px var(--hair);text-transform:none;letter-spacing:0}
+.lang-sw a{padding:4px 12px;border-radius:999px;color:var(--mut);text-decoration:none;font-size:12px;letter-spacing:.03em}
+.lang-sw a.on{background:var(--ink);color:#fff}
+h1{font-family:var(--serif);font-weight:650;font-size:clamp(30px,5.4vw,44px);line-height:1.22;letter-spacing:-.012em;color:var(--ink);margin:18px 0 12px}
+.lede{font-size:19px;line-height:1.6;color:var(--body);max-width:640px;margin:0 0 16px}
+.meta{font-size:13.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.meta .sep{opacity:.5}
+.tag{font-weight:650;text-decoration:none}
+.tag.c0{color:var(--blue)}.tag.c1{color:var(--purple)}.tag.c2{color:var(--orange)}.tag.c3{color:var(--pink)}.tag.c4{color:var(--teal)}
+figure.hero{margin:22px 0 6px}
+figure.hero img{width:100%;height:auto;display:block;border-radius:22px}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:24px 26px;margin:22px 0}
+.card .ct{font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:650}
+.summary p{margin:0 0 10px;font-size:16.5px;color:var(--ink)}
+.summary ul{margin:10px 0 0;padding-left:20px}
+.summary li{margin:5px 0;font-size:15.5px}
+.listen{display:flex;flex-direction:column;gap:12px}
+.listen audio{width:100%;height:40px}
+.listen .who{font-size:13.5px;color:var(--mut);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--bg);color:var(--mut);border:1px solid var(--hair);cursor:pointer;transition:background .15s,color .15s}
+.chip:hover{color:var(--ink);border-color:rgba(23,24,28,.2)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.now{font-size:12.5px;color:var(--mut);min-height:18px}
+.source{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+.source img{width:100%;border-radius:12px;display:block;aspect-ratio:16/9;object-fit:cover}
+.source .t{font-family:var(--serif);font-size:18px;color:var(--ink);margin:0 0 4px;line-height:1.35}
+.source .s{font-size:13.5px;color:var(--mut)}
+.source a.watch{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink);text-decoration:none;font-weight:650;border-bottom:1px solid rgba(23,24,28,.25)}
+.chapters{margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;columns:2;column-gap:18px}
+.chapters li{break-inside:avoid;margin:2px 0}
+.chapters a{color:var(--mut);text-decoration:none;font-variant-numeric:tabular-nums}
+.chapters a:hover{color:var(--ink)}
+.chapters .ct{margin:0 0 6px}
+@media(max-width:560px){.source{grid-template-columns:1fr}.chapters{columns:1}.card{padding:20px 18px;border-radius:18px}}
+article.body{padding:8px 0 30px}
+.body h2{font-family:var(--serif);font-size:clamp(24px,3.6vw,30px);line-height:1.3;color:var(--ink);margin:48px 0 12px;font-weight:650;letter-spacing:-.01em}
+.body h3{font-size:19px;color:var(--ink);margin:30px 0 8px;font-weight:650}
+.body h4{font-size:16px;color:var(--ink);margin:22px 0 6px;font-weight:650}
+.body p{margin:0 0 18px}
+.body a{color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(23,24,28,.25)}
+.body a:hover{border-color:var(--ink)}
+.body a.ts{font-family:var(--mono);font-size:.8em;color:var(--blue);border:0;background:rgba(47,107,216,.08);padding:1px 7px;border-radius:999px;white-space:nowrap;vertical-align:.08em}
+.body ul,.body ol{padding-left:24px;margin:0 0 18px}
+.body li{margin:6px 0}
+.body li>p{margin:0 0 6px}
+.body strong{color:var(--ink);font-weight:650}
+.body blockquote{margin:26px 0;padding:0 0 0 20px;border-left:3px solid var(--ink);color:var(--ink);font-family:var(--serif);font-size:19.5px;line-height:1.5}
+.body blockquote p{margin:0 0 6px}
+.body blockquote cite,.body blockquote em.by{display:block;font-family:var(--sans);font-style:normal;font-size:13.5px;color:var(--mut);margin-top:4px}
+.body blockquote.pull{border:0;padding:22px 26px;background:var(--card);border-radius:20px;box-shadow:var(--shadow)}
+.body code{font-family:var(--mono);font-size:.88em;background:rgba(23,24,28,.05);padding:.1em .4em;border-radius:6px}
+.body pre{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;overflow:auto;font-size:13.5px;line-height:1.55;margin:0 0 20px}
+.body pre code{background:none;padding:0}
+figure.fig{margin:30px -6px}
+figure.fig img{width:100%;height:auto;display:block;border-radius:16px;background:#fff}
+figure.fig figcaption{font-size:13.5px;color:var(--mut);margin:10px 8px 0;line-height:1.5}
+figure.fig figcaption b{color:var(--ink);font-weight:650}
+figure.fig-inline .inl{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;overflow-x:auto}
+figure.fig-inline .inl svg{max-width:100%;height:auto;display:block}
+.tbl{overflow-x:auto;margin:0 0 20px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--hair)}
+th{color:var(--ink);font-weight:650}
+hr{border:0;height:1px;background:var(--hair);margin:36px 0}
+.body #references+ol,.body #references+p+ol,.refs ol{font-size:14.5px}
+.body sup{font-size:.7em}
+footer.credits{padding:26px 0 96px;color:var(--mut);font-size:13.5px;line-height:1.65;border-top:1px solid var(--hair);margin-top:24px}
+footer.credits p{margin:0 0 8px}
+@media print{#pbar,.lang-sw,.listen,#jw-home{display:none}}
+
+</style>
+</head>
+<body>
+<div id="pbar" aria-hidden="true"></div>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">
+    <span class="yt"><i></i>arXiv · Yifan Zhang et al. · 2026-08-27</span>
+    <nav class="lang-sw" aria-label="language">
+      <a href="index.html" class="on">EN</a>
+      <a href="ko.html" class="">한국어</a>
+    </nav>
+  </div>
+  <h1>Off by One Token — Falcon Rewrites the Fast-Weight Update</h1>
+  <p class="lede">What changes when the state update of linear attention and SSMs is treated as an online learner with a stated objective — and what the 130M-scale evidence does and does not show.</p>
+  <div class="meta">
+    <span>2026-09-02</span>
+    <span class="sep">·</span><span>15 min read</span>
+    <span class="sep">·</span><span>19 min listen</span>
+    <span class="sep">·</span><a class="tag c0" href="../../?tag=deep-dive">#deep-dive</a><a class="tag c1" href="../../?tag=linear-attention">#linear-attention</a>
+  </div>
+</header>
+
+<figure class="hero"><img src="figures/hero.png" alt="Token stream compressing into a fixed-size fast-weight matrix, with one write arrow originating a step earlier than the other"></figure>
+
+<section class="card summary" aria-label="In brief">
+  <p class="ct">In brief</p>
+  <p>Falcon (Zhang et al., arXiv 2608.27763, 2026-08-27) recasts the state update of linear attention, DeltaNet, and Mamba-style models as an explicit online learning rule, and observes that the standard convention binds the key and value of the same step while read-after-write prediction actually reveals a pair whose feature comes one step earlier. From two local objectives the authors derive a six-member family of NLMS-normalized update rules with exact recurrent, masked-parallel, and chunk-parallel forms. At 124M–130M parameters one variant takes the best validation perplexity (17.10 versus Gated DeltaNet's 17.32) and a different one the best length extrapolation on multi-digit addition (87.2 versus 65.8 for the Transformer) — but no variant wins both, the headline alignment claim is never isolated in an ablation, and no code has been released. The paper is best read as a bid to define the design vocabulary of a layer that already ships inside frontier hybrid models.</p>
+  <ul><li>Falcon reads every fast-weight or SSM state update as an online learning rule with an explicit objective.</li><li>Its claimed fix is a one-step index shift in the write pair, costing no extra compute.</li><li>Falcon-1.3 wins perplexity (17.10 vs 17.32); Falcon-3A.3 wins addition extrapolation (87.2). No variant wins both.</li><li>The central alignment claim is never isolated — the defined shifted-vs-unshifted ablation has no reported numbers.</li><li>No code exists as of 2026-09-02; all results are author-reported at 124M–130M scale.</li><li>The cheap pieces — QK-RMSNorm, NLMS step sizes, the shift itself — are drop-in testable in delta-style blocks today.</li></ul>
+</section>
+
+
+<section class="card listen" aria-label="Listen to this article">
+  <p class="ct">Listen to this article</p>
+  <audio id="narr" controls preload="none" src="audio/en.mp3"></audio>
+  <div class="who"><span>Read by Eleanor · Higgs TTS</span><span>19:10</span></div>
+  <div class="chips" id="chips" role="list" aria-label="Jump to a section">
+    <button class="chip" data-t="1.2" role="listitem">A fixed-size state turns long context into a learning problem</button><button class="chip" data-t="108.14" role="listitem">The claim: the field binds the wrong training pair</button><button class="chip" data-t="239.17" role="listitem">Two objectives and a decades-old normalizer generate six rules</button><button class="chip" data-t="470.55" role="listitem">The scoreboard shows one win per column, and never both</button><button class="chip" data-t="622.43" role="listitem">What the evidence does not yet establish</button><button class="chip" data-t="775.11" role="listitem">An engineer can lift four things without waiting for code</button><button class="chip" data-t="917.67" role="listitem">The pitch targets a layer that already ships at frontier scale</button><button class="chip" data-t="1045.69" role="listitem">Five dated signals will settle it</button>
+  </div><div class="now" id="now"></div>
+</section>
+
+
+<section class="card source" aria-label="Source paper">
+  <a href="https://arxiv.org/abs/2608.27763" target="_blank" rel="noopener"><img src="figures/thumb.jpg" alt=""></a>
+  <div>
+    <p class="ct">Source paper</p>
+    <p class="t">Fast Weight Attention for Continual Learning</p>
+    <div class="s">Yifan Zhang et al. · 2026-08-27</div>
+    <a class="watch" href="https://arxiv.org/abs/2608.27763" target="_blank" rel="noopener">Read on arXiv ↗</a> <a class="watch" style="margin-left:14px" href="https://github.com/yifanzhang-pro/fast-weight-attention" target="_blank" rel="noopener">Code on GitHub ↗</a>
+    
+  </div>
+</section>
+
+<article class="body">
+<h2 id="a-fixed-size-state-turns-long-context-into-a-learning-problem">A fixed-size state turns long context into a learning problem</h2>
+<p>The transformer's answer to long context is to remember everything: the key-value cache grows with every token, and so does the cost of touching it. The recurrent alternatives that matured over the past five years — linear attention [3], DeltaNet [4], and Mamba-style selective state-space models [5] — compress the whole prefix into a fixed-size matrix instead, which buys constant-size inference state but forces a decision, at every step, about what to keep and what to overwrite.</p>
+<p>"Fast Weight Attention for Continual Learning" [1], posted to arXiv on 2026-08-27 by Yifan Zhang and ten co-authors spanning ByteDance Seed, Princeton, Tsinghua, and Hyperbolic Labs, asks that this decision be read literally: if the state is a compressed memory, then the rule that updates it is an online learning rule, and it deserves a stated objective rather than an architectural convention.</p>
+<blockquoteNone>
+<p>"Beyond efficiency, long-context modeling is also a continual-learning problem: the model must bind new evidence online without catastrophic interference."</p><cite>§1, p.1</cite></blockquote>
+<p>The author list is part of the story. The corresponding authors are Mengdi Wang of Princeton, Turing laureate Andrew Chi-Chih Yao of Tsinghua, and Quanquan Gu, who ran LLM pretraining at ByteDance Seed for three years before departing around June 2026 [26]; first author Yifan Zhang is a Princeton PhD student, and a footnote records that part of his work was done while at Seed (p.1). The framework they propose is named Falcon — no relation to the Falcon LLM family from TII — and it arrives just as the layer it studies has started shipping in production models, a point we return to below.</p>
+<h2 id="the-claim-the-field-binds-the-wrong-training-pair">The claim: the field binds the wrong training pair</h2>
+<p>All the models in this family share one mechanism. At each step the network produces a query, key, and value; the memory state is updated with an outer product of a key feature and a value, and a query later reads the state with a dot product. The near-universal convention writes the same-step pair — key t stores value t.</p>
+<p>Falcon's central observation concerns what the training signal actually reveals. Under read-after-write semantics — write token t into the state, then read the updated state to predict token t+1 — the value observed at step t arrives as the answer to a prediction that was made from the previous step's feature. The training example the prefix-prediction objective exposes at step t therefore pairs v_t with φ(k_{t−1}), the feature from one step earlier, not with the same step's φ(k_t) (§3, p.6).</p>
+<blockquoteNone>
+<p>"The same-step pairing is still causal, but it optimizes a different internal fast-memory objective."</p><cite>§1, p.3</cite></blockquote>
+<figure class="fig fig-inline" id="fig-1"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Diagram contrasting the common same-step key–value pairing with Falcon's prefix-aligned pairing" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display:block;">
+  <defs>
+    <marker id="fa1-arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6bd8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="675" fill="#f6f5f1"/>
+
+  <!-- column guides -->
+  <g stroke="#676b76" stroke-width="1" stroke-dasharray="2 6" opacity="0.35">
+    <line x1="210" y1="150" x2="210" y2="560"/>
+    <line x1="400" y1="150" x2="400" y2="560"/>
+    <line x1="590" y1="150" x2="590" y2="560"/>
+    <line x1="780" y1="150" x2="780" y2="560"/>
+  </g>
+
+  <!-- ================= token timeline ================= -->
+  <g>
+    <!-- t-2 -->
+    <rect x="155" y="38" width="110" height="46" rx="8" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="210" y="68" text-anchor="middle" font-size="21" fill="#17181c">t−2</text>
+    <!-- t-1 -->
+    <rect x="345" y="38" width="110" height="46" rx="8" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="400" y="68" text-anchor="middle" font-size="21" fill="#17181c">t−1</text>
+    <!-- t -->
+    <rect x="535" y="38" width="110" height="46" rx="8" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="590" y="68" text-anchor="middle" font-size="21" fill="#17181c">t</text>
+    <!-- t+1 (not yet seen) -->
+    <rect x="725" y="38" width="110" height="46" rx="8" fill="#f6f5f1" stroke="#676b76" stroke-width="1.5" stroke-dasharray="6 5"/>
+    <text x="780" y="68" text-anchor="middle" font-size="21" fill="#676b76">t+1</text>
+
+    <!-- small chips under each box -->
+    <g font-size="15">
+      <g>
+        <rect x="158" y="96" width="48" height="26" rx="13" fill="#fff" stroke="#676b76"/>
+        <text x="182" y="114" text-anchor="middle" fill="#33353c">φ(k)</text>
+        <rect x="214" y="96" width="34" height="26" rx="13" fill="#fff" stroke="#676b76"/>
+        <text x="231" y="114" text-anchor="middle" fill="#33353c">v</text>
+      </g>
+      <g>
+        <rect x="348" y="96" width="48" height="26" rx="13" fill="#fff" stroke="#676b76"/>
+        <text x="372" y="114" text-anchor="middle" fill="#33353c">φ(k)</text>
+        <rect x="404" y="96" width="34" height="26" rx="13" fill="#fff" stroke="#676b76"/>
+        <text x="421" y="114" text-anchor="middle" fill="#33353c">v</text>
+      </g>
+      <g>
+        <rect x="538" y="96" width="48" height="26" rx="13" fill="#fff" stroke="#676b76"/>
+        <text x="562" y="114" text-anchor="middle" fill="#33353c">φ(k)</text>
+        <rect x="594" y="96" width="34" height="26" rx="13" fill="#fff" stroke="#676b76"/>
+        <text x="611" y="114" text-anchor="middle" fill="#33353c">v</text>
+      </g>
+      <g opacity="0.55">
+        <rect x="728" y="96" width="48" height="26" rx="13" fill="#f6f5f1" stroke="#676b76" stroke-dasharray="4 4"/>
+        <text x="752" y="114" text-anchor="middle" fill="#676b76">φ(k)</text>
+        <rect x="784" y="96" width="34" height="26" rx="13" fill="#f6f5f1" stroke="#676b76" stroke-dasharray="4 4"/>
+        <text x="801" y="114" text-anchor="middle" fill="#676b76">v</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ================= row 1: common same-step pair ================= -->
+  <g>
+    <text x="40" y="222" font-size="22" font-weight="600" fill="#17181c">Common: same-step pair</text>
+
+    <!-- chips, both under column t -->
+    <rect x="505" y="238" width="96" height="36" rx="18" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="553" y="262" text-anchor="middle" font-size="18" fill="#17181c">φ(k<tspan font-size="13" dy="4">t</tspan><tspan dy="-4">)</tspan></text>
+    <rect x="613" y="238" width="62" height="36" rx="18" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="644" y="262" text-anchor="middle" font-size="18" fill="#17181c">v<tspan font-size="13" dy="4">t</tspan></text>
+
+    <!-- bracket joining the two chips -->
+    <path d="M505,286 L505,296 L675,296 L675,286" fill="none" stroke="#33353c" stroke-width="2"/>
+    <!-- stem + elbow into S_t -->
+    <path d="M590,296 L590,312 L868,312" fill="none" stroke="#2f6bd8" stroke-width="2.5" marker-end="url(#fa1-arrow-blue)"/>
+
+    <!-- S_t -->
+    <rect x="878" y="286" width="72" height="52" rx="8" fill="#fff" stroke="#17181c" stroke-width="1.8"/>
+    <text x="914" y="318" text-anchor="middle" font-size="20" fill="#17181c">S<tspan font-size="14" dy="5">t</tspan></text>
+
+    <!-- read arrow -->
+    <line x1="950" y1="312" x2="1118" y2="312" stroke="#2f6bd8" stroke-width="2.5" marker-end="url(#fa1-arrow-blue)"/>
+    <text x="1034" y="296" text-anchor="middle" font-size="16" fill="#2f6bd8">read S<tspan font-size="12" dy="4">t</tspan><tspan dy="-4">, predict t+1</tspan></text>
+
+    <!-- tag -->
+    <text x="505" y="340" font-size="16" font-style="italic" fill="#676b76">still causal, different objective</text>
+  </g>
+
+  <!-- ================= row 2: falcon prefix-aligned pair ================= -->
+  <g>
+    <text x="40" y="412" font-size="22" font-weight="600" fill="#17181c">Falcon: prefix-aligned pair</text>
+
+    <!-- shifted feature chip under column t−1 (orange) -->
+    <rect x="340" y="428" width="120" height="36" rx="18" fill="#fff" stroke="#e08a1e" stroke-width="2.2"/>
+    <text x="400" y="452" text-anchor="middle" font-size="18" fill="#e08a1e">φ(k<tspan font-size="13" dy="4">t−1</tspan><tspan dy="-4">)</tspan></text>
+    <!-- value chip under column t -->
+    <rect x="559" y="428" width="62" height="36" rx="18" fill="#fff" stroke="#17181c" stroke-width="1.5"/>
+    <text x="590" y="452" text-anchor="middle" font-size="18" fill="#17181c">v<tspan font-size="13" dy="4">t</tspan></text>
+
+    <!-- bracket joining the two chips (orange) -->
+    <path d="M340,476 L340,486 L621,486 L621,476" fill="none" stroke="#e08a1e" stroke-width="2"/>
+    <!-- stem + elbow into S_t -->
+    <path d="M480,486 L480,502 L868,502" fill="none" stroke="#2f6bd8" stroke-width="2.5" marker-end="url(#fa1-arrow-blue)"/>
+
+    <!-- annotation -->
+    <text x="340" y="530" font-size="16" font-style="italic" fill="#e08a1e">pair revealed by prediction</text>
+
+    <!-- S_t -->
+    <rect x="878" y="476" width="72" height="52" rx="8" fill="#fff" stroke="#17181c" stroke-width="1.8"/>
+    <text x="914" y="508" text-anchor="middle" font-size="20" fill="#17181c">S<tspan font-size="14" dy="5">t</tspan></text>
+
+    <!-- read arrow -->
+    <line x1="950" y1="502" x2="1118" y2="502" stroke="#2f6bd8" stroke-width="2.5" marker-end="url(#fa1-arrow-blue)"/>
+    <text x="1034" y="486" text-anchor="middle" font-size="16" fill="#2f6bd8">read S<tspan font-size="12" dy="4">t</tspan><tspan dy="-4">, predict t+1</tspan></text>
+  </g>
+
+  <!-- footnote chip -->
+  <g>
+    <rect x="40" y="598" width="248" height="36" rx="18" fill="#fff" stroke="#676b76"/>
+    <text x="164" y="622" text-anchor="middle" font-size="16" fill="#676b76">boundary: x<tspan font-size="12" dy="4">1</tspan><tspan dy="-4"> = 0, η</tspan><tspan font-size="12" dy="4">1</tspan><tspan dy="-4"> = 0</tspan></text>
+  </g>
+</svg>
+</div><figcaption><b>Figure 1.</b> Under read-after-write semantics the value observed at step t answers the feature from step t−1, so the causally revealed training pair is (φ(k_{t−1}), v_t); the common same-step pairing remains causal but optimizes a different internal objective.</figcaption></figure>
+
+<p>Two things keep this claim honest. First, its normative force depends on accepting the authors' prefix-prediction objective as what the fast memory ought to minimize; the same-step rule is exactly correct for a same-step reconstruction objective, so "different" is established while "wrong" is a modeling choice. Second, the fix costs nothing: it is a relabeling of the write stream plus two boundary sentinels — the first write feature is set to zero, and the first step size with it, so that step one neither writes data nor decays a carried state (§3, p.6). Our search, like the paper's, found no prior work stating this shift, which makes it a genuinely novel observation of unproven empirical value — the experiments never isolate it, as we discuss below.</p>
+<h2 id="two-objectives-and-a-decades-old-normalizer-generate-six-rules">Two objectives and a decades-old normalizer generate six rules</h2>
+<p>Once the pair is fixed, Falcon derives rather than designs. Treat the state S as an online linear predictor from the shifted feature to the newly revealed value, charge it an instantaneous ridge-regression loss, and take a single gradient step per token: the update becomes S_t = (1 − η_t λ_t) S_{t−1} + η_t x_t r_t^⊤, where the residual r_t is the gap between the observed value and what the old state predicted (§3.1, p.7). Choosing the step size η_t = β_t / (‖x_t‖² + λ_t + ε) puts the loss's exact smoothness constant in the denominator, so every update provably decreases the local loss whenever the learned gain β_t stays in (0, 2) — and with the ridge and stabilizer terms at zero, the rule reduces exactly to the classical normalized least-mean-squares (NLMS) filter of adaptive signal processing [16].</p>
+<p>Familiar architectures then drop out as special cases. Undo the one-step shift and the regression update recovers DeltaNet's delta rule exactly [4]; swap the squared error for a negative inner-product objective, whose gradient is simply the outer product itself, and the additive writes of linear attention and Mamba-2 appear (§3.3, p.8; §4.3, p.14–17) [3][6]. This unifying reading — sequence layers as test-time optimizers — is not new in itself: DeltaNet's own authors framed the delta rule as error correction [4], and Titans, ATLAS, MesaNet, TTT, and Test-Time Regression all built internal-objective views that Falcon cites and constrains to strict single-step causality [8][9][10][11][12]. What Falcon adds on top of the lineage is the alignment, the normalization, and exactness.</p>
+<figure class="fig fig-inline" id="fig-2"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Anatomy of one Falcon update step with three variant switches" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <!-- ===== spine stages ===== -->
+  <!-- stage geometry: 5 boxes, w=214 h=120, y=90; x = 17, 250, 483, 716, 949; gaps 19 for arrows -->
+
+  <!-- stage 1 -->
+  <rect x="17" y="90" width="214" height="120" rx="12" fill="#ffffff" stroke="#17181c" stroke-width="1.5"/>
+  <text x="124" y="132" text-anchor="middle" font-size="20" font-weight="600" fill="#17181c">write feature</text>
+  <text x="124" y="170" text-anchor="middle" font-size="17" fill="#2f6bd8">x&#8348; = &#966;(k&#8348;&#8331;&#8321;)</text>
+
+  <!-- arrow 1→2 -->
+  <line x1="231" y1="150" x2="243" y2="150" stroke="#2f6bd8" stroke-width="2.5"/>
+  <path d="M 243 144 L 253 150 L 243 156 Z" fill="#2f6bd8"/>
+
+  <!-- stage 2 -->
+  <rect x="250" y="90" width="214" height="120" rx="12" fill="#ffffff" stroke="#17181c" stroke-width="1.5"/>
+  <text x="357" y="132" text-anchor="middle" font-size="20" font-weight="600" fill="#17181c">predict</text>
+  <text x="357" y="170" text-anchor="middle" font-size="17" fill="#2f6bd8">&#375; = S&#8348;&#8331;&#8321;&#7488; x&#8348;</text>
+
+  <!-- arrow 2→3 -->
+  <line x1="464" y1="150" x2="476" y2="150" stroke="#2f6bd8" stroke-width="2.5"/>
+  <path d="M 476 144 L 486 150 L 476 156 Z" fill="#2f6bd8"/>
+
+  <!-- stage 3 -->
+  <rect x="483" y="90" width="214" height="120" rx="12" fill="#ffffff" stroke="#17181c" stroke-width="1.5"/>
+  <text x="590" y="132" text-anchor="middle" font-size="20" font-weight="600" fill="#17181c">residual</text>
+  <text x="590" y="170" text-anchor="middle" font-size="17" fill="#2f6bd8">r = v&#8348; &#8722; &#375;</text>
+
+  <!-- arrow 3→4 -->
+  <line x1="697" y1="150" x2="709" y2="150" stroke="#2f6bd8" stroke-width="2.5"/>
+  <path d="M 709 144 L 719 150 L 709 156 Z" fill="#2f6bd8"/>
+
+  <!-- stage 4 -->
+  <rect x="716" y="90" width="214" height="120" rx="12" fill="#ffffff" stroke="#17181c" stroke-width="1.5"/>
+  <text x="823" y="132" text-anchor="middle" font-size="20" font-weight="600" fill="#17181c">normalized step</text>
+  <text x="823" y="170" text-anchor="middle" font-size="16" fill="#2f6bd8">&#951; = &#946; / (&#8214;x&#8214;&#178; + &#955; + &#949;)</text>
+
+  <!-- arrow 4→5 -->
+  <line x1="930" y1="150" x2="942" y2="150" stroke="#2f6bd8" stroke-width="2.5"/>
+  <path d="M 942 144 L 952 150 L 942 156 Z" fill="#2f6bd8"/>
+
+  <!-- stage 5 -->
+  <rect x="949" y="90" width="234" height="120" rx="12" fill="#ffffff" stroke="#17181c" stroke-width="1.5"/>
+  <text x="1066" y="126" text-anchor="middle" font-size="20" font-weight="600" fill="#17181c">update + read</text>
+  <text x="1066" y="158" text-anchor="middle" font-size="14.5" fill="#2f6bd8">S&#8348; = (1&#8722;&#951;&#955;)S&#8348;&#8331;&#8321; + &#951; x&#8348; r&#7488;</text>
+  <text x="1066" y="186" text-anchor="middle" font-size="14.5" fill="#2f6bd8">o&#8348; = S&#8348;&#7488; &#966;(q&#8348;)</text>
+
+  <!-- ===== switch connectors (dashed teal) ===== -->
+  <!-- stage 2 → window badge -->
+  <line x1="357" y1="210" x2="357" y2="292" stroke="#0f9d8c" stroke-width="1.8" stroke-dasharray="5 5"/>
+  <!-- stage 3 → objective badge -->
+  <line x1="590" y1="210" x2="590" y2="402" stroke="#0f9d8c" stroke-width="1.8" stroke-dasharray="5 5"/>
+  <!-- stage 4 → plasticity badge -->
+  <line x1="823" y1="210" x2="823" y2="292" stroke="#0f9d8c" stroke-width="1.8" stroke-dasharray="5 5"/>
+
+  <!-- ===== switch badges ===== -->
+  <!-- window badge (under stage 2) -->
+  <rect x="192" y="292" width="330" height="86" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.8"/>
+  <text x="208" y="316" font-size="12" font-weight="700" letter-spacing="1.5" fill="#0f9d8c">SWITCH</text>
+  <text x="357" y="342" text-anchor="middle" font-size="17" font-weight="600" fill="#17181c">window: 1 pair | B pairs</text>
+  <text x="357" y="366" text-anchor="middle" font-size="14.5" fill="#676b76">-1 | -3 (rehearsal)</text>
+
+  <!-- plasticity badge (under stage 4) -->
+  <rect x="653" y="292" width="340" height="86" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.8"/>
+  <text x="669" y="316" font-size="12" font-weight="700" letter-spacing="1.5" fill="#0f9d8c">SWITCH</text>
+  <text x="823" y="342" text-anchor="middle" font-size="17" font-weight="600" fill="#17181c">plasticity: one scalar &#951; | per-column &#951;</text>
+  <text x="823" y="366" text-anchor="middle" font-size="14.5" fill="#676b76">-1 | -2</text>
+
+  <!-- objective badge (under stage 3, lower row) -->
+  <rect x="415" y="402" width="350" height="86" rx="10" fill="#ffffff" stroke="#0f9d8c" stroke-width="1.8"/>
+  <text x="431" y="426" font-size="12" font-weight="700" letter-spacing="1.5" fill="#0f9d8c">SWITCH</text>
+  <text x="590" y="452" text-anchor="middle" font-size="17" font-weight="600" fill="#17181c">objective: residual r | value v</text>
+  <text x="590" y="476" text-anchor="middle" font-size="14.5" fill="#676b76">Falcon-1/2/3 | Falcon-1A/2A/3A</text>
+
+  <!-- ===== bottom strip ===== -->
+  <line x1="60" y1="540" x2="1140" y2="540" stroke="#676b76" stroke-width="0.75" opacity="0.5"/>
+  <text x="600" y="576" text-anchor="middle" font-size="16" fill="#676b76">shrinkage (1&#8722;&#951;&#955;) = derived forgetting &#183; &#946; &#8712; (0,2) guarantees descent (regression family)</text>
+
+  <!-- ===== variant legend ===== -->
+  <text x="600" y="620" text-anchor="middle" font-size="15" fill="#33353c">six variants: <tspan fill="#0f9d8c" font-weight="600">Falcon-1 / -2 / -3</tspan> (residual objective) &#183; <tspan fill="#0f9d8c" font-weight="600">Falcon-1A / -2A / -3A</tspan> (value objective)</text>
+</svg>
+</div><figcaption><b>Figure 2.</b> One Falcon step: predict from the shifted feature, take a normalized gradient step on the local objective, then read the updated state. Three switches — objective, plasticity granularity, window size — generate all six variants.</figcaption></figure>
+
+<p>Three switches generate the family from this one spine. The objective can be squared-error regression (Falcon-1, -2, -3) or negative inner product (Falcon-1A, -2A, -3A); the plasticity can be one scalar step size or one per value channel; the update can consume a single pair or a sliding window of B recent causal pairs — a bounded rehearsal buffer, in continual-learning terms. Two derived properties carry practical bite. Forgetting is not a free gate but ridge shrinkage: the carry factor (1 − η_t λ_t) falls out of the objective, where Gated DeltaNet adds its decay gate as a free learned parameter tied to no objective [7]. And because β_t may exceed 1, the update can flip the state's sign along the current write direction — a stable regime that prior work links to state-tracking ability in linear RNNs [15].</p>
+<p>The engineering payload is that every rule ships in three provably equivalent forms — sequential scan, masked-parallel attention, and chunk-parallel — via WY representations for the regression rules [13], ParallelFlow's tensor-inversion machinery for the windowed regression rule [14] (as far as we can tell, the first architecture paper to build a training algorithm on that theory), and a log-space renormalization that keeps positive decay numerically stable in low precision. That keeps training compatible with the SSD-style chunked regime that made Mamba-2 fast [6]. One asymmetry deserves flagging: for the inner-product family the denominator is not a curvature match — the paper says plainly that it "stabilizes the write magnitude" rather than being required by smoothness (§4.3, p.17) — so the per-step descent guarantee belongs to the regression family alone, and the paper is equally plain that local descent implies nothing monotone about the outer training loss (§3.2, p.7).</p>
+<h2 id="the-scoreboard-shows-one-win-per-column-and-never-both">The scoreboard shows one win per column, and never both</h2>
+<p>The experiments are small and clean. All models have 124M–130M parameters and train for 100,000 steps at sequence length 1,024 with global batch 480 — about 49.2B tokens of FineWeb-Edu [17] — each run fitting on a single four-GPU H100/H200 node, against Transformer (RoPE), RetNet/LightningAttn, Mamba-2, DeltaNet, and Gated DeltaNet baselines (§5.1, p.26; App. B.1, p.35).</p>
+<p>On validation perplexity the regression variant Falcon-1.3 leads at 17.10, with Gated DeltaNet the best baseline at 17.32 and the Transformer at 17.38 (Table 1, p.26). On an eight-task downstream suite little more than a point covers every model's zero-shot average, and the Transformer's one-shot average of 49.67 still tops the field (Table 2, p.27) — differences we read as within noise, since no seed variance is reported. The distinctive result is variable-digit addition: trained on 1–32-digit sums and tested on 33–48 digits — a protocol descended from Neural GPUs [18], though the original used binary numbers — the sliding-window variant Falcon-3A.3 reaches 87.2 mean accuracy and Falcon-1A.3 85.9, against 82.9 for RetNet/LightningAttn, 75.2 for Mamba-2, and 65.8 for the Transformer (Table 3, p.28).</p>
+<blockquoteNone>
+<p>"The empirical takeaway is therefore not a uniform win, but that the proposed aligned, normalized updates preserve competitive language-model quality while providing the controlled arithmetic gains reported below."</p><cite>§5.1, p.26</cite></blockquote>
+<p>That hedge is accurate, and the sharpest illustration is internal: Falcon-1.3, the perplexity champion, collapses to 68.8 on the same addition task — below every recurrent baseline listed and barely above the Transformer. The regression objective and the inner-product objective appear to store different things, the two success metrics anticorrelate across variants, and the paper offers no explanation. The authors label the arithmetic result "supporting evidence rather than the paper’s primary result" (§5.2, p.27), which is the right label; it is also the paper's only result that is not within a fraction of a point of its baselines.</p>
+<figure class="fig fig-inline" id="fig-3"><div class="inl">
+<svg viewBox="0 0 1200 675" width="100%" role="img" aria-label="Scatter plot of FineWeb-Edu validation perplexity versus mean addition accuracy for seven models" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#f6f5f1; display:block;">
+  <!-- gridlines -->
+  <g stroke="#e3e1da" stroke-width="1">
+    <line x1="100" y1="538" x2="1150" y2="538"/>
+    <line x1="100" y1="434" x2="1150" y2="434"/>
+    <line x1="100" y1="330" x2="1150" y2="330"/>
+    <line x1="100" y1="226" x2="1150" y2="226"/>
+    <line x1="100" y1="122" x2="1150" y2="122"/>
+    <line x1="362.5" y1="70" x2="362.5" y2="590"/>
+    <line x1="625" y1="70" x2="625" y2="590"/>
+    <line x1="887.5" y1="70" x2="887.5" y2="590"/>
+  </g>
+
+  <!-- axes -->
+  <g stroke="#17181c" stroke-width="1.5">
+    <line x1="100" y1="590" x2="1150" y2="590"/>
+    <line x1="100" y1="70" x2="100" y2="590"/>
+  </g>
+
+  <!-- x tick labels -->
+  <g fill="#676b76" font-size="18" text-anchor="middle">
+    <text x="100" y="616">17.0</text>
+    <text x="362.5" y="616">17.5</text>
+    <text x="625" y="616">18.0</text>
+    <text x="887.5" y="616">18.5</text>
+    <text x="1150" y="616">19.0</text>
+  </g>
+  <!-- y tick labels -->
+  <g fill="#676b76" font-size="18" text-anchor="end">
+    <text x="88" y="544">50</text>
+    <text x="88" y="440">60</text>
+    <text x="88" y="336">70</text>
+    <text x="88" y="232">80</text>
+    <text x="88" y="128">90</text>
+  </g>
+
+  <!-- axis titles -->
+  <text x="625" y="652" fill="#17181c" font-size="20" text-anchor="middle">FineWeb-Edu validation perplexity</text>
+  <text x="170" y="652" fill="#676b76" font-size="19" text-anchor="middle">&#8592; better</text>
+  <text x="30" y="330" fill="#17181c" font-size="20" text-anchor="middle" transform="rotate(-90 30 330)">mean addition accuracy, 33&#8211;48 digits (%)</text>
+  <text x="132" y="92" fill="#676b76" font-size="19" text-anchor="start">better &#8593;</text>
+
+  <!-- Falcon-3A.3 dashed horizontal line (no perplexity reported) -->
+  <line x1="100" y1="151.1" x2="1150" y2="151.1" stroke="#676b76" stroke-width="1.5" stroke-dasharray="7 6"/>
+  <circle cx="1084" cy="151.1" r="8" fill="none" stroke="#e08a1e" stroke-width="3"/>
+  <text x="1145" y="139" fill="#676b76" font-size="18" text-anchor="end">Falcon-3A.3: 87.2, no perplexity reported</text>
+
+  <!-- DeltaNet / Gated DeltaNet dashed ticks (no addition score) -->
+  <g stroke="#676b76" stroke-width="1.5" stroke-dasharray="5 5">
+    <line x1="268" y1="590" x2="268" y2="548"/>
+    <line x1="541" y1="590" x2="541" y2="548"/>
+  </g>
+  <text x="560" y="540" fill="#676b76" font-size="17" text-anchor="start">Gated DeltaNet 17.32, DeltaNet 17.84: no addition score</text>
+
+  <!-- baseline points (ink) -->
+  <g fill="#17181c">
+    <circle cx="299.5" cy="373.7" r="9"/>
+    <circle cx="1039.75" cy="195.8" r="9"/>
+    <circle cx="467.5" cy="275.9" r="9"/>
+  </g>
+  <g fill="#33353c" font-size="18">
+    <text x="316" y="380">Transformer (RoPE)</text>
+    <text x="1023" y="202" text-anchor="end">RetNet/LightningAttn</text>
+    <text x="484" y="282">Mamba-2</text>
+  </g>
+
+  <!-- Falcon points (blue) -->
+  <g fill="#2f6bd8">
+    <circle cx="467.5" cy="219.8" r="9"/>
+    <circle cx="467.5" cy="171.9" r="9"/>
+    <circle cx="310" cy="164.6" r="9"/>
+    <circle cx="152.5" cy="342.5" r="9"/>
+  </g>
+  <!-- orange ring: Falcon-1.3 (perplexity winner) -->
+  <circle cx="152.5" cy="342.5" r="15" fill="none" stroke="#e08a1e" stroke-width="3"/>
+  <g fill="#2f6bd8" font-size="18">
+    <text x="484" y="226">Falcon-1A.1</text>
+    <text x="484" y="178">Falcon-1A.2</text>
+    <text x="310" y="196" text-anchor="middle">Falcon-1A.3</text>
+    <text x="174" y="349">Falcon-1.3</text>
+  </g>
+</svg>
+</div><figcaption><b>Figure 3.</b> Perplexity versus addition-extrapolation accuracy at 124M–130M parameters. The regression variant Falcon-1.3 wins perplexity but collapses on addition; the inner-product variants excel at addition; DeltaNet and Gated DeltaNet were not evaluated on addition. Data: Tables 1 and 3 of the paper.</figcaption></figure>
+
+<h2 id="what-the-evidence-does-not-yet-establish">What the evidence does not yet establish</h2>
+<p>The gap between the framework and the experiments is the most important thing to understand about this paper. The contribution list opens with the temporal-alignment observation, and the paper even defines the exact two-by-two ablation — read-after-write versus read-before-write, shifted versus unshifted — that would isolate it (Figure 11, p.37). No numbers from that ablation appear in any table. The winning configuration changes three things at once relative to the baselines — the alignment, the QK normalization, and context-conditioned step sizes — so nothing reported attributes the 0.22-perplexity margin to the shift itself. A reader can accept every table and still not know whether the paper's central idea does anything.</p>
+<p>The addition table has a matching blind spot: DeltaNet and Gated DeltaNet, the very family Falcon claims to improve, are absent from it, so the best extrapolation result is established against a field whose strongest member scores 82.9 — 4.3 points behind. Half the family is untested altogether: Falcon-2, Falcon-2A, and Falcon-3 are derived with full parallel algorithms but, as the paper states, are "defined but not separately benchmarked in the main tables" (§5, p.26). No throughput or wall-clock numbers appear anywhere, which is notable for a paper whose selling point is chunk-parallel trainability, and notable again because production adoption of this layer family has been driven by speed.</p>
+<p>External verification is currently impossible. The official "project page" repository contains a README, the PDF, one figure, and an empty model stub — no code, verified live on 2026-09-02 [2]. During our checks on 2026-09-02 the authors' project site briefly served an anonymous-authors version of the PDF — a signal consistent with double-blind review in progress, though the live page showed the full named author list when we re-checked the same day — and the PDF body carries an internal date of March 9, 2026 that contradicts the 2026-08-27 arXiv submission. Every number is author-reported, with no seeds, no error bars, and no independent replication.</p>
+<p>None of this is misrepresentation. Checking the paper's characterizations of prior work against the sources turns up accurate citation after accurate citation, the algebra that can be verified by hand is correct, and the hedges quoted above are the authors' own. Our reading is that the paper is honest about a gap its readers may be tempted to paper over: an elegant derivation is not evidence that the derived rule matters.</p>
+<h2 id="an-engineer-can-lift-four-things-without-waiting-for-code">An engineer can lift four things without waiting for code</h2>
+<p>For someone maintaining a delta-rule or gated-linear-attention stack, the paper sorts into a short list of cheap tests and one warning.</p>
+<p>The most directly transferable change is QK-RMSNorm inside the fast-weight block, in place of the ℓ2 normalization common in Gated DeltaNet implementations: the paper's one controlled comparison moves perplexity from 17.70 to 17.40 with everything else held fixed (Table 1, p.26). The claimed mixed-precision stability benefit, though, is an argument about coordinate magnitudes, not a measured experiment (§4.1, p.10). The second lift is the NLMS parameterization, a clean way to separate plasticity from scale in any write rule: learn a dimensionless gain in (0, 2) and derive the step size from the local feature norm, which turns fixed learning rates from a silent scale mismatch into a removable bug and makes gains above 1 a deliberate state-tracking regime rather than an instability [15][16].</p>
+<p>The third is the alignment shift itself — a few lines plus the two boundary sentinels, but since the paper never isolates it, treat it as a hypothesis your own ablation harness can settle in one small run. The fourth is the numerical checklist, which generalizes to any decayed linear recurrence: clamp the decay fraction, compute log-decays in fp32 via log1p, and renormalize at chunk boundaries on both the step size and the write target — the appendix is explicit that rescaling the step size alone is not sufficient (App. C.6, p.38).</p>
+<p>The warning concerns serving. For the sliding-window variants the matrix state alone is not a complete checkpoint: exact continuation across a segment boundary also requires the last B−1 causal pairs (B = 4 in the paper's runs), so any inference stack built on the assumption that a recurrent model hands one state tensor across segments — prefix caching, chunked prefill, session resumption — needs explicit plumbing for the tail (App. C.7, p.39). And anyone adopting more than the drop-in pieces should budget real time: with no released code, the kernels must be rebuilt from pseudocode. The appendices provide unusually complete forward and backward listings, which is genuinely rare and welcome, but the cost side of the ledger is empty until someone measures it.</p>
+<h2 id="the-pitch-targets-a-layer-that-already-ships-at-frontier-scale">The pitch targets a layer that already ships at frontier scale</h2>
+<p>Falcon's strongest baseline is not a research artifact. Gated DeltaNet has been the linear-attention layer inside Alibaba's Qwen3-Next since September 2025 [19] and stayed there in the roughly 400B-parameter Qwen3.5 of February 2026 [20], while Moonshot's Kimi Linear extends the same family [21]. Read against that backdrop, the paper's real pitch is not "replace your model" but a kernel swap:</p>
+<blockquoteNone>
+<p>"The same normalization/alignment can be used as a drop-in replacement for the local update inside delta-style blocks, independent of their particular gating or mixing parameterization."</p><cite>Appendix C.6, p.39</cite></blockquote>
+<p>A drop-in local update is a low-switching-cost proposition, which is exactly why the missing throughput numbers and the missing isolation ablation matter commercially as much as scientifically: a pretraining team offered this menu cannot pick a variant without redoing the experiments, and without code it cannot redo them cheaply.</p>
+<figure class="fig fig-inline" id="fig-4"><div class="inl">
+<svg viewBox="0 0 1200 600" width="100%" role="img" aria-label="Timeline 2020 to 2026: fast-weight papers lane above, shipping models lane below" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: #f6f5f1; display: block;">
+  <!-- year gridlines: x(t) = 70 + (t - 2020) * 160 -->
+  <g stroke="#e7e5de" stroke-width="1">
+    <line x1="70"   y1="70" x2="70"   y2="556"/>
+    <line x1="230"  y1="70" x2="230"  y2="556"/>
+    <line x1="390"  y1="70" x2="390"  y2="556"/>
+    <line x1="550"  y1="70" x2="550"  y2="556"/>
+    <line x1="710"  y1="70" x2="710"  y2="556"/>
+    <line x1="870"  y1="70" x2="870"  y2="556"/>
+    <line x1="1030" y1="70" x2="1030" y2="556"/>
+  </g>
+  <g fill="#676b76" font-size="13" text-anchor="middle">
+    <text x="70"   y="578">2020</text>
+    <text x="230"  y="578">2021</text>
+    <text x="390"  y="578">2022</text>
+    <text x="550"  y="578">2023</text>
+    <text x="710"  y="578">2024</text>
+    <text x="870"  y="578">2025</text>
+    <text x="1030" y="578">2026</text>
+  </g>
+
+  <!-- lane lines -->
+  <line x1="70" y1="245" x2="1150" y2="245" stroke="#2f6bd8" stroke-width="1.5" opacity="0.45"/>
+  <line x1="70" y1="380" x2="1150" y2="380" stroke="#e08a1e" stroke-width="1.5" opacity="0.45"/>
+  <text x="72" y="232" fill="#2f6bd8" font-size="15" font-weight="700">Papers</text>
+  <text x="72" y="368" fill="#e08a1e" font-size="15" font-weight="700">Shipping models</text>
+
+  <!-- connector: Gated DeltaNet (paper, Dec 2024) -> Qwen3-Next (ship, Sep 2025) -->
+  <defs>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e08a1e"/>
+    </marker>
+  </defs>
+  <path d="M 865 252 Q 882 348 976 371" fill="none" stroke="#e08a1e" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow-orange)"/>
+  <text x="906" y="330" fill="#e08a1e" font-size="14" font-weight="700">&#8776; 9 months</text>
+
+  <!-- ===== Papers lane: dots on y=245 ===== -->
+  <g fill="#2f6bd8">
+    <circle cx="143"  cy="245" r="6"/>
+    <circle cx="250"  cy="245" r="6"/>
+    <circle cx="703"  cy="245" r="6"/>
+    <circle cx="770"  cy="245" r="6"/>
+    <circle cx="797"  cy="245" r="6"/>
+    <circle cx="861"  cy="245" r="6"/>
+    <circle cx="871"  cy="245" r="6"/>
+    <circle cx="937"  cy="245" r="6"/>
+    <circle cx="997"  cy="245" r="6"/>
+  </g>
+  <!-- Falcon: emphasized -->
+  <circle cx="1130" cy="245" r="8" fill="#2f6bd8"/>
+  <circle cx="1130" cy="245" r="15" fill="none" stroke="#2f6bd8" stroke-width="2"/>
+
+  <!-- paper leader lines -->
+  <g stroke="#b9bcc4" stroke-width="1">
+    <line x1="143"  y1="222" x2="143"  y2="237"/>
+    <line x1="250"  y1="222" x2="250"  y2="237"/>
+    <line x1="703"  y1="222" x2="703"  y2="237"/>
+    <line x1="770"  y1="182" x2="770"  y2="237"/>
+    <line x1="797"  y1="222" x2="797"  y2="237"/>
+    <line x1="820"  y1="102" x2="861"  y2="237"/>
+    <line x1="871"  y1="142" x2="871"  y2="237"/>
+    <line x1="930"  y1="182" x2="937"  y2="237"/>
+    <line x1="997"  y1="142" x2="997"  y2="237"/>
+    <line x1="1130" y1="182" x2="1130" y2="227"/>
+  </g>
+
+  <!-- paper labels: name (14px ink), date (11px muted) -->
+  <g text-anchor="middle">
+    <text x="143" y="198" fill="#17181c" font-size="14">Linear Attention</text>
+    <text x="143" y="215" fill="#676b76" font-size="11">2020-06</text>
+    <text x="250" y="198" fill="#17181c" font-size="14">DeltaNet</text>
+    <text x="250" y="215" fill="#676b76" font-size="11">2021-02</text>
+    <text x="703" y="198" fill="#17181c" font-size="14">Mamba</text>
+    <text x="703" y="215" fill="#676b76" font-size="11">2023-12</text>
+    <text x="770" y="158" fill="#17181c" font-size="14">Mamba-2 / SSD</text>
+    <text x="770" y="175" fill="#676b76" font-size="11">2024-05</text>
+    <text x="797" y="198" fill="#17181c" font-size="14">TTT</text>
+    <text x="797" y="215" fill="#676b76" font-size="11">2024-07</text>
+    <text x="820" y="78"  fill="#17181c" font-size="14">Gated DeltaNet</text>
+    <text x="820" y="95"  fill="#676b76" font-size="11">2024-12</text>
+    <text x="871" y="118" fill="#17181c" font-size="14">Titans</text>
+    <text x="871" y="135" fill="#676b76" font-size="11">2024-12</text>
+    <text x="930" y="158" fill="#17181c" font-size="14">ATLAS &#183; MesaNet</text>
+    <text x="930" y="175" fill="#676b76" font-size="11">2025-05/06</text>
+    <text x="997" y="118" fill="#17181c" font-size="14">Kimi Linear</text>
+    <text x="997" y="135" fill="#676b76" font-size="11">2025-10</text>
+    <text x="1130" y="158" fill="#2f6bd8" font-size="16" font-weight="700">Falcon</text>
+    <text x="1130" y="175" fill="#676b76" font-size="11">2026-08</text>
+  </g>
+
+  <!-- ===== Shipping lane: dots on y=380 ===== -->
+  <g fill="#e08a1e">
+    <circle cx="983"  cy="380" r="6"/>
+    <circle cx="997"  cy="380" r="6"/>
+    <circle cx="1050" cy="380" r="6"/>
+  </g>
+
+  <!-- shipping leader lines -->
+  <g stroke="#b9bcc4" stroke-width="1">
+    <line x1="983"  y1="388" x2="930"  y2="402"/>
+    <line x1="997"  y1="388" x2="997"  y2="466"/>
+    <line x1="1050" y1="388" x2="1090" y2="402"/>
+  </g>
+
+  <!-- shipping labels -->
+  <g text-anchor="middle">
+    <text x="930" y="418" fill="#17181c" font-size="14">Qwen3-Next</text>
+    <text x="930" y="435" fill="#17181c" font-size="14">GDN hybrid</text>
+    <text x="930" y="452" fill="#676b76" font-size="11">2025-09</text>
+
+    <text x="1090" y="418" fill="#17181c" font-size="14">Qwen3.5-397B</text>
+    <text x="1090" y="435" fill="#17181c" font-size="14">GDN hybrid</text>
+    <text x="1090" y="452" fill="#676b76" font-size="11">2026-02</text>
+
+    <text x="997" y="484" fill="#17181c" font-size="14">MiniMax M2</text>
+    <text x="997" y="501" fill="#17181c" font-size="14">back to full attention</text>
+    <text x="997" y="518" fill="#676b76" font-size="11">2025-10</text>
+  </g>
+</svg>
+</div><figcaption><b>Figure 4.</b> The fast-weight lineage and its deployments. Gated DeltaNet went from paper to a frontier hybrid in about nine months; Falcon arrives a year after that layer shipped, into a market where one lab has already reverted to full attention.</figcaption></figure>
+
+<p>The market it lands in is split. While Qwen and Kimi doubled down on linear-attention hybrids, MiniMax publicly moved its M2 flagship back to full attention in October 2025, citing production quality problems on multi-turn and reasoning workloads [25]. And the conceptual territory is contested too: Google's Titans–ATLAS–MesaNet line and its November 2025 "Nested Learning" post push the same layers-as-internal-optimizers vocabulary from the exact-solver end [8][9][10][22], a February 2026 paper independently reduced a broad class of test-time-training architectures to linear attention [24], and Mamba-3 arrived in March 2026 [23] — the latter two uncited, which suggests both that this synthesis was in the air and that priority windows in this subfield are now measured in weeks. With every training run fitting on one node, generating architecture ideas has become startup-cheap; validating them at 100B-token scale still belongs to the incumbent labs. Our reading: Falcon is a priority-and-vocabulary play, structurally dependent on the teams already running delta-style hybrids to complete its own evidence.</p>
+<h2 id="five-dated-signals-will-settle-it">Five dated signals will settle it</h2>
+<p>The paper's future is unusually legible because the missing pieces are so specific. The first signal is an arXiv v2 or camera-ready that reports the defined two-by-two alignment ablation — the single most information-dense artifact this line can produce, and its falsification point. The second is code, or a community kernel in the flash-linear-attention ecosystem, which is how the parallelized delta rule itself spread [13]. The third is an independent replication of the perplexity margin at a billion-plus parameters, and the fourth is the shift or the NLMS normalization appearing inside a production hybrid's tech report — Gated DeltaNet needed about nine months to go from paper to Qwen3-Next [7][19]. The fifth is whether next-generation frontier hybrids keep a delta-style layer at all [25]. The signs of double-blind review and the submission date are consistent with an ICLR 2027 bet, which would put decisions around January 2027 — our inference, not a stated fact.</p>
+<p>The open problem most likely to generate follow-up work is the regression-versus-inner-product trade-off: a single variant that holds both the perplexity column and the extrapolation column would be the strongest confirmation the framework could get, and a persistent split would say something real about what different objectives store. Either way, the durable contribution may be the axes rather than the rules — temporal alignment, plasticity, forgetting, and bounded rehearsal as independent design choices. Naming the axes is how SSD reorganized this field two years ago; whether Falcon's strict-causality version or Google's nested-optimization version becomes the canonical statement is, on the evidence so far, the most consequential open question this paper raises.</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://arxiv.org/abs/2608.27763" target="_blank" rel="noopener">Fast Weight Attention for Continual Learning</a> — arXiv, 2026-08-27</li>
+<li><a href="https://github.com/yifanzhang-pro/fast-weight-attention" target="_blank" rel="noopener">Falcon project page (official repo)</a> — GitHub, accessed 2026-09-02</li>
+<li><a href="https://arxiv.org/abs/2006.16236" target="_blank" rel="noopener">Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention</a> — arXiv, 2020-06-29</li>
+<li><a href="https://arxiv.org/abs/2102.11174" target="_blank" rel="noopener">Linear Transformers Are Secretly Fast Weight Programmers</a> — arXiv, 2021-02-22</li>
+<li><a href="https://arxiv.org/abs/2312.00752" target="_blank" rel="noopener">Mamba: Linear-Time Sequence Modeling with Selective State Spaces</a> — arXiv, 2023-12-01</li>
+<li><a href="https://arxiv.org/abs/2405.21060" target="_blank" rel="noopener">Transformers are SSMs (Mamba-2 / Structured State Space Duality)</a> — arXiv, 2024-05-31</li>
+<li><a href="https://arxiv.org/abs/2412.06464" target="_blank" rel="noopener">Gated Delta Networks: Improving Mamba2 with Delta Rule</a> — arXiv, 2024-12-09</li>
+<li><a href="https://arxiv.org/abs/2501.00663" target="_blank" rel="noopener">Titans: Learning to Memorize at Test Time</a> — arXiv, 2024-12-31</li>
+<li><a href="https://arxiv.org/abs/2505.23735" target="_blank" rel="noopener">ATLAS: Learning to Optimally Memorize the Context at Test Time</a> — arXiv, 2025-05-29</li>
+<li><a href="https://arxiv.org/abs/2506.05233" target="_blank" rel="noopener">MesaNet: Sequence Modeling by Locally Optimal Test-Time Training</a> — arXiv, 2025-06-05</li>
+<li><a href="https://arxiv.org/abs/2407.04620" target="_blank" rel="noopener">Learning to (Learn at Test Time): RNNs with Expressive Hidden States</a> — arXiv, 2024-07-05</li>
+<li><a href="https://arxiv.org/abs/2501.12352" target="_blank" rel="noopener">Test-Time Regression (Wang, Shi &amp; Fox)</a> — arXiv, 2025-01-21</li>
+<li><a href="https://arxiv.org/abs/2406.06484" target="_blank" rel="noopener">Parallelizing Linear Transformers with the Delta Rule over Sequence Length</a> — arXiv, 2024-06-10</li>
+<li><a href="https://arxiv.org/abs/2504.00492" target="_blank" rel="noopener">ParallelFlow: Parallelizing Linear Transformers via Flow Discretization</a> — arXiv, 2025-04-01</li>
+<li><a href="https://arxiv.org/abs/2411.12537" target="_blank" rel="noopener">Unlocking State-Tracking in Linear RNNs Through Negative Eigenvalues</a> — arXiv, 2024-11-19</li>
+<li><a href="https://onlinelibrary.wiley.com/doi/book/10.1002/9780470374122" target="_blank" rel="noopener">Adaptive Filters (Ali H. Sayed)</a> — Wiley, 2008</li>
+<li><a href="https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu" target="_blank" rel="noopener">FineWeb-Edu dataset</a> — Hugging Face, accessed 2026-09-02</li>
+<li><a href="https://arxiv.org/abs/1511.08228" target="_blank" rel="noopener">Neural GPUs Learn Algorithms</a> — arXiv, 2015-11-25</li>
+<li><a href="https://x.com/Alibaba_Qwen/status/1966197643904000262" target="_blank" rel="noopener">Qwen3-Next-80B-A3B announcement</a> — Alibaba Qwen on X, 2025-09</li>
+<li><a href="https://huggingface.co/blog/mlabonne/qwen35" target="_blank" rel="noopener">Qwen3.5: Nobody Agrees on Attention Anymore</a> — Hugging Face blog (M. Labonne), 2026-02</li>
+<li><a href="https://arxiv.org/abs/2510.26692" target="_blank" rel="noopener">Kimi Linear</a> — arXiv, 2025-10-30</li>
+<li><a href="https://research.google/blog/introducing-nested-learning-a-new-ml-paradigm-for-continual-learning/" target="_blank" rel="noopener">Introducing Nested Learning: a new ML paradigm for continual learning</a> — Google Research blog, 2025-11</li>
+<li><a href="https://arxiv.org/abs/2603.15569" target="_blank" rel="noopener">Mamba-3: Improved Sequence Modeling using State Space Principles</a> — arXiv, 2026-03-16</li>
+<li><a href="https://arxiv.org/abs/2602.21204" target="_blank" rel="noopener">Test-Time Training with KV Binding Is Secretly Linear Attention</a> — arXiv, 2026-02</li>
+<li><a href="https://magazine.sebastianraschka.com/p/beyond-standard-llms" target="_blank" rel="noopener">Beyond Standard LLMs</a> — Sebastian Raschka, accessed 2026-09-02</li>
+<li><a href="https://www.scmp.com/tech/big-tech/article/3355677/bytedance-loses-key-ai-research-leader-behind-seed-models-amid-monetisation-push" target="_blank" rel="noopener">ByteDance loses key AI research leader behind Seed models</a> — South China Morning Post, 2026-06</li>
+</ol>
+</article>
+
+<footer class="credits">
+  <p>Written from the paper’s full text by a multi-agent pipeline — background research, six analytical lenses, synthesis, and an editorial pass — then illustrated in this blog’s house style and narrated with Higgs TTS.</p>
+  <p>The paper belongs to its authors; this article is commentary and summary, not a substitute for reading it.</p>
+</footer>
+</div>
+
+<style>#jw-home{position:fixed;left:18px;bottom:18px;z-index:9999;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo",sans-serif;padding:9px 15px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid #e3e1da;color:#17181c;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .15s,color .15s}#jw-home:hover{background:#17181c;color:#fff}@media print{#jw-home{display:none}}</style>
+<a id="jw-home" href="../../">&larr; 이것저것</a>
+
+<script>
+(function(){
+  var bar=document.getElementById('pbar');
+  function prog(){var h=document.documentElement,s=h.scrollTop||document.body.scrollTop,m=h.scrollHeight-h.clientHeight;bar.style.width=(m>0?Math.min(100,s/m*100):0)+'%';}
+  addEventListener('scroll',prog,{passive:true});prog();
+  var a=document.getElementById('narr'),chips=document.querySelectorAll('.chip'),now=document.getElementById('now');
+  if(a&&chips.length){
+    var secs=[].map.call(chips,function(c){return {t:+c.dataset.t,el:c};});
+    chips.forEach(function(c){c.addEventListener('click',function(){a.currentTime=+c.dataset.t;a.play();});});
+    a.addEventListener('timeupdate',function(){var cur=null;for(var i=0;i<secs.length;i++){if(a.currentTime>=secs[i].t-0.2)cur=secs[i];}
+      secs.forEach(function(s){s.el.classList.toggle('on',s===cur);});
+      if(now)now.textContent=cur?('Now reading: '+cur.el.textContent):'';});
+  }
+})();
+</script>
+</body>
+</html>

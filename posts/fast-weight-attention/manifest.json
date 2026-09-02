@@ -1,0 +1,44 @@
+{
+  "posts_js_entry": {
+    "slug": "fast-weight-attention",
+    "title": "Off by One Token — Falcon Rewrites the Fast-Weight Update",
+    "date": "2026-09-02",
+    "description": "Falcon derives fast-weight update rules from explicit online objectives, fixing a one-step alignment mismatch in linear attention and DeltaNet. Zhang 등(ByteDance Seed, 프린스턴, 칭화, Hyperbolic Labs; arXiv 2608.27763, 2026-08-27)의 이 논문은 선형 어텐션, DeltaNet, Mamba 계열 SSM 등 순환 시퀀스 모델의 상태 갱신을 명시적인 국소 목적 함수를 가진 온라인 학습 규칙으로 재구성한다.",
+    "tags": [
+      "deep-dive",
+      "linear-attention"
+    ],
+    "lang": "en · ko",
+    "art": "ledger"
+  },
+  "en": {
+    "file": "index.html",
+    "title": "Off by One Token — Falcon Rewrites the Fast-Weight Update",
+    "words": 3428,
+    "read_min": 15,
+    "listen_min": 19,
+    "summary": "Falcon (Zhang et al., arXiv 2608.27763, 2026-08-27) recasts the state update of linear attention, DeltaNet, and Mamba-style models as an explicit online learning rule, and observes that the standard convention binds the key and value of the same step while read-after-write prediction actually reveals a pair whose feature comes one step earlier. From two local objectives the authors derive a six-member family of NLMS-normalized update rules with exact recurrent, masked-parallel, and chunk-parallel forms. At 124M–130M parameters one variant takes the best validation perplexity (17.10 versus Gated DeltaNet's 17.32) and a different one the best length extrapolation on multi-digit addition (87.2 versus 65.8 for the Transformer) — but no variant wins both, the headline alignment claim is never isolated in an ablation, and no code has been released. The paper is best read as a bid to define the design vocabulary of a layer that already ships inside frontier hybrid models.",
+    "tags": [
+      "deep-dive",
+      "linear-attention"
+    ],
+    "date": "2026-09-02",
+    "category": "ai-research"
+  },
+  "ko": {
+    "file": "ko.html",
+    "title": "토큰 하나의 어긋남 — Falcon이 다시 쓰는 fast-weight 업데이트",
+    "words": 3802,
+    "read_min": 13,
+    "listen_min": 21,
+    "summary": "Falcon(Zhang et al., arXiv 2608.27763, 2026-08-27)은 linear attention, DeltaNet, Mamba 계열 모델의 상태 업데이트를 명시적인 온라인 학습 규칙으로 다시 정식화하면서, 표준 관례가 같은 스텝의 key와 value를 묶는 반면 read-after-write 예측이 실제로 드러내는 쌍은 feature가 한 스텝 앞선 쌍이라는 점을 지적한다. 저자들은 두 개의 국소 목적함수로부터 NLMS 정규화를 갖춘 여섯 가지 업데이트 규칙 패밀리를 유도하고, 각 규칙에 대해 순차 recurrent, masked-parallel, chunk-parallel의 정확히 동치인 세 가지 형태를 제시한다. 124M–130M 파라미터 규모에서 한 변형이 검증 perplexity 최고 기록(Gated DeltaNet의 17.32 대비 17.10)을, 다른 변형이 여러 자릿수 덧셈 길이 외삽 최고 기록(Transformer의 65.8 대비 87.2)을 가져가지만, 두 지표를 동시에 이기는 변형은 없고, 핵심인 정렬(alignment) 주장은 어떤 ablation에서도 단독으로 검증되지 않았으며, 코드도 공개되지 않았다. 이 논문은 이미 프런티어 하이브리드 모델 안에 실전 배치된 레이어의 설계 어휘를 선점하려는 시도로 읽는 것이 가장 정확하다.",
+    "tags": [
+      "deep-dive",
+      "linear-attention"
+    ],
+    "date": "2026-09-02",
+    "category": "ai-research"
+  },
+  "post_dir": "/Users/jaewon/mywork_2026/blog-dev/yt-articles/fast-weight-attention/post",
+  "publish": "cd my_blog && ./new-post.sh /Users/jaewon/mywork_2026/blog-dev/yt-articles/fast-weight-attention/post fast-weight-attention  (answers: title/description/tags/date from posts_js_entry)"
+}

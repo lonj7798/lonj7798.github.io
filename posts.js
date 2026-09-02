@@ -5,6 +5,18 @@
 // Fields: slug*, title*, date* (YYYY-MM-DD), description, tags[], lang
 window.POSTS = [
   {
+    "slug": "fast-weight-attention",
+    "title": "Off by One Token — Falcon Rewrites the Fast-Weight Update",
+    "date": "2026-09-02",
+    "description": "Falcon derives fast-weight update rules from explicit online objectives, fixing a one-step alignment mismatch in linear attention and DeltaNet. Zhang 등(ByteDance Seed, 프린스턴, 칭화, Hyperbolic Labs; arXiv 2608.27763, 2026-08-27)의 이 논문은 선형 어텐션, DeltaNet, Mamba 계열 SSM 등 순환 시퀀스 모델의 상태 갱신을 명시적인 국소 목적 함수를 가진 온라인 학습 규칙으로 재구성한다.",
+    "tags": [
+      "deep-dive",
+      "linear-attention"
+    ],
+    "lang": "en · ko",
+    "art": "ledger"
+  },
+  {
     "slug": "ai-uncertainty",
     "title": "Teaching AI to Doubt — Zoubin Ghahramani's Bayesian Bet",
     "date": "2026-09-01",
