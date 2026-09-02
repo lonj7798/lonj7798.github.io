@@ -373,7 +373,7 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
   // per-post generative cover — a MOTIF (structure) + palette, both seeded by slug.
   // posts.js can pin the motif via "art" (any name in MOTIFS below);
   // unset posts draw from the family by hash, so no two neighbors need to match.
-  const MOTIFS = ["wave", "ridge", "cells", "ribbon", "synapse", "factory", "tree", "fan"];
+  const MOTIFS = ["wave", "ridge", "cells", "ribbon", "synapse", "factory", "tree", "fan", "ledger"];
   const mixc = (a, b, u, al) =>
     `rgba(${(a[0] + (b[0] - a[0]) * u) | 0},${(a[1] + (b[1] - a[1]) * u) | 0},${(a[2] + (b[2] - a[2]) * u) | 0},${al})`;
 
@@ -585,6 +585,88 @@ footer { margin-top:64px; border-top:1px solid var(--hair); }
       for (let x = -4; x <= xs; x += 4)
         ctx.lineTo(x, mid + noise(x * 0.004 * a.sp, a.o2) * h * 0.012);
       ctx.lineTo(xs, mid); ctx.stroke();
+    },
+
+    // ledger — a boundless stream, a bounded memory: tokens drift in from the
+    // west and are written into a fixed matrix state that never grows; each
+    // write arcs from the token one step BEHIND the newest (the off-by-one
+    // pair, in the card gradient) while a faint ghost arc marks the same-step
+    // convention, and older entries quietly decay. On hover the stream glides
+    // and the writes keep landing, one calm beat at a time.
+    ledger(ctx, cv, t) {
+      const w = cv._w, h = cv._h, noise = cv._noise, a = cv._art;
+      const R = 4, C = 6;
+      const gx0 = w * 0.60, gx1 = w * 0.925, gy0 = h * 0.20, gy1 = h * 0.80;
+      const cw = (gx1 - gx0) / C, ch = (gy1 - gy0) / R;
+      const hash = m => { const v = Math.sin(m * 127.1 + (a.seed % 97) * 0.13) * 43758.5453; return v - Math.floor(v); };
+      const ease = p => p * p * (3 - 2 * p);
+      // one write per beat; t=0 rests mid-write so the frame is complete
+      const tB = t * 0.55 + 0.45, M = Math.floor(tB), fb = tB - M;
+      // the state — per-cell ink from the last dozen writes, decaying
+      const lit = new Array(R * C).fill(0);
+      for (let m = M - 12; m <= M; m++) {
+        const age = M - m + fb, u2 = m === M ? ease(fb) : 1;
+        lit[(hash(m) * R * C) | 0] += 0.60 * Math.pow(0.76, age) * u2;
+      }
+      const cell = i => [gx0 + (i % C) * cw, gy0 + ((i / C) | 0) * ch];
+      for (let i = 0; i < R * C; i++) {
+        const [cx, cy] = cell(i);
+        const al = Math.min(0.72, 0.05 + lit[i]);
+        ctx.fillStyle = mixc(a.c1, a.c2, (cx + cw / 2) / w, al);
+        ctx.fillRect(cx + 1.5, cy + 1.5, cw - 3, ch - 3);
+      }
+      ctx.strokeStyle = "rgba(23,24,28,.16)"; ctx.lineWidth = 1;
+      for (let i = 0; i <= C; i++) { const x = gx0 + i * cw;
+        ctx.beginPath(); ctx.moveTo(x, gy0); ctx.lineTo(x, gy1); ctx.stroke(); }
+      for (let j = 0; j <= R; j++) { const y = gy0 + j * ch;
+        ctx.beginPath(); ctx.moveTo(gx0, y); ctx.lineTo(gx1, y); ctx.stroke(); }
+      ctx.strokeStyle = "rgba(23,24,28,.42)"; ctx.lineWidth = Math.max(1.4, h * 0.011);
+      ctx.strokeRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+      // the stream — world-indexed tokens gliding toward the write point
+      const s = Math.max(2.8, h * 0.026), pitch = s * 2.6, wx = gx0 - s * 1.7;
+      const laneY = x => h * 0.5 + noise(x * 0.004 * a.sp + a.o1, 2.2) * h * 0.06;
+      ctx.strokeStyle = "rgba(23,24,28,.055)"; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x <= wx; x += 6) ctx.lineTo(x, laneY(x));
+      ctx.stroke();
+      const tok = j => wx - (j + 1 - fb) * pitch;      // j = 0 is the newest token
+      for (let j = 0; ; j++) {
+        const x = tok(j);
+        if (x < -s) break;
+        const u2 = Math.max(0, x / wx);
+        const det = 0.75 + 0.25 * Math.abs(noise((M - j) * 0.9, a.o2 + 1.4));
+        const sz = s * (0.45 + 0.55 * u2) * det, y = laneY(x);
+        ctx.fillStyle = j < 2 ? mixc(a.c1, a.c2, 0.08 + 0.1 * j, 0.30 + 0.45 * u2)
+          : `rgba(23,24,28,${(0.08 + 0.34 * u2).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(x - sz / 2, y - sz / 2, sz, sz, sz * 0.22) : ctx.rect(x - sz / 2, y - sz / 2, sz, sz);
+        ctx.fill();
+      }
+      // this beat's write — the arc leaves from one token BEHIND the newest
+      const ti = (hash(M) * R * C) | 0, [tx0, ty0] = cell(ti);
+      const tx = tx0 + cw / 2, ty = ty0 + ch / 2;
+      const pulse = Math.sin(Math.PI * Math.min(1, fb * 1.15));
+      const arc = (x, y, al, lw) => {
+        ctx.lineWidth = lw; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(x, y);
+        ctx.quadraticCurveTo((x + tx) / 2, Math.min(y, gy0) - h * 0.16, tx, ty);
+        ctx.stroke();
+      };
+      ctx.strokeStyle = "rgba(23,24,28,.10)";
+      arc(tok(0), laneY(tok(0)) - s * 0.5, 0, 1);                       // the same-step ghost
+      ctx.strokeStyle = mixc(a.c1, a.c2, tx / w, 0.28 + 0.5 * pulse);
+      arc(tok(1), laneY(tok(1)) - s * 0.5, 0, Math.max(1.4, h * 0.011)); // the aligned pair
+      ctx.fillStyle = mixc(a.c1, a.c2, tx / w, 0.25 + 0.55 * pulse);    // the cell taking the write
+      ctx.fillRect(tx0 + 1.5, ty0 + 1.5, cw - 3, ch - 3);
+      // the read — a quiet prediction leaving the state
+      const oy = h * 0.5, ox0 = gx1 + s * 0.6, ox1 = Math.min(w - s * 1.6, ox0 + w * 0.035);
+      ctx.strokeStyle = "rgba(23,24,28,.30)"; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(ox0, oy); ctx.lineTo(ox1, oy); ctx.stroke();
+      const os = s * 1.15, breathe = 0.30 + 0.18 * pulse;
+      ctx.setLineDash([2.5, 2.5]);
+      ctx.strokeStyle = mixc(a.c1, a.c2, 1, 0.35 + breathe); ctx.lineWidth = 1.2;
+      ctx.strokeRect(ox1 + 2, oy - os / 2, os, os);
+      ctx.setLineDash([]);
     },
 
     // tree — search is the teacher: a Go position (west) feeds a search tree

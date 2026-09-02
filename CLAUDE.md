@@ -22,7 +22,11 @@ The blog looks like **ink flowing on paper**. Every visual decision follows from
    a selection pulse walks out, then the value backs up, ringing each node it updates
    · `fan` uncertainty fan: one confident point-forecast line frays at a "now" hairline into an
    ensemble of possible futures, a few members in the card gradient and one long-tail outlier
-   peeling away — on hover the ensemble resamples while the observed past holds still),
+   peeling away — on hover the ensemble resamples while the observed past holds still
+   · `ledger` bounded memory: a boundless token stream (west) is written into a fixed matrix state
+   that never grows; each write arcs from the token one step *behind* the newest (the off-by-one
+   pair, in the card gradient) past a faint same-step ghost arc, older entries decay, and a dotted
+   next-token square (east) takes the read — on hover the stream glides and writes land beat by beat),
    structure + palette both seeded by `hash32(slug)`. Pin a motif per post with the `art`
    field in posts.js (Jaewon asked for visibly *different* covers between neighboring posts —
    don't let two adjacent cards share a motif). No image assets to manage.
@@ -66,7 +70,7 @@ post (via `./new-post.sh <folder-or-html> <slug>` or by hand), craft the entry l
 
 - **slug** — short kebab-case, and **stable**: it seeds the cover art
   (`hash32(slug)` → palette, phases, and the default motif). Renaming the slug changes the
-  artwork. Prefer setting the **art** field (`wave`/`ridge`/`cells`/`ribbon`/`synapse`/`factory`/`tree`/`fan`) over renaming;
+  artwork. Prefer setting the **art** field (`wave`/`ridge`/`cells`/`ribbon`/`synapse`/`factory`/`tree`/`fan`/`ledger`) over renaming;
   if auto-colors clash, adjust the slug suffix rather than the art code.
 - **title** — keep the post's own `<title>` (auto-detected). Serif-rendered; reads best at
   8–14 words. An em-dash subtitle ("Main Title — What It Actually Shows") works well.
