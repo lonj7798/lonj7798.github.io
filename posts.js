@@ -14,7 +14,7 @@ window.POSTS = [
       "bayesian"
     ],
     "lang": "en · ko",
-    "art": "ridge"
+    "art": "fan"
   },
   {
     "slug": "alphago-self-play",

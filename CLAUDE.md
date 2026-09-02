@@ -19,7 +19,10 @@ The blog looks like **ink flowing on paper**. Every visual decision follows from
    dense throughput band, a lane or two idling — tokens glide east on hover
    · `tree` search tree: a small Go-board fragment (west) feeds a tree fanning east, the most-visited
    line inked in the card gradient down to a ringed leaf — on hover one calm MCTS heartbeat repeats:
-   a selection pulse walks out, then the value backs up, ringing each node it updates),
+   a selection pulse walks out, then the value backs up, ringing each node it updates
+   · `fan` uncertainty fan: one confident point-forecast line frays at a "now" hairline into an
+   ensemble of possible futures, a few members in the card gradient and one long-tail outlier
+   peeling away — on hover the ensemble resamples while the observed past holds still),
    structure + palette both seeded by `hash32(slug)`. Pin a motif per post with the `art`
    field in posts.js (Jaewon asked for visibly *different* covers between neighboring posts —
    don't let two adjacent cards share a motif). No image assets to manage.
@@ -63,7 +66,7 @@ post (via `./new-post.sh <folder-or-html> <slug>` or by hand), craft the entry l
 
 - **slug** — short kebab-case, and **stable**: it seeds the cover art
   (`hash32(slug)` → palette, phases, and the default motif). Renaming the slug changes the
-  artwork. Prefer setting the **art** field (`wave`/`ridge`/`cells`/`ribbon`/`synapse`/`factory`/`tree`) over renaming;
+  artwork. Prefer setting the **art** field (`wave`/`ridge`/`cells`/`ribbon`/`synapse`/`factory`/`tree`/`fan`) over renaming;
   if auto-colors clash, adjust the slug suffix rather than the art code.
 - **title** — keep the post's own `<title>` (auto-detected). Serif-rendered; reads best at
   8–14 words. An em-dash subtitle ("Main Title — What It Actually Shows") works well.
